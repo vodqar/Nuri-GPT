@@ -1,111 +1,73 @@
-# 🔄 Authentication & Security Implementation Handoff (2026-04-07)
+# 🔄 Handoff (2026-04-11)
 
 ## 🎯 Goal
-인증 흐름 구현 + 보안 설계 통합 - Critical 보안 이슈 3건(C-1, C-2, C-3) 즉시 대응 및 전체 인증 인프라 구축
+관찰일지 작성 뷰(`LogInputView`) manual 모드 입력 필드를 아코디언 카드 구조에서 **doc-table 테이블 레이아웃**으로 재설계. 헤더·버튼 등 나머지 UI는 변경 없이 유지.
 
-## 📈 Current Progress
+---
 
-### ✅ 완료된 작업
+## ✅ 완료된 작업
 
-#### Phase 1: 백엔드 인증 엔드포인트
-- **@/home/kj/Projects/Nuri-GPT/nuri-gpt-backend/app/schemas/auth.py** - Auth 스키마 생성
-  - `LoginRequest`, `TokenResponse`, `UserAuthInfo`, `LogoutResponse`, `TokenPayload`
-- **@/home/kj/Projects/Nuri-GPT/nuri-gpt-backend/app/api/endpoints/auth.py** - 인증 엔드포인트 구현
-  - `POST /api/auth/login` - access_token 반환 + httpOnly refresh_token 쿠키
-  - `POST /api/auth/refresh` - 쿠키 기반 토큰 갱신
-  - `POST /api/auth/logout` - 쿠키 삭제 + 세션 무효화
-- **@/home/kj/Projects/Nuri-GPT/nuri-gpt-backend/app/core/dependencies.py** - JWT 검증 의존성
-  - `get_current_user()` - Bearer 토큰 검증 및 사용자 정보 반환
-- **@/home/kj/Projects/Nuri-GPT/nuri-gpt-backend/app/main.py** - auth 라우터 등록
+### 핵심 구현
+- **`LogInputView.tsx`** 렌더 로직 전체 교체
+  - `renderDayGroupedFields` + 아코디언 state 제거
+  - `renderTableView` + `renderDocRow` + `renderSubRow` 신규 구현
+  - 1수준(대분류) → `doc-header-col`, 2수준(소분류) → `doc-sub-header-col`, 3수준 → `innerLabel`(뱃지)로 표시
+  - 요일 필드: 같은 소분류의 첫 번째 행만 헤더 표시, 나머지는 빈칸(시각적 병합)
+  - `[object Object]` 버그 수정: `toPlaceholder()` 헬퍼로 객체 값 → 빈 문자열 처리
+  - 제거된 import: `PathBreadcrumb`, `ChevronDown/Right`, `useState`, `getFlatFields`, `FlatField`, `Day` (→ `DAYS`, `Day`만 유지)
+  - OCR 버튼: `ScanText` 아이콘 + `doc-ocr-btn` 클래스
 
-#### Phase 1-6: 보호 라우터에 JWT 검증 적용
-- **upload.py** - `/api/upload/memo`, `/api/upload/template`에 JWT 적용, user_id 파라미터 제거
-- **template.py** - `/api/templates/`에 JWT 적용, user_id 파라미터 제거
-- **generate.py** - `/api/generate/log`, `/api/generate/regenerate`에 JWT 적용, MOCK_USER_ID 제거
-- **journals.py** - `/api/journals`에 JWT 적용, MOCK_USER_ID 제거
-- **user.py** - `/api/users/me` 신규, 기존 엔드포인트에 본인 확인 추가
+- **`index.css`** doc-table 스타일 블록 추가 (`.doc-table` 스코프)
+  - `.doc-table`, `.doc-row`, `.doc-header-col`, `.doc-sub-header-col`, `.doc-content-col`, `.doc-textarea`, `.doc-ocr-btn`, `.doc-inner-label`
+  - 선 시스템: 모두 `1px / rgb(150,160,155)`, opacity 위계 0.5(대분류 가로) → 0.4(대분류 세로) → 0.3(소분류 세로) → 0.25(소분류 내부 가로)
+  - OCR 버튼: 데스크탑 hover 시 표시 / 모바일(`≤640px`) 항상 표시
 
-#### Phase 2: 프론트엔드 토큰 저장 방식 변경
-- **@/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/store/authStore.ts**
-  - `persist` 제거 - 메모리 기반 저장 (XSS 방지)
-  - `refreshAccessToken()` 추가 - 자동 토큰 갱신
-- **@/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/services/api.ts**
-  - `withCredentials: true` 추가 (쿠키 전송)
-  - 401 인터셉터 구현 - refresh → 재요청 → 실패 시 로그아웃
-  - `fetchFormData`에도 동일한 401 처리 적용
-  - `userId` 파라미터 제거 (JWT에서 추출)
-  - `login()`, `logout()`, `getCurrentUser()` API 추가
+- **`DEVELOPMENT.md`** 변경 이력 기록
 
-#### Phase 3: 개발 편의성 유지
-- **@/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/routes/PrivateRoute.tsx**
-  - `VITE_AUTH_BYPASS` 환경변수 기반 분기
-- **@/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/.env.development** - `VITE_AUTH_BYPASS=true`
-- **@/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/.env.production** - 보안 기본값
+### 렌더 로직 구조
+```
+semanticJson (Record<string, unknown>)
+└─ 1수준 key (topKey)          → doc-header-col
+   └─ 2수준 key (subKey)       → doc-sub-header-col
+      └─ 3수준 key (innerKey)  → doc-inner-label (뱃지, 입력 영역 상단)
+         └─ value              → doc-textarea placeholder
+```
 
-#### 테스트 및 문서
-- 모든 테스트에 `mock_current_user` fixture 추가 (74 passed, 12 skipped)
-- **@/home/kj/Projects/Nuri-GPT/nuri-gpt-backend/docs/API_REFERENCE.md** - 인증 엔드포인트 문서화
+---
 
 ## ✅ What Worked
 
-- **JWT + httpOnly 쿠키 구조** - 보안 모범 사례 준수
-- **get_current_user 의존성** - FastAPI Depends 패턴으로 깔끔한 인증 적용
-- **401 인터셉터 패턴** - axios + fetch 통합된 자동 갱신 로직
-- **환경변수 기반 개발 우회** - `import.meta.env.VITE_AUTH_BYPASS`로 안전한 개발 경험
-- **테스트 격리** - mock fixture로 인증 의존성 우회, 실제 인프라 없이 단위 테스트 유지
+- **1px 선 + opacity 위계** — 두께 차이 없이 색상 투명도만으로 시각 위계 표현, 자연스럽고 조화로움
+- **hideSubKey 패턴** — 같은 요일 그룹의 첫 행만 헤더 표시 → rowspan 효과, 반복 노이즈 제거
+- **toPlaceholder 헬퍼** — `Array / object / primitive` 분기 일원화로 `[object Object]` 방지
+- **doc-inner-label 뱃지** — `surface-container-low` 배경 + `primary` 색상으로 가독성 확보
 
-## ❌ 주의사항
+## ❌ What Didn't Work / 주의사항
 
-- **user_id 타입 불일치** - JWT는 string UUID, DB는 UUID 객체 → 변환 주의
-- **/me 엔드포인트 변경** - `/{user_id}` → `/me` 경로 변경 반영
+- **두께 차이로 위계 표현** — `2px` vs `1px` 혼용 시 선이 어색하게 보임 → opacity 차이로만 처리
+- **4단계 이상 JSON** — 현재 렌더러는 3단계까지만 지원. 4단계 값이 object면 `toPlaceholder`가 빈 문자열 반환 (표시 안 됨). 필요 시 재귀 처리 추가 필요
 
-## 📋 Changed Files
+---
 
-### 백엔드 (신규/수정)
+## 📋 수정된 파일
+
 ```
-app/schemas/auth.py (신규)
-app/api/endpoints/auth.py (신규)
-app/core/dependencies.py (수정 - get_current_user 추가)
-app/main.py (수정 - auth 라우터 등록)
-app/api/endpoints/upload.py (수정 - JWT 적용)
-app/api/endpoints/template.py (수정 - JWT 적용)
-app/api/endpoints/generate.py (수정 - JWT 적용)
-app/api/endpoints/journals.py (수정 - JWT 적용)
-app/api/endpoints/user.py (수정 - /me 추가, 본인 확인)
+nuri-gpt-frontend/frontend/src/features/observation/components/LogInputView.tsx
+nuri-gpt-frontend/frontend/src/index.css
+nuri-gpt-frontend/frontend/docs/DEVELOPMENT.md
 ```
 
-### 프론트엔드 (수정)
-```
-frontend/src/store/authStore.ts (수정 - persist 제거, refresh 추가)
-frontend/src/services/api.ts (수정 - 인터셉터, 401 처리)
-frontend/src/routes/PrivateRoute.tsx (수정 - 환경변수 분기)
-frontend/.env.development (신규)
-frontend/.env.production (신규)
-```
-
-### 테스트 (수정)
-```
-tests/test_generate_api.py
-tests/test_template_upload.py
-tests/test_template_api.py
-tests/test_upload_api.py
-tests/test_user_api.py
-tests/test_journals_api.py
-tests/test_integration.py
-```
-
-### 문서 (수정)
-```
-docs/API_REFERENCE.md
-```
+---
 
 ## 🚀 Next Steps
 
-- [ ] 프론트엔드 로그인 페이지 연동 - `/login`에서 실제 `login()` API 호출
-- [ ] 로그인 성공 후 토큰 저장 및 리다이렉트 구현
-- [ ] 로그아웃 기능 구현 - `logout()` API 호출 + 메모리 토큰 삭제
-- [ ] 프로덕션 HTTPS 설정 - SameSite=Strict, Secure 쿠키 활성화
-- [ ] 토큰 만료 시간 조정 - access_token 15분, refresh_token 7일
+- [ ] (선택) 4단계 이상 JSON 구조 지원 필요 시 `renderDocRow` 재귀화
+- [ ] 실제 데이터로 전체 필드 렌더링 QA — 특히 요일 그룹핑이 정상 표시되는지 확인
+- [ ] 모바일 레이아웃 실기기 검증 (doc-header-col 폭 80px, OCR 버튼 static)
+- [ ] 기존 미완 작업: 프론트엔드 로그인 페이지 연동, 로그아웃 구현, 프로덕션 HTTPS 쿠키 설정
 
-## 📝 참고 계획서
-- `/home/kj/.windsurf/plans/auth-security-review-782899.md`
+---
+
+## 📝 이전 세션 참고
+이전 세션(2026-04-07): 인증 인프라 구축 완료 (JWT + httpOnly 쿠키, 401 인터셉터, 환경변수 분기)
+관련 계획서: `/home/kj/.windsurf/plans/auth-security-review-782899.md`

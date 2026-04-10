@@ -929,6 +929,172 @@
     margin-bottom: 0.5rem;
   }
 
+  /* ============================================
+     Doc Table (일지 작성 테이블 레이아웃)
+     ============================================ */
+
+  .doc-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid rgba(150, 160, 155, 0.35);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background: white;
+    box-shadow: 0 4px 12px rgba(45, 52, 50, 0.02);
+  }
+
+  .doc-row {
+    display: flex;
+    border-bottom: 1px solid rgba(150, 160, 155, 0.5);
+  }
+
+  .doc-row:last-child {
+    border-bottom: none;
+  }
+
+  .doc-header-col {
+    width: 140px;
+    min-width: 140px;
+    background-color: var(--color-surface-container-low);
+    padding: 1.25rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    border-right: 1px solid rgba(150, 160, 155, 0.4);
+    line-height: 1.4;
+  }
+
+  .doc-sub-header-col {
+    width: 120px;
+    min-width: 120px;
+    background-color: #f4f6f4;
+    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-on-surface-variant);
+    border-right: 1px solid rgba(150, 160, 155, 0.3);
+  }
+
+  .doc-content-col {
+    flex: 1;
+    padding: 0.25rem;
+    position: relative;
+    background: white;
+  }
+
+  .doc-inner-label {
+    display: inline-block;
+    margin: 0.5rem 0.75rem 0.125rem;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    background-color: var(--color-surface-container-low);
+    border-radius: 0.375rem;
+  }
+
+  .doc-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 0.75rem;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    border: none;
+    outline: none;
+    resize: vertical;
+    background: transparent;
+    transition: background 0.2s ease;
+    color: var(--color-on-surface);
+    font-family: inherit;
+  }
+
+  .doc-textarea:focus {
+    background: rgba(67, 104, 52, 0.03);
+  }
+
+  .doc-textarea::placeholder {
+    color: var(--color-outline-variant);
+    font-size: 0.875rem;
+  }
+
+  .doc-ocr-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    opacity: 0;
+    transition: all 0.2s ease;
+    background: white;
+    border: 1px solid rgba(172, 179, 177, 0.3);
+    padding: 0.35rem 0.625rem;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    z-index: 10;
+    cursor: pointer;
+    min-height: 32px;
+  }
+
+  .doc-content-col:hover .doc-ocr-btn {
+    opacity: 1;
+  }
+
+  .doc-ocr-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--color-surface-container-low);
+    transform: translateY(-1px);
+  }
+
+  .doc-ocr-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* 모바일: OCR 버튼 항상 표시 */
+  @media (max-width: 640px) {
+    .doc-ocr-btn {
+      opacity: 1;
+      position: static;
+      box-shadow: none;
+      margin: 0.25rem 0.25rem 0 auto;
+      display: flex;
+      transform: none !important;
+    }
+
+    .doc-content-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .doc-header-col {
+      width: 80px;
+      min-width: 80px;
+      padding: 0.75rem 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .doc-sub-header-col {
+      width: 72px;
+      min-width: 72px;
+      padding: 0.5rem 0.25rem;
+      font-size: 0.75rem;
+    }
+  }
+
   /* Mode Switch Animation - uses view transition tokens */
   .mode-switch-fade {
     opacity: 0;

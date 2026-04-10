@@ -55,7 +55,15 @@
 - **접속**: `http://localhost:5173/observations?cheat=regenerate`
 - **제거**: `ObservationPage.tsx`에서 `// === CHEAT ===` 블록 2개 삭제
 
-*마지막 업데이트: 2026-04-09*
+*마지막 업데이트: 2026-04-10*
+
+### 주요 변경사항 (2026-04-10)
+- **일지 작성 필드 테이블 레이아웃 적용**: `LogInputView.tsx`의 manual 모드 입력 영역을 아코디언 카드에서 doc-table 구조로 교체
+  - 대분류 → `doc-header-col`, 소분류 → `doc-sub-header-col`, 입력 영역 → `doc-content-col`
+  - 요일 필드는 아코디언 없이 행으로 나열 (`subKey · dayKey` 레이블)
+  - OCR 버튼: 데스크탑 hover 시 표시 / 모바일(`≤640px`) 항상 표시 (static position fallback)
+  - CSS 클래스: `index.css`에 `.doc-table`, `.doc-row`, `.doc-header-col`, `.doc-sub-header-col`, `.doc-content-col`, `.doc-textarea`, `.doc-ocr-btn` 추가
+  - `PathBreadcrumb`, `ChevronDown/Right`, `useState`, `getFlatFields`, 아코디언 state 제거
 
 ### 주요 변경사항 (2026-04-09)
 - **이미지 크롭 좌표 변환 개선**: `react-image-crop`이 반환하는 CSS 표시 크기 기준 좌표를 원본 이미지 크기 기준으로 변환 (`cropCoordinateTransform.ts` 추가)

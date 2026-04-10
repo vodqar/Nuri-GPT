@@ -1,8 +1,6 @@
-import { ArrowLeft, Sparkles, ChevronDown, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Sparkles, ScanText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
-import { PathBreadcrumb } from './PathBreadcrumb';
-import { getFlatFields, DAYS, type FlatField, type Day } from '../../../utils/objectUtils';
+import { DAYS, type Day } from '../../../utils/objectUtils';
 
 interface LogInputViewProps {
   semanticJson: Record<string, unknown> | null | undefined;
@@ -41,210 +39,124 @@ export function LogInputView({
 }: LogInputViewProps) {
   const { t } = useTranslation();
 
-  // 아코디언 상태 관리
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set(['월요일'])); // 월요일 기본 펼침
+  const toPlaceholder = (value: unknown): string => {
+    if (Array.isArray(value)) return value.join(', ');
+    if (typeof value === 'object' && value !== null) return '';
+    return String(value ?? '');
+  };
 
-  // 단일 필드 렌더링 (재사용)
-  // isDayField: true면 중분류 키만 표시 (아코디언 내부), false면 전체 경로 표시
-  const renderField = (field: FlatField, index: number, isDayField = false) => (
+  // 단일 입력 행 렌더링 (소분류 헤더 + 콘텐츠 셀)
+  // innerLabel: 3수준 키, 입력 영역 상단에 표시 (없으면 2수준만 표시)
+  const renderSubRow = (subKey: string, flatKey: string, placeholder: string, isFirst: boolean, innerLabel?: string, hideSubKey?: boolean) => (
     <div
-      key={field.flatKey}
-      className="flat-field-card fade-in"
-      style={{ animationDelay: `${index * 0.03}s` }}
+      key={flatKey}
+      className="flex flex-1"
+      style={isFirst ? undefined : { borderTop: '1px solid rgba(150, 160, 155, 0.25)' }}
     >
-      <PathBreadcrumb
-        path={field.path}
-        visibleFromIndex={isDayField ? field.path.length - 1 : 0}
-      />
-      <div className="flat-field-header">
+      <div className="doc-sub-header-col">{hideSubKey ? '' : subKey}</div>
+      <div className="doc-content-col">
+        {innerLabel && (
+          <span className="doc-inner-label">{innerLabel}</span>
+        )}
         <button
-          onClick={() => triggerUpload(field.flatKey)}
+          onClick={() => triggerUpload(flatKey)}
           disabled={isGenerating}
-          className="ocr-btn"
+          className="doc-ocr-btn"
         >
+          <ScanText className="w-3.5 h-3.5" />
           OCR 업로드
         </button>
+        <textarea
+          className="doc-textarea"
+          placeholder={placeholder}
+          value={manualInputs[flatKey] || ''}
+          onChange={(e) => onManualInputChange(flatKey, e.target.value)}
+        />
       </div>
-      <textarea
-        className="input-textarea"
-        placeholder={field.value}
-        value={manualInputs[field.flatKey] || ''}
-        onChange={(e) => onManualInputChange(field.flatKey, e.target.value)}
-      />
     </div>
   );
 
-  // 중분류 아코디언 토글
-  const toggleCategory = (categoryKey: string) => {
-    const newSet = new Set(expandedCategories);
-    if (newSet.has(categoryKey)) {
-      newSet.delete(categoryKey);
-    } else {
-      newSet.add(categoryKey);
-    }
-    setExpandedCategories(newSet);
-  };
+  // 대분류 행 렌더링: 소분류가 요일 구조이면 행으로 나열, 아니면 소분류별 행
+  const renderDocRow = (topKey: string, topValue: Record<string, unknown>) => {
+    const subEntries = Object.entries(topValue);
+    const subRows: React.ReactNode[] = [];
 
-  // 요일 아코디언 토글
-  const toggleDay = (dayKey: string) => {
-    const newSet = new Set(expandedDays);
-    if (newSet.has(dayKey)) {
-      newSet.delete(dayKey);
-    } else {
-      newSet.add(dayKey);
-    }
-    setExpandedDays(newSet);
-  };
+    subEntries.forEach(([subKey, subValue], subIdx) => {
+      if (typeof subValue === 'object' && subValue !== null && !Array.isArray(subValue)) {
+        // 3단계 구조: subValue의 키가 요일인지 확인
+        const innerEntries = Object.entries(subValue as Record<string, unknown>);
+        const hasOnlyDayKeys = innerEntries.every(([k]) => DAYS.includes(k as Day));
 
-  // 중분류 아코디언 렌더링 (요일 필드 그룹)
-  const renderCategoryAccordion = (
-    categoryKey: string,
-    categoryPath: string[],
-    fields: FlatField[],
-    index: number
-  ) => {
-    // 요일별로 필드 분리
-    const dayMap = new Map<Day, FlatField[]>();
-    for (const field of fields) {
-      const lastSegment = field.path[field.path.length - 1];
-      const day = lastSegment as Day;
-      if (DAYS.includes(day)) {
-        const dayFields = dayMap.get(day) || [];
-        dayFields.push(field);
-        dayMap.set(day, dayFields);
+        if (hasOnlyDayKeys) {
+          // 요일 필드 → subKey를 헤더 셀, 요일을 innerLabel로 상단 표시
+          // 같은 subKey 그룹 내 첫 행만 헤더 표시, 나머지는 hideSubKey
+          innerEntries.forEach(([dayKey, dayValue], dayIdx) => {
+            const flatKey = `${topKey}.${subKey}.${dayKey}`;
+            const placeholder = toPlaceholder(dayValue);
+            const isFirst = subIdx === 0 && dayIdx === 0;
+            subRows.push(renderSubRow(subKey, flatKey, placeholder, isFirst, dayKey, dayIdx > 0));
+          });
+        } else {
+          // 일반 3단계 중첩 → subKey를 헤더 셀, innerKey를 innerLabel로 상단 표시
+          innerEntries.forEach(([innerKey, innerValue], innerIdx) => {
+            const flatKey = `${topKey}.${subKey}.${innerKey}`;
+            const placeholder = toPlaceholder(innerValue);
+            const isFirst = subIdx === 0 && innerIdx === 0;
+            subRows.push(renderSubRow(subKey, flatKey, placeholder, isFirst, innerKey));
+          });
+        }
+      } else {
+        // 2단계 구조: 바로 단말 값
+        const flatKey = `${topKey}.${subKey}`;
+        const placeholder = toPlaceholder(subValue);
+        subRows.push(renderSubRow(subKey, flatKey, placeholder, subIdx === 0));
       }
-    }
+    });
 
     return (
-      <div
-        key={categoryKey}
-        className="category-accordion fade-in"
-        style={{ animationDelay: `${index * 0.03}s` }}
-      >
-        {/* 중분류 헤더 */}
-        <button
-          onClick={() => toggleCategory(categoryKey)}
-          className="category-accordion-header"
-        >
-          {expandedCategories.has(categoryKey) ? (
-            <ChevronDown className="w-4 h-4" />
-          ) : (
-            <ChevronRight className="w-4 h-4" />
-          )}
-          <span className="category-path">
-            {categoryPath.join(' › ')}
-          </span>
-        </button>
-
-        {/* 중분류 내용 - 요일별 아코디언 */}
-        {expandedCategories.has(categoryKey) && (
-          <div className="category-accordion-content">
-            {DAYS.map((day) => {
-              const dayFields = dayMap.get(day);
-              if (!dayFields || dayFields.length === 0) return null;
-
-              const dayKey = `${categoryKey}.${day}`;
-              return (
-                <div key={day} className="day-accordion">
-                  {/* 요일 헤더 */}
-                  <button
-                    onClick={() => toggleDay(dayKey)}
-                    className="day-accordion-header"
-                  >
-                    {expandedDays.has(dayKey) ? (
-                      <ChevronDown className="w-3 h-3" />
-                    ) : (
-                      <ChevronRight className="w-3 h-3" />
-                    )}
-                    <span className="day-label">{day}</span>
-                  </button>
-
-                  {/* 요일 내용 - 실제 필드들 (중분류 키만 표시) */}
-                  {expandedDays.has(dayKey) && (
-                    <div className="day-accordion-content">
-                      {dayFields.map((field, fieldIndex) => renderField(
-                        field,
-                        index + fieldIndex,
-                        true
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+      <div key={topKey} className="doc-row">
+        <div className="doc-header-col">{topKey}</div>
+        <div className="flex flex-col flex-1">{subRows}</div>
       </div>
     );
   };
 
-  // 요일별 그룹핑된 필드 렌더링 (JSON 원래 순서 유지)
-  const renderDayGroupedFields = (data: Record<string, unknown>) => {
-    const flatFields = getFlatFields(data);
-    const result: React.ReactNode[] = [];
-
-    let currentCategoryKey: string | null = null;
-    let currentCategoryPath: string[] = [];
-    let currentCategoryFields: FlatField[] = [];
-    let renderedCount = 0;
-
-    for (let i = 0; i < flatFields.length; i++) {
-      const field = flatFields[i];
-      const lastSegment = field.path[field.path.length - 1];
-
-      if (DAYS.includes(lastSegment as Day)) {
-        // 요일 필드
-        const categoryPath = field.path.slice(0, -1);
-        const categoryKey = categoryPath.join('.');
-
-        if (categoryKey !== currentCategoryKey) {
-          // 새로운 중분류 시작 - 이전 중분류 마무리
-          if (currentCategoryKey && currentCategoryFields.length > 0) {
-            result.push(renderCategoryAccordion(
-              currentCategoryKey,
-              currentCategoryPath,
-              currentCategoryFields,
-              renderedCount
-            ));
-            renderedCount += currentCategoryFields.length;
+  // 테이블 뷰 렌더링
+  const renderTableView = (data: Record<string, unknown>) => {
+    const topEntries = Object.entries(data);
+    return (
+      <div className="doc-table mode-switch-fade">
+        {topEntries.map(([topKey, topValue]) => {
+          if (typeof topValue === 'object' && topValue !== null && !Array.isArray(topValue)) {
+            return renderDocRow(topKey, topValue as Record<string, unknown>);
           }
-          currentCategoryKey = categoryKey;
-          currentCategoryPath = categoryPath;
-          currentCategoryFields = [field];
-        } else {
-          // 같은 중분류 계속
-          currentCategoryFields.push(field);
-        }
-      } else {
-        // 비요일 필드 - 이전 중분류 마무리 후 바로 렌더링
-        if (currentCategoryKey && currentCategoryFields.length > 0) {
-          result.push(renderCategoryAccordion(
-            currentCategoryKey,
-            currentCategoryPath,
-            currentCategoryFields,
-            renderedCount
-          ));
-          renderedCount += currentCategoryFields.length;
-          currentCategoryKey = null;
-          currentCategoryFields = [];
-        }
-        result.push(renderField(field, renderedCount, false));
-        renderedCount++;
-      }
-    }
-
-    // 마지막 중분류 마무리
-    if (currentCategoryKey && currentCategoryFields.length > 0) {
-      result.push(renderCategoryAccordion(
-        currentCategoryKey,
-        currentCategoryPath,
-        currentCategoryFields,
-        renderedCount
-      ));
-    }
-
-    return <div className="mode-switch-fade">{result}</div>;
+          // 1단계 단말 (드문 경우)
+          const flatKey = topKey;
+          const placeholder = toPlaceholder(topValue);
+          return (
+            <div key={topKey} className="doc-row">
+              <div className="doc-header-col">{topKey}</div>
+              <div className="doc-content-col">
+                <button
+                  onClick={() => triggerUpload(flatKey)}
+                  disabled={isGenerating}
+                  className="doc-ocr-btn"
+                >
+                  <ScanText className="w-3.5 h-3.5" />
+                  OCR 업로드
+                </button>
+                <textarea
+                  className="doc-textarea"
+                  placeholder={placeholder}
+                  value={manualInputs[flatKey] || ''}
+                  onChange={(e) => onManualInputChange(flatKey, e.target.value)}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
@@ -280,33 +192,31 @@ export function LogInputView({
         </select>
       </div>
 
-      <div className="mode-switch-fade">
-        {mode === 'manual' && semanticJson ? (
-          renderDayGroupedFields(semanticJson)
-        ) : mode === 'manual' ? (
-          <div className="text-center text-[var(--color-on-surface-variant)] py-8">
-            템플릿 구조를 불러올 수 없습니다.
+      {mode === 'manual' && semanticJson ? (
+        renderTableView(semanticJson)
+      ) : mode === 'manual' ? (
+        <div className="text-center text-[var(--color-on-surface-variant)] py-8 mode-switch-fade">
+          템플릿 구조를 불러올 수 없습니다.
+        </div>
+      ) : (
+        <section className="relative mode-switch-fade">
+          <div className="flat-field-header">
+            <button
+              onClick={() => triggerUpload('auto')}
+              disabled={isGenerating}
+              className="ocr-btn"
+            >
+              {t('observation.ocrUpload')}
+            </button>
           </div>
-        ) : (
-          <section className="relative">
-            <div className="flat-field-header">
-              <button
-                onClick={() => triggerUpload('auto')}
-                disabled={isGenerating}
-                className="ocr-btn"
-              >
-                {t('observation.ocrUpload')}
-              </button>
-            </div>
-            <textarea
-              value={autoInput}
-              onChange={(e) => setAutoInput(e.target.value)}
-              className="input-textarea auto-textarea"
-              placeholder={t('observation.autoPlaceholder')}
-            />
-          </section>
-        )}
-      </div>
+          <textarea
+            value={autoInput}
+            onChange={(e) => setAutoInput(e.target.value)}
+            className="input-textarea auto-textarea"
+            placeholder={t('observation.autoPlaceholder')}
+          />
+        </section>
+      )}
 
       <div className="writing-footer">
         <div className="flex-1">

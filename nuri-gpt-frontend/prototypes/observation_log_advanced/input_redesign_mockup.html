@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>일지 작성 화면 리디자인 목업 (LogInputView)</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#436834',
+                        'primary-dim': '#375c29',
+                        'primary-container': '#c3efad',
+                        'surface': '#f8faf8',
+                        'surface-container-low': '#f1f4f2',
+                        'surface-container-lowest': '#ffffff',
+                        'on-surface': '#2d3432',
+                        'on-surface-variant': '#59615f',
+                        'outline-variant': 'rgba(172, 179, 177, 0.15)',
+                    },
+                    fontFamily: {
+                        display: ['Manrope', 'sans-serif'],
+                        body: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f8faf8;
+            font-family: 'Inter', sans-serif;
+            color: #2d3432;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .input-group-container {
+            background-color: #f1f4f2;
+            border-radius: 1.5rem;
+            padding: 1.75rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(172, 179, 177, 0.1);
+        }
+
+        .group-title-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .group-title {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: #2d3432;
+        }
+
+        .group-icon {
+            color: #436834;
+            background: white;
+            padding: 0.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 12px rgba(67, 104, 52, 0.08);
+        }
+
+        .input-card {
+            background-color: #ffffff;
+            border-radius: 1.25rem;
+            padding: 1.25rem;
+            border: 1px solid rgba(172, 179, 177, 0.15);
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            position: relative;
+        }
+
+        .input-card:focus-within {
+            border-color: #436834;
+            box-shadow: 0 8px 24px rgba(67, 104, 52, 0.08);
+        }
+
+        .field-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #59615f;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ocr-btn {
+            background: #f1f4f2;
+            color: #436834;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.35rem 0.75rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            transition: all 0.2s ease;
+        }
+
+        .ocr-btn:hover {
+            background: #436834;
+            color: white;
+        }
+
+        .input-textarea {
+            width: 100%;
+            min-height: 120px;
+            background: #f8faf8;
+            border: 1px solid rgba(172, 179, 177, 0.1);
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            font-size: 0.9375rem;
+            line-height: 1.5;
+            resize: vertical;
+            transition: border-color 0.2s ease;
+        }
+
+        .input-textarea:focus {
+            outline: none;
+            border-color: rgba(67, 104, 52, 0.3);
+            background: white;
+        }
+
+        .writing-footer {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid rgba(172, 179, 177, 0.1);
+            padding: 1.25rem 2rem;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-finalize {
+            background: linear-gradient(135deg, #436834, #375c29);
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(67, 104, 52, 0.2);
+        }
+
+        .btn-finalize:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(67, 104, 52, 0.3);
+        }
+
+        .age-select-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: white;
+            border: 1px solid rgba(172, 179, 177, 0.2);
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body class="pb-32 pt-8 px-4 md:px-8 max-w-6xl mx-auto">
+
+    <!-- Header & Info -->
+    <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+            <h1 class="text-3xl font-display font-bold text-on-surface flex items-center gap-3">
+                <i data-lucide="pen-tool" class="text-primary"></i>
+                관찰 일지 작성
+            </h1>
+            <p class="text-on-surface-variant mt-2">템플릿에 맞춰 아동의 발달 상황과 놀이 내용을 기록해주세요.</p>
+        </div>
+        
+        <div class="flex flex-wrap items-center gap-4">
+            <div class="age-select-badge">
+                <span class="text-on-surface-variant font-medium">대상 아동 연령</span>
+                <select class="font-bold text-primary focus:outline-none bg-transparent">
+                    <option>만 2세</option>
+                    <option>만 1세</option>
+                    <option>만 0세</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group: 통합보육 (Root Level) -->
+    <div class="input-group-container">
+        <div class="group-title-row">
+            <div class="group-icon"><i data-lucide="users" class="w-5 h-5"></i></div>
+            <h2 class="group-title">통합보육</h2>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- Card: 등원 -->
+            <div class="input-card">
+                <div class="field-label">
+                    <span>등원</span>
+                    <button class="ocr-btn"><i data-lucide="scan-text" class="w-3.5 h-3.5"></i> OCR 업로드</button>
+                </div>
+                <textarea class="input-textarea" placeholder="등원 시 관찰된 내용을 입력하세요..."></textarea>
+            </div>
+
+            <!-- Card: 하원 -->
+            <div class="input-card">
+                <div class="field-label">
+                    <span>하원</span>
+                    <button class="ocr-btn"><i data-lucide="scan-text" class="w-3.5 h-3.5"></i> OCR 업로드</button>
+                </div>
+                <textarea class="input-textarea" placeholder="하원 시 특이사항 및 소통 내용을 입력하세요..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group: 일과 및 실행 -->
+    <div class="input-group-container">
+        <div class="group-title-row">
+            <div class="group-icon"><i data-lucide="activity" class="w-5 h-5"></i></div>
+            <h2 class="group-title">일과 및 실행</h2>
+        </div>
+
+        <!-- Section: 일상생활 -->
+        <div class="mb-8">
+            <div class="flex items-center gap-2 mb-4 ml-1">
+                <div class="w-1.5 h-4 bg-primary rounded-full"></div>
+                <h3 class="text-sm font-bold text-on-surface-variant uppercase tracking-wider">일상생활</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="input-card">
+                    <div class="field-label">
+                        <span>간식</span>
+                        <button class="ocr-btn"><i data-lucide="scan-text" class="w-3.5 h-3.5"></i> OCR 업로드</button>
+                    </div>
+                    <textarea class="input-textarea" placeholder="간식 시간의 반응을 기록하세요..."></textarea>
+                </div>
+                <div class="input-card">
+                    <div class="field-label">
+                        <span>점심식사</span>
+                        <button class="ocr-btn"><i data-lucide="scan-text" class="w-3.5 h-3.5"></i> OCR 업로드</button>
+                    </div>
+                    <textarea class="input-textarea" placeholder="식사 태도와 섭취량을 기록하세요..."></textarea>
+                </div>
+                <div class="input-card md:col-span-2">
+                    <div class="field-label">
+                        <span>낮잠 및 휴식</span>
+                        <button class="ocr-btn"><i data-lucide="scan-text" class="w-3.5 h-3.5"></i> OCR 업로드</button>
+                    </div>
+                    <textarea class="input-textarea" placeholder="낮잠 시간 및 수면 패턴을 기록하세요..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: 놀이활동 -->
+        <div>
+            <div class="flex items-center gap-2 mb-4 ml-1">
+                <div class="w-1.5 h-4 bg-primary rounded-full"></div>
+                <h3 class="text-sm font-bold text-on-surface-variant uppercase tracking-wider">놀이활동</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="input-card">
+                    <div class="field-label">
+                        <span>실내 놀이</span>
+                        <button class="ocr-btn"><i data-lucide="scan-text" class="w-3.5 h-3.5"></i> OCR 업로드</button>
+                    </div>
+                    <textarea class="input-textarea" placeholder="실내에서의 주요 활동과 상호작용을 기록하세요..."></textarea>
+                </div>
+                <div class="input-card">
+                    <div class="field-label">
+                        <span>실외 놀이</span>
+                        <button class="ocr-btn"><i data-lucide="scan-text" class="w-3.5 h-3.5"></i> OCR 업로드</button>
+                    </div>
+                    <textarea class="input-textarea" placeholder="실외 활동 시 신체 반응과 흥미를 기록하세요..."></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="writing-footer">
+        <div class="flex items-center gap-2 text-primary">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+            <span class="text-sm font-semibold">스마트 채우기 활성화됨</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <button class="text-on-surface-variant font-semibold hover:text-primary transition-colors">임시저장</button>
+            <button class="btn-finalize">
+                <span>작성 완료</span>
+                <i data-lucide="arrow-right" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

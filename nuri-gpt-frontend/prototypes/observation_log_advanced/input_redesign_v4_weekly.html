@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주간 보육일지 대응 레이아웃 (V4)</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#436834',
+                        'primary-dim': '#375c29',
+                        'surface': '#f8faf8',
+                        'surface-container-low': '#f1f4f2',
+                        'on-surface': '#2d3432',
+                        'on-surface-variant': '#59615f',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #f8faf8; font-family: 'Inter', sans-serif; color: #2d3432; }
+        .glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.4); }
+        
+        /* --- Weekly Grid Style --- */
+        .weekly-table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid rgba(172, 179, 177, 0.3); border-radius: 0.75rem; overflow-x: auto; background: white; }
+        .weekly-row { display: flex; border-bottom: 1px solid rgba(172, 179, 177, 0.2); min-width: 800px; }
+        .weekly-row:last-child { border-bottom: none; }
+        
+        .weekly-header-cell { width: 120px; background-color: #f1f4f2; padding: 1rem; font-size: 0.8125rem; font-weight: 700; color: #436834; border-right: 1px solid rgba(172, 179, 177, 0.2); display: flex; align-items: center; justify-content: center; text-align: center; }
+        .weekly-day-cell { flex: 1; padding: 0.5rem; border-right: 1px solid rgba(172, 179, 177, 0.1); position: relative; }
+        .weekly-day-cell:last-child { border-right: none; }
+        
+        .day-label-row { background-color: #f8faf8; border-bottom: 1px solid rgba(172, 179, 177, 0.2); }
+        .day-name { font-size: 0.75rem; font-weight: 700; color: #59615f; padding: 0.5rem; text-align: center; border-right: 1px solid rgba(172, 179, 177, 0.1); flex: 1; }
+        .day-name:last-child { border-right: none; }
+
+        .weekly-textarea { width: 100%; min-height: 120px; padding: 0.5rem; font-size: 0.875rem; border: none; outline: none; resize: none; background: transparent; }
+        
+        .doc-title-box { border: 2px solid #2d3432; padding: 1rem 2rem; margin-bottom: 2rem; text-align: center; }
+        .doc-ocr-btn { position: absolute; top: 0.25rem; right: 0.25rem; opacity: 0; transition: opacity 0.2s; background: white; border: 1px solid #ccc; border-radius: 4px; padding: 2px 4px; font-size: 0.65rem; }
+        .weekly-day-cell:hover .doc-ocr-btn { opacity: 1; }
+    </style>
+</head>
+<body class="p-8">
+    <div class="glass-panel rounded-[1.5rem] p-10 max-w-6xl mx-auto">
+        <div class="flex justify-center mb-8">
+            <div class="doc-title-box">
+                <h1 class="text-2xl font-bold tracking-widest">주 간 보 육 일 지</h1>
+            </div>
+        </div>
+
+        <div class="mb-6 flex justify-between items-end">
+            <div class="bg-surface-container-low px-4 py-2 rounded-lg text-sm font-bold text-primary">
+                만 1세 (하늘반)
+            </div>
+            <div class="text-on-surface-variant text-sm font-medium">
+                기 간: 2026. 04. 06 ~ 2026. 04. 10
+            </div>
+        </div>
+
+        <!-- Weekly Layout Table -->
+        <div class="weekly-table">
+            <!-- Day Headers -->
+            <div class="weekly-row day-label-row">
+                <div class="weekly-header-cell" style="background: transparent; border-right-color: transparent;">요일</div>
+                <div class="day-name">월요일</div>
+                <div class="day-name">화요일</div>
+                <div class="day-name">수요일</div>
+                <div class="day-name">목요일</div>
+                <div class="day-name">금요일</div>
+            </div>
+
+            <!-- Row: 간식 -->
+            <div class="weekly-row">
+                <div class="weekly-header-cell">간식</div>
+                <div class="weekly-day-cell"><textarea class="weekly-textarea" placeholder="입력..."></textarea><button class="doc-ocr-btn">OCR</button></div>
+                <div class="weekly-day-cell"><textarea class="weekly-textarea" placeholder="입력..."></textarea><button class="doc-ocr-btn">OCR</button></div>
+                <div class="weekly-day-cell"><textarea class="weekly-textarea" placeholder="입력..."></textarea><button class="doc-ocr-btn">OCR</button></div>
+                <div class="weekly-day-cell"><textarea class="weekly-textarea" placeholder="입력..."></textarea><button class="doc-ocr-btn">OCR</button></div>
+                <div class="weekly-day-cell"><textarea class="weekly-textarea" placeholder="입력..."></textarea><button class="doc-ocr-btn">OCR</button></div>
+            </div>
+
+            <!-- Row: 놀이 활동 -->
+            <div class="weekly-row">
+                <div class="weekly-header-cell">놀이 활동<br>(실내)</div>
+                <div class="weekly-day-cell"><textarea class="weekly-textarea" placeholder="입력..."></textarea><button class="doc-ocr-btn">OCR</button></div>
+                <div class="weekly-day-cell"><textarea class="weekly-textarea" placeholder="입력..."></textarea><button class="doc-ocr-btn">OCR</button></div>
+                <div class="weekly-day-cell"><textarea class="weekly-textarea" placeholder="입력..."></textarea><button class="doc-ocr-btn">OCR</button></div>
+                <div class="weekly-day-cell"><textarea class="weekly-textarea" placeholder="입력..."></textarea><button class="doc-ocr-btn">OCR</button></div>
+                <div class="weekly-day-cell"><textarea class="weekly-textarea" placeholder="입력..."></textarea><button class="doc-ocr-btn">OCR</button></div>
+            </div>
+            
+            <!-- Row: 놀이 평가 -->
+            <div class="weekly-row">
+                <div class="weekly-header-cell">놀이 평가<br>및 계획</div>
+                <div class="weekly-day-cell"><textarea class="weekly-textarea" placeholder="입력..."></textarea><button class="doc-ocr-btn">OCR</button></div>
+                <div class="weekly-day-cell"><textarea class="weekly-textarea" placeholder="입력..."></textarea><button class="doc-ocr-btn">OCR</button></div>
+                <div class="weekly-day-cell"><textarea class="weekly-textarea" placeholder="입력..."></textarea><button class="doc-ocr-btn">OCR</button></div>
+                <div class="weekly-day-cell"><textarea class="weekly-textarea" placeholder="입력..."></textarea><button class="doc-ocr-btn">OCR</button></div>
+                <div class="weekly-day-cell"><textarea class="weekly-textarea" placeholder="입력..."></textarea><button class="doc-ocr-btn">OCR</button></div>
+            </div>
+        </div>
+
+        <div class="mt-8 flex justify-end">
+            <button class="bg-primary text-white px-8 py-3 rounded-full font-bold shadow-lg hover:shadow-xl transition-all flex items-center gap-2">
+                <span>작성 완료</span>
+                <i data-lucide="arrow-right" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </div>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

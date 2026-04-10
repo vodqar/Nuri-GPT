@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>일지 작성 필드 리디자인 (v3 기반 테이블 단독)</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#436834',
+                        'on-surface': '#2d3432',
+                        'on-surface-variant': '#59615f',
+                        'surface-container-low': '#f1f4f2',
+                        'surface-container-lowest': '#ffffff',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* --- Document Grid Style (Core Table Component) --- */
+        .doc-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border: 1px solid rgba(172, 179, 177, 0.4);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 4px 12px rgba(45, 52, 50, 0.02);
+        }
+
+        .doc-row {
+            display: flex;
+            border-bottom: 1px solid rgba(172, 179, 177, 0.2);
+        }
+
+        .doc-row:last-child {
+            border-bottom: none;
+        }
+
+        .doc-header-col {
+            width: 140px;
+            min-width: 140px;
+            background-color: #f1f4f2;
+            padding: 1.25rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #436834;
+            border-right: 1px solid rgba(172, 179, 177, 0.2);
+            line-height: 1.4;
+        }
+
+        .doc-sub-header-col {
+            width: 120px;
+            min-width: 120px;
+            background-color: #f8faf8;
+            padding: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #59615f;
+            border-right: 1px solid rgba(172, 179, 177, 0.15);
+        }
+
+        .doc-content-col {
+            flex: 1;
+            padding: 0.25rem;
+            position: relative;
+            background: white;
+        }
+
+        .doc-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 0.75rem;
+            font-size: 0.9375rem;
+            line-height: 1.6;
+            border: none;
+            outline: none;
+            resize: vertical;
+            background: transparent;
+            transition: background 0.2s ease;
+            color: #2d3432;
+        }
+
+        .doc-textarea:focus {
+            background: rgba(67, 104, 52, 0.03);
+        }
+
+        .doc-textarea::placeholder {
+            color: #acb3b1;
+            font-size: 0.875rem;
+        }
+
+        .doc-ocr-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            opacity: 0;
+            transition: all 0.2s ease;
+            background: white;
+            border: 1px solid rgba(172, 179, 177, 0.3);
+            padding: 0.35rem 0.625rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #436834;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+            z-index: 10;
+        }
+
+        .doc-content-col:hover .doc-ocr-btn {
+            opacity: 1;
+        }
+
+        .doc-ocr-btn:hover {
+            border-color: #436834;
+            background: #f1f4f2;
+            transform: translateY(-1px);
+        }
+
+        /* Responsive adjustment for small screens */
+        @media (max-width: 640px) {
+            .doc-row { flex-direction: column; }
+            .doc-header-col { width: 100%; border-right: none; border-bottom: 1px solid rgba(172, 179, 177, 0.2); padding: 0.75rem; }
+            .doc-sub-header-col { width: 100px; min-width: 100px; font-size: 0.75rem; }
+        }
+    </style>
+</head>
+<body class="p-4 bg-transparent">
+
+    <!-- Document Table (Pure Component) -->
+    <div class="doc-table">
+        <!-- Row: 통합보육 -->
+        <div class="doc-row">
+            <div class="doc-header-col">통합보육</div>
+            <div class="flex flex-col flex-1">
+                <div class="flex h-full">
+                    <div class="doc-sub-header-col">등원</div>
+                    <div class="doc-content-col">
+                        <button class="doc-ocr-btn"><i data-lucide="scan-text" class="w-3.5 h-3.5"></i> OCR 업로드</button>
+                        <textarea class="doc-textarea" placeholder="등원 시 관찰된 내용을 입력하세요..."></textarea>
+                    </div>
+                </div>
+                <div class="flex h-full border-t border-[rgba(172,179,177,0.15)]">
+                    <div class="doc-sub-header-col">하원</div>
+                    <div class="doc-content-col">
+                        <button class="doc-ocr-btn"><i data-lucide="scan-text" class="w-3.5 h-3.5"></i> OCR 업로드</button>
+                        <textarea class="doc-textarea" placeholder="하원 시 특이사항 및 소통 내용을 입력하세요..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row: 일과 및 실행 (일상생활) -->
+        <div class="doc-row">
+            <div class="doc-header-col">일과 및 실행<br>(일상생활)</div>
+            <div class="flex flex-col flex-1">
+                <div class="flex h-full">
+                    <div class="doc-sub-header-col">간식</div>
+                    <div class="doc-content-col">
+                        <button class="doc-ocr-btn"><i data-lucide="scan-text" class="w-3.5 h-3.5"></i> OCR 업로드</button>
+                        <textarea class="doc-textarea" placeholder="간식 시간의 반응을 기록하세요..."></textarea>
+                    </div>
+                </div>
+                <div class="flex border-t border-[rgba(172,179,177,0.15)] h-full">
+                    <div class="doc-sub-header-col">점심식사</div>
+                    <div class="doc-content-col">
+                        <button class="doc-ocr-btn"><i data-lucide="scan-text" class="w-3.5 h-3.5"></i> OCR 업로드</button>
+                        <textarea class="doc-textarea" placeholder="식사 태도와 섭취량을 기록하세요..."></textarea>
+                    </div>
+                </div>
+                <div class="flex border-t border-[rgba(172,179,177,0.15)] h-full">
+                    <div class="doc-sub-header-col">낮잠 및 휴식</div>
+                    <div class="doc-content-col">
+                        <button class="doc-ocr-btn"><i data-lucide="scan-text" class="w-3.5 h-3.5"></i> OCR 업로드</button>
+                        <textarea class="doc-textarea" placeholder="낮잠 시간 및 수면 패턴을 기록하세요..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row: 놀이활동 -->
+        <div class="doc-row">
+            <div class="doc-header-col">놀이활동</div>
+            <div class="flex flex-col flex-1">
+                <div class="flex h-full">
+                    <div class="doc-sub-header-col">실내 놀이</div>
+                    <div class="doc-content-col">
+                        <button class="doc-ocr-btn"><i data-lucide="scan-text" class="w-3.5 h-3.5"></i> OCR 업로드</button>
+                        <textarea class="doc-textarea" placeholder="실내에서의 주요 활동과 상호작용을 기록하세요..."></textarea>
+                    </div>
+                </div>
+                <div class="flex border-t border-[rgba(172,179,177,0.15)] h-full">
+                    <div class="doc-sub-header-col">실외 놀이</div>
+                    <div class="doc-content-col">
+                        <button class="doc-ocr-btn"><i data-lucide="scan-text" class="w-3.5 h-3.5"></i> OCR 업로드</button>
+                        <textarea class="doc-textarea" placeholder="실외 활동 시 신체 반응과 흥미를 기록하세요..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

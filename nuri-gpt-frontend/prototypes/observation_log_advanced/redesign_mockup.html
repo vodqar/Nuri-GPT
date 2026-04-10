@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>일지 생성 결과 리디자인 목업</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#436834',
+                        'primary-dim': '#375c29',
+                        'primary-container': '#c3efad',
+                        'surface': '#f8faf8',
+                        'surface-container-low': '#f1f4f2',
+                        'surface-container-lowest': '#ffffff',
+                        'on-surface': '#2d3432',
+                        'on-surface-variant': '#59615f',
+                        'outline-variant': 'rgba(172, 179, 177, 0.15)',
+                    },
+                    fontFamily: {
+                        display: ['Manrope', 'sans-serif'],
+                        body: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f8faf8;
+            font-family: 'Inter', sans-serif;
+            color: #2d3432;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .result-group {
+            background-color: #f1f4f2;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .group-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            font-family: 'Manrope', sans-serif;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: #2d3432;
+        }
+
+        .group-header i {
+            color: #436834;
+        }
+
+        .result-card {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 1px solid rgba(172, 179, 177, 0.15);
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            position: relative;
+        }
+
+        .result-card:hover {
+            box-shadow: 0 12px 32px rgba(45, 52, 50, 0.06);
+            border-color: rgba(67, 104, 52, 0.2);
+        }
+
+        .card-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #59615f;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-content {
+            font-size: 0.9375rem;
+            line-height: 1.6;
+            color: #2d3432;
+            min-height: 4.5rem;
+            white-space: pre-wrap;
+        }
+
+        .card-actions {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .result-card:hover .card-actions {
+            opacity: 1;
+        }
+
+        .action-btn {
+            padding: 0.4rem;
+            border-radius: 0.5rem;
+            color: #59615f;
+            background: #f8faf8;
+            border: 1px solid rgba(172, 179, 177, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            color: #436834;
+            background: #ffffff;
+            border-color: #436834;
+        }
+
+        .badge-comment {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 2rem;
+            background-color: rgba(67, 104, 52, 0.1);
+            color: #436834;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-top: auto;
+        }
+
+        .placeholder-text {
+            color: #acb3b1;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 max-w-5xl mx-auto">
+
+    <!-- Header Section -->
+    <header class="mb-8 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-display font-bold text-on-surface">일지 생성 결과</h1>
+            <p class="text-on-surface-variant mt-2">AI가 생성한 내용을 확인하고 필요시 수정 요청을 남겨주세요.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="text-xs font-bold uppercase text-on-surface-variant tracking-wider">버전</span>
+            <select class="bg-white border border-outline-variant rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <option>V2 (최신)</option>
+                <option>V1</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- Group: 통합보육 -->
+    <section class="result-group">
+        <div class="group-header">
+            <i data-lucide="users"></i>
+            <h2>통합보육</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Card: 등원 -->
+            <div class="result-card">
+                <div class="card-label">등원</div>
+                <div class="card-content">등원 시 영아의 건강 상태를 확인하고 부모님과 특이사항을 공유했습니다. 영아는 밝은 표정으로 교사에게 안기며 안정적으로 등원하였습니다.</div>
+                <div class="card-actions">
+                    <button class="action-btn" title="복사"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                    <button class="action-btn" title="수정 요청"><i data-lucide="message-square-plus" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+            <!-- Card: 하원 -->
+            <div class="result-card">
+                <div class="card-label">하원</div>
+                <div class="card-content">부모님께 오늘 하루 영아의 수면 및 식사 상황을 전달해 드렸습니다. 하원 시 영아는 "선생님 안녕히 계세요"라고 인사하며 즐겁게 귀가하였습니다.</div>
+                <div class="card-actions">
+                    <button class="action-btn" title="복사"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                    <button class="action-btn" title="수정 요청"><i data-lucide="message-square-plus" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Group: 일과 및 실행 -->
+    <section class="result-group">
+        <div class="group-header">
+            <i data-lucide="layers"></i>
+            <h2>일과 및 실행</h2>
+        </div>
+        
+        <h3 class="text-sm font-bold text-primary mb-4 ml-1">일상생활</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <!-- Card: 간식 -->
+            <div class="result-card">
+                <div class="card-label">간식</div>
+                <div class="card-content">오전 간식으로 제공된 과일을 골고루 섭취하였습니다. 스스로 포크를 사용하여 먹으려는 시도를 격려해 주었습니다.</div>
+                <div class="card-actions">
+                    <button class="action-btn" title="복사"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                    <button class="action-btn" title="수정 요청"><i data-lucide="message-square-plus" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+            <!-- Card: 점심식사 -->
+            <div class="result-card">
+                <div class="card-label">점심식사</div>
+                <div class="card-content">다양한 나물 반찬에 관심을 보이며 즐겁게 식사하였습니다. "이거 맛있어요"라고 표현하며 한 그릇을 모두 비웠습니다.</div>
+                <div class="badge-comment">
+                    <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                    반찬 이름을 구체적으로 넣어주세요
+                </div>
+                <div class="card-actions">
+                    <button class="action-btn" title="복사"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                    <button class="action-btn" title="수정 요청"><i data-lucide="message-square-plus" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+            <!-- Card: 낮잠 및 휴식 (Full Width Example) -->
+            <div class="result-card md:col-span-2">
+                <div class="card-label">낮잠 및 휴식</div>
+                <div class="card-content">잔잔한 음악을 들으며 10분 이내에 평온하게 잠이 들었습니다. 약 1시간 30분 동안 깊은 수면을 취한 후 개운한 모습으로 일어났습니다. 자고 일어난 후 스스로 이불을 정리해보는 시간을 가졌습니다.</div>
+                <div class="card-actions">
+                    <button class="action-btn" title="복사"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                    <button class="action-btn" title="수정 요청"><i data-lucide="message-square-plus" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <h3 class="text-sm font-bold text-primary mb-4 ml-1">놀이활동</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Card: 실내 놀이 -->
+            <div class="result-card">
+                <div class="card-label">실내 놀이</div>
+                <div class="card-content">블록으로 높은 성을 쌓으며 공간 감각을 익히는 놀이를 하였습니다. 친구와 역할을 나누어 놀이하는 사회성을 보였습니다.</div>
+                <div class="card-actions">
+                    <button class="action-btn" title="복사"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                    <button class="action-btn" title="수정 요청"><i data-lucide="message-square-plus" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+            <!-- Card: 실외 놀이 -->
+            <div class="result-card">
+                <div class="card-label">실외 놀이</div>
+                <div class="card-content">미세먼지 농도가 '좋음'으로 확인되어 놀이터에서 미끄럼틀을 타고 비눗방울 놀이를 즐겼습니다.</div>
+                <div class="card-actions">
+                    <button class="action-btn" title="복사"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                    <button class="action-btn" title="수정 요청"><i data-lucide="message-square-plus" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer Action Bar -->
+    <div class="fixed bottom-0 left-0 right-0 p-6 glass-panel flex justify-end gap-4 shadow-lg z-50">
+        <button class="px-6 py-2.5 rounded-xl border border-outline-variant font-semibold text-on-surface-variant hover:bg-surface transition-all">
+            목록으로
+        </button>
+        <button class="px-8 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-dim text-white font-semibold flex items-center gap-2 hover:shadow-lg transition-all">
+            <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+            반영하여 다시 만들기
+            <span class="bg-white/20 px-2 py-0.5 rounded-full text-xs">1</span>
+        </button>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

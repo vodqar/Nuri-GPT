@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>복잡한 JSON 구조 대응 테스트 (v3 구조 유지)</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#436834',
+                        'on-surface': '#2d3432',
+                        'on-surface-variant': '#59615f',
+                        'surface-container-low': '#f1f4f2',
+                        'surface-container-lowest': '#ffffff',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* --- Document Grid Style (v3 구조 그대로 유지) --- */
+        .doc-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border: 1px solid rgba(172, 179, 177, 0.4);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 4px 12px rgba(45, 52, 50, 0.02);
+        }
+
+        .doc-row {
+            display: flex;
+            border-bottom: 1px solid rgba(172, 179, 177, 0.2);
+        }
+
+        .doc-row:last-child {
+            border-bottom: none;
+        }
+
+        .doc-header-col {
+            width: 160px; /* 복잡한 키 대응을 위해 약간 넓힘 */
+            min-width: 160px;
+            background-color: #f1f4f2;
+            padding: 1.25rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 0.8125rem;
+            font-weight: 700;
+            color: #436834;
+            border-right: 1px solid rgba(172, 179, 177, 0.2);
+            line-height: 1.4;
+        }
+
+        .doc-sub-header-col {
+            width: 100px;
+            min-width: 100px;
+            background-color: #f8faf8;
+            padding: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #59615f;
+            border-right: 1px solid rgba(172, 179, 177, 0.15);
+        }
+
+        .doc-content-col {
+            flex: 1;
+            padding: 0.25rem;
+            position: relative;
+            background: white;
+        }
+
+        .doc-textarea {
+            width: 100%;
+            min-height: 60px; /* 요일별 항목이 많으므로 높이 축소 */
+            padding: 0.5rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            border: none;
+            outline: none;
+            resize: vertical;
+            background: transparent;
+            transition: background 0.2s ease;
+            color: #2d3432;
+        }
+
+        .doc-textarea:focus {
+            background: rgba(67, 104, 52, 0.02);
+        }
+
+        .doc-ocr-btn {
+            position: absolute;
+            top: 0.4rem;
+            right: 0.4rem;
+            opacity: 0;
+            transition: all 0.2s ease;
+            background: white;
+            border: 1px solid rgba(172, 179, 177, 0.3);
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.3rem;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #436834;
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+            z-index: 10;
+        }
+
+        .doc-content-col:hover .doc-ocr-btn {
+            opacity: 1;
+        }
+
+        @media (max-width: 640px) {
+            .doc-row { flex-direction: column; }
+            .doc-header-col { width: 100%; border-right: none; border-bottom: 1px solid rgba(172, 179, 177, 0.2); padding: 0.75rem; }
+        }
+    </style>
+</head>
+<body class="p-8">
+
+    <div class="max-w-5xl mx-auto">
+        <h2 class="text-lg font-bold mb-4 text-on-surface">복잡한 JSON 구조 대응 결과 (v3 구조 유지)</h2>
+        
+        <div class="doc-table">
+            <!-- Row: 교사의 기대 -->
+            <div class="doc-row">
+                <div class="doc-header-col">교사의 기대</div>
+                <div class="flex flex-col flex-1">
+                    <div class="flex h-full">
+                        <div class="doc-sub-header-col">전체</div>
+                        <div class="doc-content-col">
+                            <button class="doc-ocr-btn"><i data-lucide="scan-text" class="w-3 h-3"></i> OCR</button>
+                            <textarea class="doc-textarea" placeholder="내용을 입력하세요..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row: 일상생활 - 간식 -->
+            <div class="doc-row">
+                <div class="doc-header-col">계획 및 실행<br>(일상생활 - 간식)</div>
+                <div class="flex flex-col flex-1">
+                    <div class="flex h-full">
+                        <div class="doc-sub-header-col">월요일</div>
+                        <div class="doc-content-col"><textarea class="doc-textarea"></textarea></div>
+                    </div>
+                    <div class="flex h-full border-t border-[rgba(172,179,177,0.1)]">
+                        <div class="doc-sub-header-col">화요일</div>
+                        <div class="doc-content-col"><textarea class="doc-textarea"></textarea></div>
+                    </div>
+                    <div class="flex h-full border-t border-[rgba(172,179,177,0.1)]">
+                        <div class="doc-sub-header-col">수요일</div>
+                        <div class="doc-content-col"><textarea class="doc-textarea"></textarea></div>
+                    </div>
+                    <div class="flex h-full border-t border-[rgba(172,179,177,0.1)]">
+                        <div class="doc-sub-header-col">목요일</div>
+                        <div class="doc-content-col"><textarea class="doc-textarea"></textarea></div>
+                    </div>
+                    <div class="flex h-full border-t border-[rgba(172,179,177,0.1)]">
+                        <div class="doc-sub-header-col">금요일</div>
+                        <div class="doc-content-col"><textarea class="doc-textarea"></textarea></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row: 일상생활 - 점심식사 -->
+            <div class="doc-row">
+                <div class="doc-header-col">계획 및 실행<br>(일상생활 - 점심식사)</div>
+                <div class="flex flex-col flex-1">
+                    <div class="flex h-full">
+                        <div class="doc-sub-header-col">월요일</div>
+                        <div class="doc-content-col"><textarea class="doc-textarea"></textarea></div>
+                    </div>
+                    <div class="flex h-full border-t border-[rgba(172,179,177,0.1)]">
+                        <div class="doc-sub-header-col">화요일</div>
+                        <div class="doc-content-col"><textarea class="doc-textarea"></textarea></div>
+                    </div>
+                    <!-- 생략 (나머지 요일 동일 패턴) -->
+                    <div class="flex h-full border-t border-[rgba(172,179,177,0.1)]">
+                        <div class="doc-sub-header-col">...</div>
+                        <div class="doc-content-col"><p class="p-4 text-xs text-gray-400 italic">수/목/금 생략</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row: 놀이 평가 및 다음날 지원 계획 -->
+            <div class="doc-row">
+                <div class="doc-header-col">놀이 평가 및<br>다음날 지원 계획</div>
+                <div class="flex flex-col flex-1">
+                    <div class="flex h-full">
+                        <div class="doc-sub-header-col">월요일</div>
+                        <div class="doc-content-col"><textarea class="doc-textarea"></textarea></div>
+                    </div>
+                    <div class="flex h-full border-t border-[rgba(172,179,177,0.1)]">
+                        <div class="doc-sub-header-col">화요일</div>
+                        <div class="doc-content-col"><textarea class="doc-textarea"></textarea></div>
+                    </div>
+                    <!-- 생략 -->
+                    <div class="flex h-full border-t border-[rgba(172,179,177,0.1)]">
+                        <div class="doc-sub-header-col">...</div>
+                        <div class="doc-content-col"><p class="p-4 text-xs text-gray-400 italic">나머지 요일 생략</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row: 다음 주 예상 놀이 및 -->
+            <div class="doc-row">
+                <div class="doc-header-col">다음 주 예상 놀이 및</div>
+                <div class="flex flex-col flex-1">
+                    <div class="flex h-full">
+                        <div class="doc-sub-header-col">-</div>
+                        <div class="doc-content-col">
+                            <textarea class="doc-textarea" placeholder="내용을 입력하세요..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
