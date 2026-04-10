@@ -75,7 +75,8 @@ class LlmService:
             "query": query_text,
             "response_mode": "streaming",
             "conversation_id": "",
-            "user": "nuri-gpt-user"
+            "user": "nuri-gpt-user",
+            "auto_generate_name": False
         }
         
         endpoint = f"{dify_url.rstrip('/')}/chat-messages"
@@ -485,7 +486,8 @@ class LlmService:
             "query": query_text,
             "response_mode": "streaming",
             "conversation_id": "",
-            "user": "nuri-gpt-user"
+            "user": "nuri-gpt-user",
+            "auto_generate_name": False
         }
 
         endpoint = f"{dify_url.rstrip('/')}/chat-messages"
@@ -681,7 +683,8 @@ class LlmService:
                 "query": user_prompt,
                 "response_mode": "streaming",
                 "conversation_id": "",
-                "user": "nuri-gpt-user"
+                "user": "nuri-gpt-user",
+                "auto_generate_name": False
             }
             
             endpoint = f"{dify_url.rstrip('/')}/chat-messages"
