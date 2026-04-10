@@ -1,0 +1,90 @@
+import pytest
+from unittest.mock import MagicMock, AsyncMock, patch
+from uuid import uuid4
+from datetime import datetime, timezone
+
+from fastapi.testclient import TestClient
+
+from app.main import app
+from app.db.models.template import TemplateResponse
+from app.schemas.storage import StorageUploadResponse
+from app.core.dependencies import get_template_repository, get_storage_service, get_vision_service, get_current_user
+
+client = TestClient(app)
+
+@pytest.fixture
+def mock_template_repo():
+    repo = MagicMock()
+    mock_template = TemplateResponse(
+        id=uuid4(),
+        user_id=uuid4(),
+        name="테스트 템플릿",
+        template_type="observation_log",
+        structure_json={"area": "놀이"},
+        file_storage_path="templates/test_uuid/test.jpg",
+        is_default=False,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
+    )
+    repo.create = AsyncMock(return_value=mock_template)
+    return repo
+
+@pytest.fixture
+def mock_storage_service():
+    service = MagicMock()
+    upload_res = StorageUploadResponse(
+        file_path="templates/test_uuid/test.jpg",
+        file_name="test.jpg",
+        file_size=1024,
+        content_type="image/jpeg",
+        bucket="templates",
+        created_at=datetime.now(timezone.utc)
+    )
+    service.upload_template = AsyncMock(return_value=upload_res)
+    return service
+    
+@pytest.fixture
+def mock_vision_service():
+    service = MagicMock()
+    service.extract_template_structure.return_value = {
+        "area": "놀이"
+    }
+    return service
+
+@pytest.fixture
+def mock_current_user():
+    return {
+        "id": "00000000-0000-0000-0000-000000000001",
+        "email": "test@example.com",
+        "metadata": {"name": "Test User"}
+    }
+
+def test_upload_template_with_vision(mock_template_repo, mock_storage_service, mock_vision_service, mock_current_user):
+    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
+    app.dependency_overrides[get_storage_service] = lambda: mock_storage_service
+    app.dependency_overrides[get_vision_service] = lambda: mock_vision_service
+    app.dependency_overrides[get_current_user] = lambda: mock_current_user
+    
+    response = client.post(
+        "/api/upload/template",
+        data={
+            "template_name": "테스트 일지"
+        },
+        files={"file": ("test.jpg", b"dummy_content", "image/jpeg")}
+    )
+        
+    if response.status_code != 200:
+        print("RESPONSE JSON:", response.json())
+    assert response.status_code == 200
+    data = response.json()
+    assert data["template_name"] == "테스트 템플릿"
+    assert data["structure_json"] == {"area": "놀이"}
+    
+    # Verify vision was called
+    mock_vision_service.extract_template_structure.assert_called_once_with(b"dummy_content", "image/jpeg")
+    
+    # Verify repo create was called
+    repo_call_args = mock_template_repo.create.call_args[0][0]
+    assert repo_call_args.structure_json == {"area": "놀이"}
+    
+    app.dependency_overrides.clear()

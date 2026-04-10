@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Observation Log Creator | The Digital Curator</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "inverse-surface": "#0b0f0e",
+                        "surface-container-highest": "#dde4e1",
+                        "on-tertiary": "#fff8ed",
+                        "primary-dim": "#375c29",
+                        "on-tertiary-fixed-variant": "#6d5e26",
+                        "primary-fixed-dim": "#b5e1a0",
+                        "background": "#f8faf8",
+                        "on-secondary-fixed": "#004076",
+                        "tertiary-fixed-dim": "#eed994",
+                        "secondary-container": "#d4e3ff",
+                        "on-secondary-container": "#005396",
+                        "tertiary-dim": "#60521b",
+                        "on-tertiary-fixed": "#4f420b",
+                        "on-primary-container": "#365b28",
+                        "on-tertiary-container": "#63541d",
+                        "on-primary-fixed": "#244817",
+                        "secondary-dim": "#005498",
+                        "on-background": "#2d3432",
+                        "outline-variant": "#acb3b1",
+                        "on-surface-variant": "#59615f",
+                        "tertiary-container": "#fde7a1",
+                        "surface-tint": "#436834",
+                        "primary-fixed": "#c3efad",
+                        "inverse-on-surface": "#9b9d9c",
+                        "error-dim": "#791903",
+                        "error-container": "#fd795a",
+                        "on-secondary-fixed-variant": "#005da7",
+                        "tertiary": "#6d5e26",
+                        "error": "#a73b21",
+                        "surface-container-low": "#f1f4f2",
+                        "surface-bright": "#f8faf8",
+                        "tertiary-fixed": "#fde7a1",
+                        "secondary": "#0060ad",
+                        "on-surface": "#2d3432",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed-dim": "#bcd6ff",
+                        "surface-container-high": "#e4e9e7",
+                        "on-error": "#fff7f6",
+                        "primary-container": "#c3efad",
+                        "inverse-primary": "#d0feba",
+                        "surface-variant": "#dde4e1",
+                        "surface-container": "#eaefec",
+                        "surface": "#f8faf8",
+                        "on-error-container": "#6e1400",
+                        "surface-dim": "#d4dcd9",
+                        "on-primary-fixed-variant": "#3f6531",
+                        "on-primary": "#ecffdd",
+                        "outline": "#757c7a",
+                        "on-secondary": "#f8f8ff",
+                        "secondary-fixed": "#d4e3ff",
+                        "primary": "#436834"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .glass-header {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+        }
+        body {
+            background-color: #f8faf8;
+            color: #2d3432;
+        }
+        
+        /* Accordion Animation */
+        .menu-content {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .menu-content[aria-expanded="true"] {
+            grid-template-rows: 1fr;
+        }
+        .menu-inner {
+            overflow: hidden;
+        }
+        
+        .arrow-rotate {
+            transition: transform 0.3s ease;
+        }
+        .rotated {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body class="font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- Mobile Top Bar -->
+<header class="md:hidden flex items-center justify-between px-6 py-4 fixed top-0 w-full z-40 bg-white/70 backdrop-blur-xl shadow-sm">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">menu</span>
+<h1 class="font-headline text-lg font-semibold tracking-tight text-green-900">Observation Log Creator</h1>
+</div>
+<div class="w-8 h-8 rounded-full bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="professional portrait of a female educator" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDS50v-bDzSBnsD_Gk03h8AdlKkIL5blfFkaQM8sTQCpjtFG76R05j5PyBbAdpO5BerkfxKQc8-nWR_HwCzx4oij98fFmya331jHY7uLDrzSfEn1n8Pw8sJmgKH_MkWawcEoRbmPfoZeQKp-IrIC3oZWkh42jM9laLcYDK47FbYtDjZUWUYcEm6kd6K-eNNRQNbZtryPFZ7iWQbxHkA5oh7_OkYPRVg1M6r5SlCU4-MfZAR-m-9dDRL25T8_NbSI14zm8iJ9ru2Pw"/>
+</div>
+</header>
+<!-- Side Navigation Bar -->
+<aside class="h-screen w-64 fixed left-0 top-0 z-50 bg-zinc-50 dark:bg-zinc-950 flex flex-col hidden md:flex border-r border-zinc-200 dark:border-zinc-800 shadow-[0_12px_32px_rgba(45,52,50,0.06)]">
+<!-- Brand Section -->
+<div class="p-6">
+<div class="flex items-center gap-3 mb-8">
+<div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">auto_stories</span>
+</div>
+<div>
+<h2 class="font-headline text-lg font-extrabold text-green-900 dark:text-green-100 leading-tight">The Digital Curator</h2>
+<p class="text-xs font-medium text-on-surface-variant/70 uppercase tracking-widest">Educator Portal</p>
+</div>
+</div>
+<!-- Primary Navigation -->
+<nav class="space-y-1" id="nav-accordion">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:scale-[1.02] transition-all duration-200 font-manrope text-sm font-medium" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- Observations Category -->
+<div class="accordion-item">
+<button class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-green-900 dark:text-green-200 font-bold border-r-4 border-green-800 dark:border-green-400 bg-green-50/50 dark:bg-green-900/10 font-manrope text-sm transition-all group" onclick="toggleAccordion(this)">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">visibility</span>
+<span>Observations</span>
+</div>
+<span class="material-symbols-outlined text-xs arrow-rotate rotated">keyboard_arrow_down</span>
+</button>
+<div aria-expanded="true" class="menu-content">
+<div class="menu-inner pl-12 pr-4 space-y-1 py-1">
+<a class="block py-2 text-sm text-primary font-semibold border-l-2 border-primary/20 pl-4 hover:bg-primary/5 rounded-r-lg transition-colors" href="#">New Observation</a>
+<a class="block py-2 text-sm text-zinc-500 hover:text-primary border-l-2 border-transparent pl-4 hover:border-primary/20 transition-colors" href="#">Review Pending</a>
+</div>
+</div>
+</div>
+<!-- Logs Category -->
+<div class="accordion-item">
+<button class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:scale-[1.02] transition-all duration-200 font-manrope text-sm font-medium group" onclick="toggleAccordion(this)">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined">history_edu</span>
+<span>Logs</span>
+</div>
+<span class="material-symbols-outlined text-xs arrow-rotate">keyboard_arrow_down</span>
+</button>
+<div aria-expanded="false" class="menu-content">
+<div class="menu-inner pl-12 pr-4 space-y-1 py-1">
+<a class="block py-2 text-sm text-zinc-500 hover:text-primary border-l-2 border-transparent pl-4 hover:border-primary/20 transition-colors" href="#">Attendance Logs</a>
+<a class="block py-2 text-sm text-zinc-500 hover:text-primary border-l-2 border-transparent pl-4 hover:border-primary/20 transition-colors" href="#">Daily Records</a>
+<a class="block py-2 text-sm text-zinc-500 hover:text-primary border-l-2 border-transparent pl-4 hover:border-primary/20 transition-colors" href="#">Export History</a>
+</div>
+</div>
+</div>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:scale-[1.02] transition-all duration-200 font-manrope text-sm font-medium" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span>Resources</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:scale-[1.02] transition-all duration-200 font-manrope text-sm font-medium" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span>Analytics</span>
+</a>
+</nav>
+</div>
+<!-- Footer Navigation -->
+<div class="mt-auto p-4 space-y-2 border-t border-zinc-100 dark:border-zinc-900">
+<div class="group">
+<button class="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-zinc-600 hover:bg-zinc-100 transition-all font-manrope text-sm font-medium">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</div>
+<span class="material-symbols-outlined text-xs group-hover:rotate-180 transition-transform">keyboard_arrow_up</span>
+</button>
+<div class="hidden group-hover:block pl-11 py-1 space-y-1">
+<a class="block py-1.5 text-xs text-on-surface-variant hover:text-primary" href="#">Account</a>
+<a class="block py-1.5 text-xs text-on-surface-variant hover:text-primary" href="#">Preferences</a>
+</div>
+</div>
+<!-- Profile Card -->
+<div class="relative group cursor-pointer p-3 rounded-xl bg-surface-container-low hover:bg-white hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-out">
+<div class="flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover border-2 border-transparent group-hover:border-primary transition-all" data-alt="professional portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUu-UvnXOZ2h4Yn67oztWuXr0wM-xtW9BUx39JfM970ZsFMNysq6KoE2tF1NgDJ8zioB43aS8Sz_1fwSHp_Qz41iWzlKM-n4IeHG9ULU8URNndx8Ed55zggbUa3MmlHofumoAl5w_1Jh2RfLou8-iSnvN0F7eXFMaEsGS8kfbn1kYTLYLOFcRmX8350DR32H_XoJHjolWsr_SQYlPqGzM9R0wfc3rPO3pNsiAzmEjfcrklksdDnZXc5RwkIlT2rIIJVKKAT1yoFw"/>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-bold text-on-surface truncate">Dr. Sarah Jenkins</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-tighter">Senior Curator</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-sm group-hover:text-primary transition-colors">more_vert</span>
+</div>
+<!-- Profile Menu Dropup -->
+<div class="absolute bottom-full left-0 w-full mb-2 bg-white rounded-xl shadow-xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all scale-95 group-hover:scale-100">
+<a class="flex items-center gap-2 px-4 py-3 text-xs text-error font-semibold hover:bg-error-container/10" href="#">
+<span class="material-symbols-outlined text-sm">logout</span>
+                        Sign Out
+                    </a>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="md:ml-64 min-h-screen pt-20 md:pt-0 pb-12">
+<!-- Desktop Sticky Header -->
+<header class="hidden md:flex sticky top-0 z-30 glass-header px-12 py-6 items-center justify-between">
+<h2 class="font-headline text-2xl font-bold text-on-surface tracking-tight">Observation Log Creator</h2>
+<div class="flex items-center gap-4">
+<button class="px-5 py-2 rounded-xl text-sm font-semibold text-on-surface-variant hover:bg-surface-container transition-colors">Save as Draft</button>
+<button class="px-6 py-2.5 bg-primary text-on-primary rounded-full text-sm font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">Finalize Log</button>
+</div>
+</header>
+<div class="max-w-5xl mx-auto px-6 md:px-12 mt-8">
+<!-- Observation Intro Section -->
+<section class="mb-12">
+<div class="bg-surface-container-low rounded-3xl p-8 flex flex-col md:flex-row gap-8 items-center border border-primary/5">
+<div class="flex-1 space-y-4">
+<div class="inline-flex items-center gap-2 px-3 py-1 bg-primary-container text-on-primary-container rounded-full text-[10px] font-bold uppercase tracking-wider">
+<span class="material-symbols-outlined text-sm">edit_note</span>
+                            Manual Entry Session
+                        </div>
+<h3 class="font-headline text-3xl font-extrabold text-green-900 leading-tight">Capture the Moment of Learning.</h3>
+<p class="text-on-surface-variant text-sm max-w-md leading-relaxed">Fill out the structured fields below to document student interactions, progress, and behavioral patterns. Use the OCR tool to digitize handwritten notes instantly.</p>
+</div>
+<div class="w-full md:w-64 h-40 rounded-2xl overflow-hidden relative group">
+<div class="absolute inset-0 bg-primary/10 group-hover:bg-primary/5 transition-colors z-10"></div>
+<img class="w-full h-full object-cover grayscale-[20%] group-hover:scale-110 transition-transform duration-700" data-alt="close up of a pen" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAw-9GO9oAznassqJMMxIZG1zWQpz7M4tLZTpV6ay4mkVloTpKpXA2FlZ0lmhnorgQGzflFVWGAYeIfsGxwIWIep4Pn_6G8NgFCfQJr2Lq9O-a3Cmj4IOh7Y4nGRYCqANio9QhuJrSMr14clXGzQwAq1-2_HCruNMsqPRdQCiafTp0C-9ojpAC4kqtH2HSNArShT2x4AhqtzTzdwIh-PuqsJR-Nu52LCs7Tnx8Ux5Cv7gXsUtkEcnBa3eBuaAqp-4_e4fFhcaCfg"/>
+</div>
+</div>
+</section>
+<!-- Observation Form Grid -->
+<div class="grid grid-cols-1 gap-8">
+<!-- Section: Observation Content -->
+<div class="group">
+<div class="flex items-center justify-between mb-3 px-2">
+<label class="font-headline text-sm font-bold text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings: 'FILL' 1;">description</span>
+                            Observation Content
+                        </label>
+<button class="flex items-center gap-1.5 text-[10px] font-bold text-primary uppercase tracking-widest bg-white px-3 py-1.5 rounded-lg shadow-sm hover:shadow-md transition-all">
+<span class="material-symbols-outlined text-sm">document_scanner</span>
+                            OCR Upload
+                        </button>
+</div>
+<div class="bg-surface-container-low rounded-2xl overflow-hidden focus-within:ring-2 ring-primary/20 transition-all">
+<textarea class="w-full min-h-[160px] bg-transparent border-none p-6 text-on-surface placeholder:text-outline-variant focus:ring-0 resize-none leading-relaxed" placeholder="Describe the specific behavior or interaction observed..."></textarea>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Section: Evaluation Content -->
+<div class="group">
+<div class="flex items-center justify-between mb-3 px-2">
+<label class="font-headline text-sm font-bold text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-lg" style="font-variation-settings: 'FILL' 1;">analytics</span>
+                                Evaluation Content
+                            </label>
+<button class="flex items-center gap-1.5 text-[10px] font-bold text-primary uppercase tracking-widest bg-white px-3 py-1.5 rounded-lg shadow-sm hover:shadow-md transition-all">
+<span class="material-symbols-outlined text-sm">document_scanner</span>
+                                OCR
+                            </button>
+</div>
+<div class="bg-surface-container-low rounded-2xl overflow-hidden focus-within:ring-2 ring-primary/20 transition-all">
+<textarea class="w-full min-h-[140px] bg-transparent border-none p-6 text-on-surface placeholder:text-outline-variant focus:ring-0 resize-none leading-relaxed" placeholder="Assess the performance against learning outcomes..."></textarea>
+</div>
+</div>
+<!-- Section: Development Areas -->
+<div class="group">
+<div class="flex items-center justify-between mb-3 px-2">
+<label class="font-headline text-sm font-bold text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-lg" style="font-variation-settings: 'FILL' 1;">trending_up</span>
+                                Development Areas
+                            </label>
+<button class="flex items-center gap-1.5 text-[10px] font-bold text-primary uppercase tracking-widest bg-white px-3 py-1.5 rounded-lg shadow-sm hover:shadow-md transition-all">
+<span class="material-symbols-outlined text-sm">document_scanner</span>
+                                OCR
+                            </button>
+</div>
+<div class="bg-surface-container-low rounded-2xl overflow-hidden focus-within:ring-2 ring-primary/20 transition-all">
+<textarea class="w-full min-h-[140px] bg-transparent border-none p-6 text-on-surface placeholder:text-outline-variant focus:ring-0 resize-none leading-relaxed" placeholder="Identify specific skills or competencies for improvement..."></textarea>
+</div>
+</div>
+</div>
+<!-- Section: Notes/Context -->
+<div class="group">
+<div class="flex items-center justify-between mb-3 px-2">
+<label class="font-headline text-sm font-bold text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-dim text-lg" style="font-variation-settings: 'FILL' 1;">info</span>
+                            Notes/Context
+                        </label>
+<button class="flex items-center gap-1.5 text-[10px] font-bold text-primary uppercase tracking-widest bg-white px-3 py-1.5 rounded-lg shadow-sm hover:shadow-md transition-all">
+<span class="material-symbols-outlined text-sm">document_scanner</span>
+                            OCR Upload
+                        </button>
+</div>
+<div class="bg-surface-container-low rounded-2xl overflow-hidden focus-within:ring-2 ring-primary/20 transition-all">
+<textarea class="w-full min-h-[120px] bg-transparent border-none p-6 text-on-surface placeholder:text-outline-variant focus:ring-0 resize-none leading-relaxed" placeholder="Add any external factors, environmental notes, or side observations..."></textarea>
+</div>
+</div>
+</div>
+<!-- Footer Actions Mobile -->
+<div class="md:hidden flex flex-col gap-4 mt-12">
+<button class="w-full py-4 bg-primary text-on-primary rounded-2xl font-bold shadow-xl shadow-primary/20">Finalize Log</button>
+<button class="w-full py-4 text-on-surface-variant font-semibold">Save as Draft</button>
+</div>
+</div>
+</main>
+<!-- Contextual FAB -->
+<button class="hidden md:flex fixed bottom-8 right-8 w-16 h-16 bg-primary text-on-primary rounded-2xl items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all group z-50">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">add</span>
+<span class="absolute right-full mr-4 px-3 py-1 bg-on-surface text-surface text-[10px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">Quick Save</span>
+</button>
+<script>
+        function toggleAccordion(button) {
+            const currentItem = button.closest('.accordion-item');
+            const currentContent = currentItem.querySelector('.menu-content');
+            const currentArrow = currentItem.querySelector('.arrow-rotate');
+            const allItems = document.querySelectorAll('.accordion-item');
+            
+            const isExpanding = currentContent.getAttribute('aria-expanded') === 'false';
+
+            // Collapse all others
+            allItems.forEach(item => {
+                const content = item.querySelector('.menu-content');
+                const arrow = item.querySelector('.arrow-rotate');
+                const btn = item.querySelector('button');
+                
+                content.setAttribute('aria-expanded', 'false');
+                arrow.classList.remove('rotated');
+                
+                // Reset styles to inactive state
+                btn.classList.remove('text-green-900', 'dark:text-green-200', 'font-bold', 'border-r-4', 'border-green-800', 'dark:border-green-400', 'bg-green-50/50', 'dark:bg-green-900/10');
+                btn.classList.add('text-zinc-600', 'dark:text-zinc-400', 'hover:bg-zinc-100', 'dark:hover:bg-zinc-900', 'font-medium');
+                
+                const icon = btn.querySelector('.material-symbols-outlined');
+                if (icon) icon.style.fontVariationSettings = "'FILL' 0";
+            });
+
+            if (isExpanding) {
+                currentContent.setAttribute('aria-expanded', 'true');
+                currentArrow.classList.add('rotated');
+                
+                // Apply active styles
+                button.classList.add('text-green-900', 'dark:text-green-200', 'font-bold', 'border-r-4', 'border-green-800', 'dark:border-green-400', 'bg-green-50/50', 'dark:bg-green-900/10');
+                button.classList.remove('text-zinc-600', 'dark:text-zinc-400', 'hover:bg-zinc-100', 'dark:hover:bg-zinc-900', 'font-medium');
+                
+                const icon = button.querySelector('.material-symbols-outlined');
+                if (icon) icon.style.fontVariationSettings = "'FILL' 1";
+            }
+        }
+    </script>
+</body></html>

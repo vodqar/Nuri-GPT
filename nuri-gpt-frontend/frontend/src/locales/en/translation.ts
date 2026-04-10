@@ -1,0 +1,97 @@
+const translation = {
+  nav: {
+    dashboard: 'Dashboard',
+    observations: 'Observations',
+    logs: 'Logs',
+    insights: 'Insights',
+    settings: 'Settings',
+    home: 'Home',
+    account: 'Account',
+  },
+  topNav: {
+    profileAvatarAlt: 'Teacher Profile Avatar',
+  },
+  sideNav: {
+    assistantName: 'Nuri Assistant',
+    assistantSubtitle: 'Childcare Professional',
+    newObservation: 'New Observation',
+    helpCenter: 'Help Center',
+    signOut: 'Sign Out',
+  },
+  app: {
+    dashboardTitle: 'Dashboard',
+    logsTitle: 'Logs',
+    insightsTitle: 'Insights',
+  },
+  observation: {
+    title: 'Observation Log Creator',
+    sessionLabel: 'Session: Morning Exploration • March 14, 2024',
+    modeManual: 'Manual',
+    modeAuto: 'Auto',
+    freeformNotes: 'Freeform Notes',
+    ocrUpload: 'OCR Upload',
+    autoPlaceholder: 'Enter your observation notes freely...',
+    notSaved: 'Not saved',
+    saveDraft: 'Save Draft',
+    finalize: 'Finalize',
+    generatedTitle: 'Generated Result',
+    copy: 'Copy',
+    copied: 'Copied',
+    aiInsights: 'AI Insights',
+    gettingStartedTitle: 'Getting Started',
+    gettingStartedDescription: "Upload an image of your handwritten notes or start typing directly. I'll help structure it into a professional observation log.",
+    noTemplateStructure: 'No template structure loaded.',
+    // Template selection
+    templateSelection: 'Select Template',
+    templateManage: 'Manage',
+    templateManageDone: 'Done',
+    templateStart: 'Start with this template',
+    noTemplates: 'No saved templates.',
+    createTemplatePrompt: 'Please create a new template.',
+    newTemplate: 'Create New Template',
+    templateTypeDaycare: 'Daycare Log',
+    defaultBadge: 'Default',
+    recentlyUsedBadge: 'Recently Used',
+    recentlyCreatedBadge: 'Recently Created',
+    // Template creation
+    createTemplateTitle: 'Create New Template',
+    templateNameLabel: 'Template Name',
+    templateNamePlaceholder: 'e.g., Infant Observation Log Template',
+    templateUploadLabel: 'Upload Template Image',
+    templateUploadPrompt: 'Click or drag image here',
+    templateUploadFormats: 'Supports PNG, JPG document images',
+    createTemplateButton: 'Create Template',
+    creatingTemplate: 'Analyzing and creating template... (may take up to 1 minute)',
+    // Delete modal
+    deleteTemplateTitle: 'Delete Template',
+    deleteTemplateConfirm: 'Are you sure you want to delete this template? Deleted templates cannot be recovered.',
+    delete: 'Delete',
+    cancel: 'Cancel',
+    // Common errors
+    errorTemplateCreate: 'Failed to create template. Please try again.',
+    errorTemplateLoad: 'Failed to load templates.',
+    errorOcrUpload: 'Failed to upload file and convert text.',
+    errorLogGenerate: 'Failed to generate observation log.',
+    errorRegenerate: 'An error occurred during regeneration.',
+    blocks: {
+      observation: {
+        label: 'Observation Content',
+        placeholder: "Describe the child's activity, interactions, and specific behaviors observed...",
+      },
+      evaluation: {
+        label: 'Evaluation Content',
+        placeholder: 'How does this observation link to curriculum milestones or developmental goals?',
+      },
+      development: {
+        label: 'Development Areas',
+        placeholder: 'Specify identified areas for future focus...',
+      },
+      notes: {
+        label: 'Notes & Context',
+        placeholder: 'Environmental factors, group dynamics, or other relevant circumstances...',
+      },
+    },
+  },
+} as const;
+
+export default translation;

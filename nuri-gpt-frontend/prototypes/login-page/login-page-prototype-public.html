@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Login | Nuri-GPT</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-low": "#f1f4f2",
+              "inverse-primary": "#d0feba",
+              "on-surface-variant": "#59615f",
+              "surface-variant": "#dde4e1",
+              "on-secondary-fixed": "#004076",
+              "tertiary-fixed": "#fde7a1",
+              "on-tertiary-fixed": "#4f420b",
+              "surface": "#f8faf8",
+              "primary-fixed-dim": "#b5e1a0",
+              "surface-container-highest": "#dde4e1",
+              "secondary-fixed": "#d4e3ff",
+              "surface-container-high": "#e4e9e7",
+              "outline-variant": "#acb3b1",
+              "primary-container": "#c3efad",
+              "inverse-on-surface": "#9b9d9c",
+              "surface-container-lowest": "#ffffff",
+              "surface-dim": "#d4dcd9",
+              "on-primary-fixed": "#244817",
+              "on-error": "#fff7f6",
+              "tertiary": "#6d5e26",
+              "on-background": "#2d3432",
+              "outline": "#757c7a",
+              "on-tertiary-container": "#63541d",
+              "error-dim": "#791903",
+              "on-tertiary-fixed-variant": "#6d5e26",
+              "tertiary-fixed-dim": "#eed994",
+              "primary-dim": "#375c29",
+              "on-error-container": "#6e1400",
+              "secondary": "#0060ad",
+              "primary-fixed": "#c3efad",
+              "on-secondary-fixed-variant": "#005da7",
+              "surface-bright": "#f8faf8",
+              "tertiary-dim": "#60521b",
+              "tertiary-container": "#fde7a1",
+              "on-surface": "#2d3432",
+              "surface-tint": "#436834",
+              "on-primary": "#ecffdd",
+              "on-primary-container": "#365b28",
+              "secondary-dim": "#005498",
+              "inverse-surface": "#0b0f0e",
+              "secondary-container": "#d4e3ff",
+              "on-secondary-container": "#005396",
+              "error-container": "#fd795a",
+              "on-primary-fixed-variant": "#3f6531",
+              "surface-container": "#eaefec",
+              "on-secondary": "#f8f8ff",
+              "error": "#a73b21",
+              "secondary-fixed-dim": "#bcd6ff",
+              "primary": "#436834",
+              "background": "#f8faf8",
+              "on-tertiary": "#fff8ed"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8faf8;
+        }
+        .font-manrope { font-family: 'Manrope', sans-serif; }
+        .glass-header {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+        }
+        .ethereal-glow {
+            background: radial-gradient(circle at top left, rgba(195, 239, 173, 0.15) 0%, transparent 40%),
+                        radial-gradient(circle at bottom right, rgba(195, 239, 173, 0.1) 0%, transparent 40%);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface selection:bg-primary-container selection:text-on-primary-container min-h-screen flex flex-col">
+<!-- Top Navigation Anchor (Shared Component Mapping) -->
+<!-- Navigation shell suppressed per "The Destination Rule": This is a Transactional Page (Login) -->
+<header class="fixed top-0 w-full z-50 glass-header">
+<div class="flex justify-between items-center px-6 py-5 w-full max-w-7xl mx-auto">
+<div class="text-xl font-headline font-bold text-primary italic tracking-tight">
+                Nuri-GPT
+            </div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant font-body text-sm hover:text-primary transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[20px]" data-icon="help">help</span>
+                    Support
+                </button>
+</div>
+</div>
+</header>
+<main class="flex-grow flex items-center justify-center px-6 pt-24 pb-12 ethereal-glow relative overflow-hidden">
+<!-- Background decorative elements for the "Digital Curator" feel -->
+<div class="absolute top-1/4 -left-20 w-96 h-96 bg-primary-container/20 rounded-full blur-[100px]"></div>
+<div class="absolute bottom-1/4 -right-20 w-80 h-80 bg-secondary-container/20 rounded-full blur-[100px]"></div>
+<div class="w-full max-w-[440px] z-10">
+<!-- Login Card -->
+<div class="bg-surface-container-lowest rounded-[2rem] shadow-[0_12px_32px_rgba(45,52,50,0.06)] p-8 md:p-10">
+<!-- Branding & Heading -->
+<div class="text-center mb-10">
+<h1 class="font-headline text-3xl font-extrabold text-on-surface tracking-tight mb-2">
+                        Welcome back, Teacher!
+                    </h1>
+<p class="font-body text-on-surface-variant text-sm">
+                        Access your curriculum workspace.
+                    </p>
+</div>
+<!-- Form Section -->
+<form class="space-y-6">
+<div>
+<label class="block font-headline text-sm font-semibold text-on-surface mb-2 ml-1" for="email">Email address</label>
+<input class="w-full px-5 py-4 bg-surface-container-low border-none rounded-xl focus:ring-1 focus:ring-primary focus:bg-surface-container-lowest transition-all placeholder:text-outline-variant text-on-surface" id="email" name="email" placeholder="name@school.edu" type="email"/>
+</div>
+<div>
+<div class="flex justify-between items-center mb-2 ml-1">
+<label class="block font-headline text-sm font-semibold text-on-surface" for="password">Password</label>
+<a class="text-xs font-medium text-primary hover:text-primary-dim transition-colors" href="#">Forgot password?</a>
+</div>
+<input class="w-full px-5 py-4 bg-surface-container-low border-none rounded-xl focus:ring-1 focus:ring-primary focus:bg-surface-container-lowest transition-all placeholder:text-outline-variant text-on-surface" id="password" name="password" placeholder="••••••••" type="password"/>
+</div>
+<div class="flex items-center ml-1">
+<input class="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary focus:ring-offset-0 bg-surface-container-low transition-all" id="remember" name="remember" type="checkbox"/>
+<label class="ml-3 text-sm text-on-surface-variant font-medium cursor-pointer" for="remember">Remember me</label>
+</div>
+<button class="w-full py-4 bg-primary text-on-primary font-headline font-bold rounded-xl shadow-lg shadow-primary/10 hover:bg-primary-dim transition-all active:scale-[0.98] flex justify-center items-center gap-2" type="submit">
+                        Sign In
+                    </button>
+</form>
+<!-- Social Login -->
+<div class="relative my-8">
+<div class="absolute inset-0 flex items-center">
+<div class="w-full border-t border-surface-variant"></div>
+</div>
+<div class="relative flex justify-center text-xs">
+<span class="px-4 bg-surface-container-lowest text-on-surface-variant font-medium uppercase tracking-widest">Or sign in with</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<button class="flex items-center justify-center gap-3 py-3 px-4 bg-surface-container-low hover:bg-surface-container transition-colors rounded-xl font-headline font-semibold text-sm text-on-surface">
+<img alt="" class="w-5 h-5" data-alt="clean multi-colored google g logo icon on a white background with flat vector style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7Z7JKmLE8sLjsHtSkrmo_HJeswFMm0gz_Im8pJ8Ku8DCd85M6ncDfCTWoUli30OIU76YJASj8E1TOHqdbS1F3-q8yL5WfyvFxEt0eAxaogjcrypTAhBTopdlhw8diFL-uIeEDboEghgeaREfR2rCUI02P0_V3WTu-JUXj5TjvjXoYArgMwxZXaciXm1f8v6MWRz5-Sa2HQn3cVzil7FMy-5OPTbRQXoH-B0KmlhpZNE8TCQUb0F3QThXMTNCTpnNYU1rNE0D7xw"/>
+                        Google
+                    </button>
+<button class="flex items-center justify-center gap-3 py-3 px-4 bg-surface-container-low hover:bg-surface-container transition-colors rounded-xl font-headline font-semibold text-sm text-on-surface">
+<span class="material-symbols-outlined text-[22px] leading-none" data-icon="apple" style="font-variation-settings: 'FILL' 1;">ios</span>
+                        Apple
+                    </button>
+</div>
+</div>
+<!-- Footer Link -->
+<p class="text-center mt-8 font-body text-sm text-on-surface-variant">
+                New to Nuri-GPT? <a class="text-primary font-bold hover:underline decoration-2 underline-offset-4" href="#">Create an account</a>
+</p>
+</div>
+</main>
+<!-- Footer Anchor (Shared Component Mapping) -->
+<footer class="w-full py-8 border-t border-zinc-200/50 dark:border-zinc-800/50 bg-zinc-50 dark:bg-zinc-950">
+<div class="flex flex-col md:flex-row justify-between items-center px-8 gap-4 w-full max-w-7xl mx-auto">
+<div class="font-inter text-xs text-zinc-500 dark:text-zinc-400">
+                © 2024 Nuri-GPT. The Digital Curator.
+            </div>
+<div class="flex gap-6">
+<a class="font-inter text-xs text-zinc-500 dark:text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors duration-200" href="#">Privacy Policy</a>
+<a class="font-inter text-xs text-zinc-500 dark:text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors duration-200" href="#">Terms of Service</a>
+<a class="font-inter text-xs text-zinc-500 dark:text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors duration-200" href="#">Support</a>
+<a class="font-inter text-xs text-zinc-500 dark:text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors duration-200" href="#">Contact</a>
+</div>
+</div>
+</footer>
+</body></html>

@@ -1,0 +1,106 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-7.4.3, pluggy-1.6.0 -- /home/kj/Projects/Nuri-GPT/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/kj/Projects/Nuri-GPT/nuri-gpt-backend
+plugins: asyncio-0.21.1, anyio-4.12.1
+asyncio: mode=Mode.STRICT
+collecting ... collected 6 items / 5 deselected / 1 selected
+
+tests/test_generate.py::test_generate_log_success CALL ARGS: call(ocr_text='아이가 블록을 높이 쌓고 즐거워함', additional_guidelines='누리과정 연계', is_aggressive='false', child_age=3)
+FAILED
+
+=================================== FAILURES ===================================
+__________________________ test_generate_log_success ___________________________
+
+client = <starlette.testclient.TestClient object at 0x742fd151c1a0>
+
+    def test_generate_log_success(client):
+        """관찰일지 생성 성공 케이스"""
+        from app.core.dependencies import get_llm_service, get_log_repository
+        from app.main import app
+    
+        # LLM mock
+        mock_llm = MagicMock()
+        mock_llm.generate_observation_log.return_value = {
+            "title": "블록 놀이 관찰",
+            "observation_content": "아이가 블록으로 성을 쌓았습니다.",
+            "evaluation_content": "소근육 발달이 잘 이루어지고 있습니다.",
+            "development_areas": ["신체운동/건강"]
+        }
+    
+        # DB mock
+        mock_repo = MagicMock()
+        mock_log_entry = MagicMock()
+        mock_log_entry.id = uuid4()
+        mock_repo.log_action = AsyncMock(return_value=mock_log_entry)
+    
+        app.dependency_overrides[get_llm_service] = lambda: mock_llm
+        app.dependency_overrides[get_log_repository] = lambda: mock_repo
+    
+        try:
+            response = client.post(
+                "/api/generate/log",
+                json={
+                    "ocr_text": "아이가 블록을 높이 쌓고 즐거워함",
+                    "additional_guidelines": "누리과정 연계",
+                    "child_age": 3
+                }
+            )
+    
+            assert response.status_code == 200
+            data = response.json()
+            assert data["title"] == "블록 놀이 관찰"
+            assert data["observation_content"] == "아이가 블록으로 성을 쌓았습니다."
+            assert data["log_id"] == str(mock_log_entry.id)
+    
+            # LLM 서비스 파라미터 확인
+            print("CALL ARGS:", mock_llm.generate_observation_log.call_args)
+>           assert False, "forced failure to read output"
+E           AssertionError: forced failure to read output
+E           assert False
+
+tests/test_generate.py:71: AssertionError
+=============================== warnings summary ===============================
+../.venv/lib/python3.14/site-packages/supabase/_async/auth_client.py:3
+  /home/kj/Projects/Nuri-GPT/.venv/lib/python3.14/site-packages/supabase/_async/auth_client.py:3: DeprecationWarning: The `gotrue` package is deprecated, is not going to receive updates in the future. Please, use `supabase_auth` instead.
+    from gotrue import (
+
+app/db/models/log.py:36
+  /home/kj/Projects/Nuri-GPT/nuri-gpt-backend/app/db/models/log.py:36: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class UserLogInDB(UserLogBase):
+
+app/db/models/template.py:48
+  /home/kj/Projects/Nuri-GPT/nuri-gpt-backend/app/db/models/template.py:48: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class TemplateInDB(TemplateBase):
+
+app/db/models/user.py:56
+  /home/kj/Projects/Nuri-GPT/nuri-gpt-backend/app/db/models/user.py:56: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class UserInDB(UserBase):
+
+app/db/models/journal.py:38
+  /home/kj/Projects/Nuri-GPT/nuri-gpt-backend/app/db/models/journal.py:38: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class JournalInDB(JournalBase):
+
+app/services/llm.py:5
+  /home/kj/Projects/Nuri-GPT/nuri-gpt-backend/app/services/llm.py:5: FutureWarning: 
+  
+  All support for the `google.generativeai` package has ended. It will no longer be receiving 
+  updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+  See README for more details:
+  
+  https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+  
+    import google.generativeai as genai
+
+app/schemas/user.py:22
+  /home/kj/Projects/Nuri-GPT/nuri-gpt-backend/app/schemas/user.py:22: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class UserResponse(BaseModel):
+
+../.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:156: 186 warnings
+  /home/kj/Projects/Nuri-GPT/.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:156: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    return asyncio.iscoroutinefunction(obj)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_generate.py::test_generate_log_success - AssertionError: fo...
+================ 1 failed, 5 deselected, 193 warnings in 0.30s =================

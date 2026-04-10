@@ -1,0 +1,57 @@
+## 문서 목록
+
+| 경로 | 설명 |
+|------|------|
+| `frontend/docs/OVERVIEW.md` | 서비스 목적·핵심 기능·기술 스택·실행 방법 |
+| `frontend/docs/ARCHITECTURE.md` | Feature-First 디렉토리 구조·의존성 규칙·상태 관리 전략 |
+| `frontend/docs/DEVELOPMENT.md` | 코드 작성 원칙·컴포넌트 규칙·MSW 모킹·DoD 체크리스트 |
+| `frontend/docs/SERVER_GUIDE.md` | 프론트엔드·백엔드 서버 실행 방법·포트 설정·트러블슈팅 |
+| `frontend/docs/DIFY_CHATFLOW_SETUP.md` | 재생성 API용 Dify Chatflow 설정 가이드 |
+| `frontend/docs/DESIGN.md` | UIUX의 디자인 철학 (Color, Typography, Elevation) |
+
+---
+
+# Frontend 개발 가이드 (프로젝트 전용)
+
+## 1. 아키텍처: Feature-First
+
+- 도메인 로직·전용 UI는 반드시 해당 `features/` 폴더 안에 위치
+- 다른 feature에서 직접 import 금지 → 공유가 필요하면 `shared/` 또는 `components/global/`로 이동
+
+## 2. 컴포넌트 계층 (실용적 Atomic Design)
+
+> **Simplicity First**: 단일 사용 코드에 추상화 레이어 생성 금지
+
+| 레벨 | 설명 | 위치 |
+|------|------|------|
+| Atoms | 최소 UI 단위 (Button, Input) | 실제 재사용 필요 시 생성 |
+| Molecules/Organisms | Atoms 조합 | 기본: `features/` 내부. 3개+ feature에서 사용 시 `components/`로 이동 |
+| Pages | 데이터 패칭 및 feature 조합 진입점 | - |
+
+## 3. 엔지니어링 규칙
+
+- **Custom Hook**: 비즈니스 로직은 feature 폴더 내 Custom Hook으로 분리 → UI 컴포넌트는 presentational 유지
+- **TypeScript**: 현재 필요한 타입만 정의. 복잡한 제네릭 지양
+- **상태 관리**: 서버 데이터 → TanStack Query / 전역 클라이언트 상태 → Zustand / 기본은 `useState` 우선
+
+## 4. 에이전트 실행 프로토콜
+
+1. 작업 전 범위 선언: `Global UI` 변경인지 `Feature-specific` 변경인지 명시
+2. 신규 UI 요소 생성 전 `components/atoms` 확인 → 기존 스타일 매칭
+3. 모든 컴포넌트는 **Named Export** 사용
+
+## 5. 완료 기준 (DoD)
+
+- [ ] UI가 `DESIGN.md` / 기획안 레이아웃과 일치
+- [ ] ESLint·TypeScript 에러 없음 (`npm run lint`, `npm run build`)
+- [ ] `features/` 격리 원칙 준수 (아키텍처 1항 참조)
+- [ ] 상태 관리 레벨 적절 (Local vs Zustand)
+- [ ] 템플릿 없는 경우 → 안내 모달 없이 즉시 템플릿 생성 화면으로 분기
+- [ ] 하위 지침(DEVELOPMENT.md)에 정의된 구현 패턴 준수
+
+- 작업 완료 후 ToC의 관련 문서가 변경된 경우 반드시 업데이트
+- 문서 수정 시 하단에 날짜 기록: `*Last Updated: YYYY-MM-DD*`
+
+---
+
+*Last Updated: 2026-04-07*

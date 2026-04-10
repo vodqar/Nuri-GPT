@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>생성 결과 - Nuri GPT</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-primary: #436834;
+      --color-primary-dim: #375c29;
+      --color-primary-container: #c3efad;
+      --color-surface: #f8faf8;
+      --color-surface-container-low: #f1f4f2;
+      --color-surface-container: #eaefec;
+      --color-surface-container-lowest: #ffffff;
+      --color-on-surface: #2d3432;
+      --color-on-surface-variant: #59615f;
+      --color-outline-variant: #acb3b1;
+      --color-amber: #eab308;
+      --color-amber-light: #fef3c7;
+    }
+    
+    * {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    
+    .font-headline {
+      font-family: 'Manrope', sans-serif;
+    }
+    
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    
+    /* Result Card Styling */
+    .result-card {
+      background: var(--color-surface);
+      border: 1px solid rgba(172, 179, 177, 0.1);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      position: relative;
+    }
+    
+    .result-card:hover {
+      border-color: rgba(67, 104, 52, 0.2);
+    }
+    
+    .result-card.has-comment {
+      border-color: rgba(234, 179, 8, 0.4);
+      background: rgba(254, 252, 232, 0.3);
+    }
+    
+    .result-card.active {
+      box-shadow: 0 0 0 2px var(--color-primary);
+      border-color: transparent;
+    }
+    
+    /* Breadcrumb path */
+    .path-label {
+      font-size: 0.625rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    
+    /* Content text */
+    .result-content {
+      color: var(--color-on-surface);
+      line-height: 1.7;
+      font-size: 0.9375rem;
+      white-space: pre-wrap;
+    }
+    
+    /* Action buttons on card */
+    .card-actions {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    
+    .result-card:hover .card-actions,
+    .result-card.active .card-actions {
+      opacity: 1;
+    }
+    
+    .action-btn {
+      padding: 0.375rem;
+      border-radius: 0.5rem;
+      transition: all 0.15s ease;
+    }
+    
+    .action-btn.comment {
+      color: rgba(89, 97, 95, 0.5);
+    }
+    
+    .action-btn.comment:hover,
+    .action-btn.comment.active {
+      color: var(--color-amber);
+      background: var(--color-amber-light);
+    }
+    
+    .action-btn.copy {
+      color: rgba(89, 97, 95, 0.5);
+    }
+    
+    .action-btn.copy:hover {
+      color: var(--color-primary);
+      background: rgba(67, 104, 52, 0.08);
+    }
+    
+    /* Comment badge */
+    .comment-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.25rem 0.625rem;
+      background: var(--color-amber-light);
+      color: #b45309;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-top: 0.75rem;
+    }
+    
+    /* Comment overlay */
+    .comment-overlay {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(172, 179, 177, 0.15);
+      animation: slideDown 0.2s ease-out;
+    }
+    
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .comment-input {
+      width: 100%;
+      background: rgba(241, 244, 242, 0.8);
+      border: none;
+      border-radius: 0.75rem;
+      padding: 0.875rem;
+      font-size: 0.875rem;
+      color: var(--color-on-surface);
+      resize: vertical;
+      min-height: 80px;
+      transition: all 0.2s ease;
+    }
+    
+    .comment-input:focus {
+      outline: none;
+      background: white;
+      box-shadow: 0 0 0 1px var(--color-amber);
+    }
+    
+    .comment-input::placeholder {
+      color: rgba(89, 97, 95, 0.5);
+    }
+    
+    /* Version History */
+    .version-nav {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      background: var(--color-surface-container-low);
+      padding: 0.375rem;
+      border-radius: 0.625rem;
+    }
+    
+    .version-btn {
+      padding: 0.5rem 0.875rem;
+      border-radius: 0.5rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      transition: all 0.15s ease;
+      color: var(--color-on-surface-variant);
+    }
+    
+    .version-btn:hover {
+      color: var(--color-on-surface);
+    }
+    
+    .version-btn.active {
+      background: white;
+      color: var(--color-primary);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    
+    /* Floating Action Bar */
+    .fab-container {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      animation: slideUp 0.3s ease-out;
+    }
+    
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+    
+    .fab {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: #18181b;
+      color: white;
+      padding: 0.875rem 1.5rem;
+      border-radius: 9999px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .fab-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: white;
+      color: #18181b;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 700;
+      transition: all 0.15s ease;
+    }
+    
+    .fab-btn:hover {
+      background: #f3f4f6;
+    }
+    
+    /* Loading overlay */
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(4px);
+      border-radius: 1.25rem;
+      z-index: 20;
+      animation: fadeIn 0.2s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .loading-box {
+      background: white;
+      padding: 1.5rem 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    
+    /* Copy all button */
+    .copy-all-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1rem;
+      background: var(--color-surface);
+      border: 1px solid rgba(172, 179, 177, 0.2);
+      border-radius: 0.75rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--color-on-surface);
+      transition: all 0.15s ease;
+    }
+    
+    .copy-all-btn:hover {
+      background: var(--color-surface-container-low);
+    }
+    
+    /* Scroll area */
+    .results-scroll {
+      max-height: 55vh;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+    
+    .results-scroll::-webkit-scrollbar {
+      width: 4px;
+    }
+    
+    .results-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    .results-scroll::-webkit-scrollbar-thumb {
+      background: var(--color-outline-variant);
+      border-radius: 2px;
+    }
+    
+    /* Fade animations */
+    .fade-in {
+      animation: fadeInContent 0.4s ease-out;
+    }
+    
+    @keyframes fadeInContent {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="min-h-screen py-8 px-4" style="background: var(--color-surface)">
+  <div class="max-w-3xl mx-auto">
+    <!-- Main Container -->
+    <div class="glass-panel rounded-3xl shadow-sm border border-white/60 p-6 md:p-10 min-h-[700px] flex flex-col relative">
+      
+      <!-- Loading Overlay (hidden by default, shown for demo) -->
+      <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-box">
+          <svg class="animate-spin w-8 h-8" style="color: var(--color-primary)" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p class="text-sm font-semibold" style="color: var(--color-on-surface)">코멘트를 반영하여 재생성 중...</p>
+        </div>
+      </div>
+      
+      <!-- Header -->
+      <header class="mb-6 fade-in">
+        <div class="flex items-center justify-between mb-4">
+          <button class="group flex items-center gap-2 transition-colors" style="color: var(--color-on-surface-variant)" onmouseover="this.style.color='var(--color-primary)'" onmouseout="this.style.color='var(--color-on-surface-variant)'">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" style="background: var(--color-surface-container-low)" onmouseover="this.style.background='rgba(67,104,52,0.08)'" onmouseout="this.style.background='var(--color-surface-container-low)'">
+              <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </div>
+          </button>
+          
+          <button class="copy-all-btn">
+            <i data-lucide="copy" class="w-4 h-4"></i>
+            <span>전체 복사</span>
+          </button>
+        </div>
+        
+        <h1 class="font-headline text-2xl md:text-3xl font-bold tracking-tight mb-2" style="color: var(--color-on-surface)">
+          생성 결과
+        </h1>
+        <p class="text-sm" style="color: var(--color-on-surface-variant)">
+          결과를 확인하고 필요한 부분을 수정하세요
+        </p>
+      </header>
+
+      <!-- Version History -->
+      <div class="mb-6 fade-in" style="animation-delay: 0.1s">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-medium" style="color: var(--color-on-surface-variant)">버전</span>
+          <div class="version-nav">
+            <button class="version-btn" onclick="switchVersion(0)">v1</button>
+            <button class="version-btn active" onclick="switchVersion(1)">v2</button>
+            <button class="version-btn" onclick="switchVersion(2)">v3</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results List -->
+      <div class="results-scroll flex-1 fade-in mb-4" style="animation-delay: 0.15s">
+        
+        <!-- Result Card 1 -->
+        <div class="result-card mb-4" onclick="toggleComment(this, 'field1')">
+          <div class="flex justify-between items-start mb-2">
+            <span class="path-label">보육일지 > 놀이 > 활동 > 내용</span>
+            <div class="card-actions flex items-center gap-1">
+              <button class="action-btn comment" onclick="event.stopPropagation(); toggleComment(this.closest('.result-card'), 'field1')" title="코멘트 달기">
+                <i data-lucide="message-square-plus" class="w-4 h-4"></i>
+              </button>
+              <button class="action-btn copy" onclick="event.stopPropagation(); copyText(this)" title="복사">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+          <p class="result-content">종이의 질감을 탐색하고 접는 과정을 통해 소근육을 정교하게 조절하며, 다양한 형태를 구성해보는 조형 활동을 진행함. 색종이를 활용하여 나비와 꽃 모양을 만들며 창의적인 표현을 시도함.</p>
+          
+          <!-- Comment Overlay (hidden by default) -->
+          <div id="comment-field1" class="comment-overlay hidden">
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background: var(--color-amber-light)">
+                <i data-lucide="message-square-plus" class="w-4 h-4" style="color: var(--color-amber)"></i>
+              </div>
+              <div class="flex-1">
+                <textarea class="comment-input" placeholder="이 부분에 대한 수정 요청사항을 입력해주세요. (예: 문장을 좀 더 부드럽게 다듬어주세요)" onkeydown="handleCommentKey(event, 'field1')">문장을 더 간결하게 다듬어주세요.</textarea>
+                <div class="flex justify-end gap-2 mt-2">
+                  <button class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors" style="color: var(--color-on-surface-variant)" onclick="event.stopPropagation(); deleteComment('field1')">삭제</button>
+                  <button class="px-3 py-1.5 text-xs font-semibold bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 transition-colors" onclick="event.stopPropagation(); saveComment('field1')">확인</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Comment Badge -->
+          <div id="badge-field1" class="comment-badge">
+            <i data-lucide="message-square-plus" class="w-3 h-3"></i>
+            <span class="truncate max-w-[200px]">문장을 더 간결하게 다듬어주세요.</span>
+          </div>
+        </div>
+        
+        <!-- Result Card 2 -->
+        <div class="result-card mb-4" onclick="toggleComment(this, 'field2')">
+          <div class="flex justify-between items-start mb-2">
+            <span class="path-label">보육일지 > 놀이 > 실내놀이 > 놀이상황</span>
+            <div class="card-actions flex items-center gap-1">
+              <button class="action-btn comment" onclick="event.stopPropagation(); toggleComment(this.closest('.result-card'), 'field2')" title="코멘트 달기">
+                <i data-lucide="message-square-plus" class="w-4 h-4"></i>
+              </button>
+              <button class="action-btn copy" onclick="event.stopPropagation(); copyText(this)" title="복사">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+          <p class="result-content">다양한 크기의 블록을 활용하여 높이 쌓거나 구조물을 만드는 놀이에 몰입함. 블록의 균형을 맞추며 성취감을 느끼고 자신의 생각을 입체적으로 표현하는 모습이 관찰됨. 타워가 무너질 때마다 웃으며 다시 시도하는 끈기 있는 태도를 보임.</p>
+        </div>
+        
+        <!-- Result Card 3 -->
+        <div class="result-card mb-4" onclick="toggleComment(this, 'field3')">
+          <div class="flex justify-between items-start mb-2">
+            <span class="path-label">보육일지 > 놀이 > 실내놀이 > 놀이지원</span>
+            <div class="card-actions flex items-center gap-1">
+              <button class="action-btn comment" onclick="event.stopPropagation(); toggleComment(this.closest('.result-card'), 'field3')" title="코멘트 달기">
+                <i data-lucide="message-square-plus" class="w-4 h-4"></i>
+              </button>
+              <button class="action-btn copy" onclick="event.stopPropagation(); copyText(this)" title="복사">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+          <p class="result-content">영유아가 블록 놀이에 충분히 몰입하고 창의적인 구조물을 구성할 수 있도록 놀이 공간을 확장하여 안전하고 여유로운 환경을 조성함. 다양한 크기와 색상의 블록을 추가로 제공하여 놀이의 심화를 지원함.</p>
+        </div>
+        
+        <!-- Result Card 4 -->
+        <div class="result-card mb-4" onclick="toggleComment(this, 'field4')">
+          <div class="flex justify-between items-start mb-2">
+            <span class="path-label">보육일지 > 일상생활 > 간식</span>
+            <div class="card-actions flex items-center gap-1">
+              <button class="action-btn comment" onclick="event.stopPropagation(); toggleComment(this.closest('.result-card'), 'field4')" title="코멘트 달기">
+                <i data-lucide="message-square-plus" class="w-4 h-4"></i>
+              </button>
+              <button class="action-btn copy" onclick="event.stopPropagation(); copyText(this)" title="복사">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+          <p class="result-content">제철 과일(딸기, 바나나)을 제공하여 다양한 맛과 식감을 경험함. 스스로 포크를 사용하여 간식을 섭취하며 식사 예절과 자조 능력을 기르는 시간을 가짐. 남은 껍질은 스스로 쓰레기통에 버리는 모습을 보임.</p>
+        </div>
+        
+        <!-- Result Card 5 -->
+        <div class="result-card mb-4" onclick="toggleComment(this, 'field5')">
+          <div class="flex justify-between items-start mb-2">
+            <span class="path-label">보육일지 > 일상생활 > 점심식사</span>
+            <div class="card-actions flex items-center gap-1">
+              <button class="action-btn comment" onclick="event.stopPropagation(); toggleComment(this.closest('.result-card'), 'field5')" title="코멘트 달기">
+                <i data-lucide="message-square-plus" class="w-4 h-4"></i>
+              </button>
+              <button class="action-btn copy" onclick="event.stopPropagation(); copyText(this)" title="복사">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+          <p class="result-content">자신의 식판에 적정량의 음식을 스스로 배식보며 자립심을 기르는 연습을 함. 배식 과정에서 질서를 지키고 차례를 기다리는 태도를 격려함. 편식하지 않고 골고루 먹으려는 노력이 돋보임.</p>
+        </div>
+        
+        <!-- Result Card 6 -->
+        <div class="result-card mb-4" onclick="toggleComment(this, 'field6')">
+          <div class="flex justify-between items-start mb-2">
+            <span class="path-label">보육일지 > 통합보육 > 등원</span>
+            <div class="card-actions flex items-center gap-1">
+              <button class="action-btn comment" onclick="event.stopPropagation(); toggleComment(this.closest('.result-card'), 'field6')" title="코멘트 달기">
+                <i data-lucide="message-square-plus" class="w-4 h-4"></i>
+              </button>
+              <button class="action-btn copy" onclick="event.stopPropagation(); copyText(this)" title="복사">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+          <p class="result-content">등원하는 영유아를 밝게 맞이하며 개별적인 기분과 컨디션을 세심하게 살피고, 보호자와 긴밀하게 소통하며 안정적인 일과 시작을 도움. 오늘은 다소 피곤한 모습이었으나 친구들과 인사하며 긍정적인 분위기를 만들어냄.</p>
+        </div>
+        
+        <!-- Result Card 7 -->
+        <div class="result-card" onclick="toggleComment(this, 'field7')">
+          <div class="flex justify-between items-start mb-2">
+            <span class="path-label">보육일지 > 통합보육 > 하원</span>
+            <div class="card-actions flex items-center gap-1">
+              <button class="action-btn comment" onclick="event.stopPropagation(); toggleComment(this.closest('.result-card'), 'field7')" title="코멘트 달기">
+                <i data-lucide="message-square-plus" class="w-4 h-4"></i>
+              </button>
+              <button class="action-btn copy" onclick="event.stopPropagation(); copyText(this)" title="복사">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+          <p class="result-content">소지품을 스스로 챙겨 하원할 수 있도록 격려하며, 안전하게 귀가할 수 있도록 보호자에게 당부 사항을 전달하고 긍정적인 상호작용으로 하루를 마무리함. 오늘 만든 블록 타워 사진을 보여주며 보호자와 즐거운 대화를 나눔.</p>
+        </div>
+        
+      </div>
+
+    </div>
+  </div>
+  
+  <!-- Floating Action Bar (shown when comments exist) -->
+  <div id="fab" class="fab-container">
+    <div class="fab">
+      <div class="flex items-center gap-2">
+        <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style="background: var(--color-amber); color: #18181b">1</span>
+        <span class="text-sm font-medium">개의 코멘트가 작성되었습니다</span>
+      </div>
+      <div class="w-px h-5 bg-white/20"></div>
+      <button class="fab-btn" onclick="regenerate()">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        <span>최종 수정본 받기</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+    
+    // Track active comments
+    const comments = { field1: '문장을 더 간결하게 다듬어주세요.' };
+    let activeCommentId = null;
+    
+    // Toggle comment overlay
+    function toggleComment(card, id) {
+      const overlay = document.getElementById(`comment-${id}`);
+      const badge = document.getElementById(`badge-${id}`);
+      const allOverlays = document.querySelectorAll('.comment-overlay');
+      const allCards = document.querySelectorAll('.result-card');
+      
+      // Close other overlays
+      allOverlays.forEach(el => el.classList.add('hidden'));
+      allCards.forEach(el => el.classList.remove('active'));
+      
+      // If clicking the same card that's already active, just close it
+      if (activeCommentId === id) {
+        activeCommentId = null;
+        return;
+      }
+      
+      // Open this overlay
+      overlay.classList.remove('hidden');
+      card.classList.add('active');
+      activeCommentId = id;
+      
+      // Focus textarea
+      setTimeout(() => {
+        const textarea = overlay.querySelector('textarea');
+        if (textarea) textarea.focus();
+      }, 50);
+    }
+    
+    // Save comment
+    function saveComment(id) {
+      const overlay = document.getElementById(`comment-${id}`);
+      const textarea = overlay.querySelector('textarea');
+      const value = textarea.value.trim();
+      
+      if (value) {
+        comments[id] = value;
+        updateBadge(id, value);
+      } else {
+        delete comments[id];
+        removeBadge(id);
+      }
+      
+      overlay.classList.add('hidden');
+      document.querySelector('.result-card.active')?.classList.remove('active');
+      document.querySelector(`.result-card[onclick*="'${id}'"]`)?.classList.add('has-comment');
+      activeCommentId = null;
+      updateFab();
+    }
+    
+    // Delete comment
+    function deleteComment(id) {
+      delete comments[id];
+      const overlay = document.getElementById(`comment-${id}`);
+      const textarea = overlay.querySelector('textarea');
+      textarea.value = '';
+      removeBadge(id);
+      overlay.classList.add('hidden');
+      document.querySelector('.result-card.active')?.classList.remove('active');
+      document.querySelector(`.result-card[onclick*="'${id}'"]`)?.classList.remove('has-comment');
+      activeCommentId = null;
+      updateFab();
+    }
+    
+    // Update badge
+    function updateBadge(id, text) {
+      const card = document.querySelector(`.result-card[onclick*="'${id}'"]`);
+      let badge = document.getElementById(`badge-${id}`);
+      
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.id = `badge-${id}`;
+        badge.className = 'comment-badge';
+        badge.innerHTML = '<i data-lucide="message-square-plus" class="w-3 h-3"></i><span></span>';
+        card.appendChild(badge);
+        lucide.createIcons();
+      }
+      
+      badge.querySelector('span').textContent = text;
+      badge.style.display = 'flex';
+      card.classList.add('has-comment');
+    }
+    
+    // Remove badge
+    function removeBadge(id) {
+      const badge = document.getElementById(`badge-${id}`);
+      if (badge) badge.style.display = 'none';
+      const card = document.querySelector(`.result-card[onclick*="'${id}'"]`);
+      if (card) card.classList.remove('has-comment');
+    }
+    
+    // Handle comment textarea key events
+    function handleCommentKey(event, id) {
+      if (event.key === 'Enter' && event.metaKey) {
+        saveComment(id);
+      }
+      if (event.key === 'Escape') {
+        deleteComment(id);
+      }
+    }
+    
+    // Update FAB visibility
+    function updateFab() {
+      const fab = document.getElementById('fab');
+      const count = Object.keys(comments).length;
+      
+      fab.querySelector('span:first-child').textContent = count;
+      
+      if (count === 0) {
+        fab.style.display = 'none';
+      } else {
+        fab.style.display = 'block';
+      }
+    }
+    
+    // Copy text
+    function copyText(btn) {
+      const card = btn.closest('.result-card');
+      const text = card.querySelector('.result-content').textContent;
+      
+      navigator.clipboard.writeText(text).then(() => {
+        const icon = btn.querySelector('i');
+        icon.setAttribute('data-lucide', 'check');
+        lucide.createIcons();
+        
+        setTimeout(() => {
+          icon.setAttribute('data-lucide', 'copy');
+          lucide.createIcons();
+        }, 1500);
+      });
+    }
+    
+    // Switch version
+    function switchVersion(index) {
+      const buttons = document.querySelectorAll('.version-btn');
+      buttons.forEach((btn, i) => {
+        if (i === index) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+      
+      // Add subtle animation to results
+      const results = document.querySelector('.results-scroll');
+      results.style.opacity = '0.7';
+      setTimeout(() => {
+        results.style.opacity = '1';
+      }, 150);
+    }
+    
+    // Regenerate
+    function regenerate() {
+      const overlay = document.getElementById('loadingOverlay');
+      overlay.classList.remove('hidden');
+      
+      // Simulate regeneration
+      setTimeout(() => {
+        overlay.classList.add('hidden');
+        
+        // Add new version button
+        const nav = document.querySelector('.version-nav');
+        const newVersion = document.createElement('button');
+        newVersion.className = 'version-btn';
+        newVersion.textContent = 'v4';
+        newVersion.onclick = () => switchVersion(3);
+        nav.appendChild(newVersion);
+        
+        // Switch to new version
+        switchVersion(3);
+        
+        // Clear comments
+        Object.keys(comments).forEach(id => delete comments[id]);
+        document.querySelectorAll('.comment-badge').forEach(b => b.style.display = 'none');
+        document.querySelectorAll('.result-card').forEach(c => c.classList.remove('has-comment'));
+        updateFab();
+        
+      }, 2000);
+    }
+    
+    // Initial setup
+    updateFab();
+  </script>
+</body>
+</html>

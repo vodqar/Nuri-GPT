@@ -1,0 +1,188 @@
+
+> frontend@0.0.0 lint
+> eslint .
+
+
+/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/public/mockServiceWorker.js
+  1:1  warning  Unused eslint-disable directive (no problems were reported)
+
+/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/components/global/Modal.tsx
+  42:9  error    Error: Cannot access variable before it is declared
+
+`triggerClose` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/components/global/Modal.tsx:42:9
+  40 |     (e: KeyboardEvent) => {
+  41 |       if (e.key === 'Escape' && isOpen && !isExiting) {
+> 42 |         triggerClose();
+     |         ^^^^^^^^^^^^ `triggerClose` accessed before it is declared
+  43 |       }
+  44 |     },
+  45 |     [isOpen, isExiting]
+
+/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/components/global/Modal.tsx:49:3
+  47 |
+  48 |   // Exit 애니메이션과 함께 닫기
+> 49 |   const triggerClose = useCallback(() => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 50 |     setIsExiting(true);
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+> 51 |     setTimeout(() => {
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+> 52 |       setIsExiting(false);
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+> 53 |       onClose();
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+> 54 |     }, 250); // modal exit duration
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+> 55 |   }, [onClose]);
+     | ^^^^^^^^^^^^^^^^^ `triggerClose` is declared here
+  56 |
+  57 |   // isOpen 변경에 따른 렌더링 제어
+  58 |   useEffect(() => {  react-hooks/immutability
+  45:5  warning  React Hook useCallback has a missing dependency: 'triggerClose'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   react-hooks/exhaustive-deps
+
+/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/components/global/ScrollToTop.tsx
+  31:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/components/global/ScrollToTop.tsx:31:7
+  29 |     if (scrollTarget) {
+  30 |       scrollTarget.addEventListener('scroll', checkScroll, { passive: true });
+> 31 |       checkScroll(); // 초기 체크
+     |       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  32 |     }
+  33 |
+  34 |     return () => {  react-hooks/set-state-in-effect
+
+/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/components/global/ToastContainer.tsx
+  26:7   error    Error: Cannot access variable before it is declared
+
+`removeToast` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/components/global/ToastContainer.tsx:26:7
+  24 |     // 3초 후 자동 닫힘
+  25 |     setTimeout(() => {
+> 26 |       removeToast(id);
+     |       ^^^^^^^^^^^ `removeToast` accessed before it is declared
+  27 |     }, 3000);
+  28 |   }, []);
+  29 |
+
+/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/components/global/ToastContainer.tsx:30:3
+  28 |   }, []);
+  29 |
+> 30 |   const removeToast = useCallback((id: string) => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 31 |     setToasts((prev) =>
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+> 32 |       prev.map((t) => (t.id === id ? { ...t, isLeaving: true } : t))
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+> 33 |     );
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+> 34 |
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+> 35 |     // 애니메이션 후 완전 제거
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+> 36 |     setTimeout(() => {
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+> 37 |       setToasts((prev) => prev.filter((t) => t.id !== id));
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+> 38 |     }, 300);
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+> 39 |   }, []);
+     | ^^^^^^^^^^ `removeToast` is declared here
+  40 |
+  41 |   // 전역 접근을 위한 메서드 노출
+  42 |   useEffect(() => {  react-hooks/immutability
+  28:6   warning  React Hook useCallback has a missing dependency: 'removeToast'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    react-hooks/exhaustive-deps
+  43:16  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+  45:25  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+  64:17  error    Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      react-refresh/only-export-components
+  65:18  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+  66:16  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+
+/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/features/auth/api/auth.ts
+  9:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/features/auth/hooks/useLoginForm.ts
+  31:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  41:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/features/observation/ObservationPage.tsx
+   97:6   warning  React Hook useEffect has missing dependencies: 'setSelectedTemplateId', 'setTemplates', and 'transitionTo'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  144:23  error    '_' is defined but never used                                                                                                                                   @typescript-eslint/no-unused-vars
+
+/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/features/observation/components/DynamicTemplateForm.tsx
+  4:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/features/observation/components/LogGenerationResultView.tsx
+   2:10  error  'ChevronLeft' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-unused-vars
+  23:3   error  'setIsBackModalOpen' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+  31:5   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/features/observation/components/LogGenerationResultView.tsx:31:5
+  29 |   // 버전 히스토리가 변경되거나(재생성 포함), 새로운 버전이 생성되면 코멘트 등 초기화
+  30 |   useEffect(() => {
+> 31 |     setComments({});
+     |     ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  32 |     setActiveCommentId(null);
+  33 |   }, [currentIndex]);
+  34 |  react-hooks/set-state-in-effect
+  43:57  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+  68:9   error  'handleCopyAll' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+  70:17  error  '_' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+  81:9   error  'handleSaveComment' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
+  92:9   error  'handleCancelComment' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+
+/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/features/observation/components/TemplateCreationView.tsx
+   2:32  error  'ArrowLeft' is defined but never used  @typescript-eslint/no-unused-vars
+  13:40  error  'onBack' is defined but never used     @typescript-eslint/no-unused-vars
+
+/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/features/observation/components/TemplateSelectionView.tsx
+  63:9  error    Error: Cannot access variable before it is declared
+
+`handleReorder` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/features/observation/components/TemplateSelectionView.tsx:63:9
+  61 |       onEnd: (evt) => {
+  62 |         if (evt.oldIndex === evt.newIndex) return;
+> 63 |         handleReorder(evt.oldIndex!, evt.newIndex!);
+     |         ^^^^^^^^^^^^^ `handleReorder` accessed before it is declared
+  64 |       },
+  65 |     });
+  66 |
+
+/home/kj/Projects/Nuri-GPT/nuri-gpt-frontend/frontend/src/features/observation/components/TemplateSelectionView.tsx:83:3
+  81 |   }, [isManageMode, hasChanges]);
+  82 |
+> 83 |   const handleReorder = (oldIndex: number, newIndex: number) => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 84 |     const newTemplates = [...templates];
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 85 |     const [moved] = newTemplates.splice(oldIndex, 1);
+     …
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 94 |     onHasChangesChange(true);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 95 |   };
+     | ^^^^^ `handleReorder` is declared here
+  96 |
+  97 |   const exitManageModeWithoutSaving = () => {
+  98 |     if (originalTemplatesRef.current) {  react-hooks/immutability
+  68:6  warning  React Hook useEffect has a missing dependency: 'handleReorder'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       react-hooks/exhaustive-deps
+
+✖ 29 problems (24 errors, 5 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+

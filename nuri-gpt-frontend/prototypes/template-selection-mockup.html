@@ -1,0 +1,3273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>템플릿 선택 - Nuri GPT</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      scrollbar-gutter: stable;
+    }
+
+    :root {
+      --color-primary: #436834;
+      --color-primary-dim: #375c29;
+      --color-primary-container: #c3efad;
+      --color-surface: #f8faf8;
+      --color-surface-container-low: #f1f4f2;
+      --color-surface-container: #eaefec;
+      --color-surface-container-lowest: #ffffff;
+      --color-on-surface: #2d3432;
+      --color-on-surface-variant: #59615f;
+      --color-outline-variant: #acb3b1;
+    }
+    
+    * {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    
+    .font-headline {
+      font-family: 'Manrope', sans-serif;
+    }
+    
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    
+    /* Edit mode transition animation */
+    .edit-mode-transition {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .template-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid transparent;
+    }
+    
+    .template-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(67, 104, 52, 0.4);
+    }
+    
+    .template-card.selected {
+      background: linear-gradient(135deg, rgba(67, 104, 52, 0.04) 0%, rgba(67, 104, 52, 0.08) 100%);
+      border: 1px solid rgba(67, 104, 52, 0.4);
+    }
+    
+    .template-card.selected .card-icon {
+      background: var(--color-primary-container) !important;
+      color: var(--color-primary) !important;
+      transition: background 0.25s ease, color 0.25s ease;
+    }
+    
+    .template-card.selected .card-badge {
+      background: var(--color-primary-container) !important;
+      color: var(--color-primary-dim) !important;
+      transition: background 0.25s ease, color 0.25s ease;
+    }
+    
+    .card-icon, .card-badge {
+      transition: background 0.25s ease, color 0.25s ease;
+    }
+    
+    .selection-indicator {
+      opacity: 0;
+      transform: scale(0.8);
+      transition: all 0.2s ease;
+    }
+    
+    .template-card.selected .selection-indicator {
+      opacity: 1;
+      transform: scale(1);
+    }
+    
+    /* Edit Mode Styles */
+    .edit-mode-container {
+      border: 2px solid #eab308 !important;
+      box-shadow: 0 0 0 4px rgba(234, 179, 8, 0.1), 0 4px 20px rgba(234, 179, 8, 0.15) !important;
+      transition: border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    
+    .edit-mode-card {
+      border: 1px solid rgba(234, 179, 8, 0.4) !important;
+      background: linear-gradient(135deg, rgba(254, 252, 232, 0.5) 0%, rgba(254, 249, 195, 0.3) 100%) !important;
+    }
+    
+    .edit-mode-card:hover {
+      border-color: rgba(234, 179, 8, 0.7) !important;
+      box-shadow: 0 2px 12px rgba(234, 179, 8, 0.2);
+    }
+    
+    /* Drag Handle - reserve space with invisible state */
+    .drag-handle {
+      cursor: grab;
+      padding: 12px 8px;
+      touch-action: none;
+      min-width: 44px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-on-surface-variant);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Hidden state: invisible and zero width */
+    .drag-handle.hidden-handle {
+      visibility: hidden;
+      width: 0;
+      min-width: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    
+    /* Visible state in edit mode */
+    .edit-mode-active .drag-handle.hidden-handle {
+      visibility: visible;
+      width: 44px;
+      min-width: 44px;
+      padding: 12px 8px;
+    }
+    
+    .drag-handle:hover {
+      color: #eab308;
+    }
+    
+    .drag-handle:active {
+      cursor: grabbing;
+    }
+    
+    .sortable-ghost {
+      opacity: 0.4;
+      background: rgba(234, 179, 8, 0.1) !important;
+      border: 2px dashed #eab308 !important;
+    }
+    
+    .sortable-drag {
+      cursor: grabbing;
+      opacity: 0.9;
+      transform: scale(1.02);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+    }
+    
+    /* Action Buttons - reserve space with invisible state */
+    .action-buttons {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Hidden state: invisible and zero width */
+    .action-buttons.hidden-handle {
+      visibility: hidden;
+      width: 0;
+      min-width: 0;
+      overflow: hidden;
+    }
+    
+    /* Visible state in edit mode */
+    .edit-mode-active .action-buttons.hidden-handle {
+      visibility: visible;
+      width: auto;
+      min-width: auto;
+    }
+    
+    /* Action Buttons */
+    .action-btn {
+      min-width: 44px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+    }
+    
+    .delete-btn {
+      color: #ef4444;
+      background: transparent;
+    }
+    
+    .delete-btn:hover {
+      background: #fef2f2;
+    }
+    
+    .delete-btn:active {
+      background: #fee2e2;
+    }
+    
+    /* Inline Edit */
+    .name-input {
+      border: 1px solid #eab308;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-on-surface);
+      background: white;
+      outline: none;
+      width: 100%;
+      max-width: 200px;
+    }
+    
+    .name-input:focus {
+      box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.2);
+    }
+    
+    .template-name {
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: background 0.2s ease;
+    }
+    
+    .edit-mode-card .template-name:hover {
+      background: rgba(234, 179, 8, 0.15);
+    }
+    
+    /* Manage Button */
+    .manage-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      min-height: 40px;
+    }
+    
+    .manage-btn-default {
+      background: var(--color-surface-container-low);
+      color: var(--color-on-surface-variant);
+    }
+    
+    .manage-btn-default:hover {
+      background: rgba(234, 179, 8, 0.15);
+      color: #b45309;
+    }
+    
+    .manage-btn-active {
+      background: #eab308;
+      color: white;
+    }
+    
+    .manage-btn-active:hover {
+      background: #d97706;
+    }
+    
+    /* Hide elements in edit mode */
+    .edit-mode-card .selection-indicator {
+      display: none !important;
+    }
+    
+    .edit-mode-card .card-badge {
+      display: none !important;
+    }
+    
+    /* Hide footer in edit mode with smooth transition */
+    footer {
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+    }
+    
+    .edit-mode-active footer {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      height: 0;
+      margin-top: 0;
+      margin-bottom: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+    
+    /* New Template Button */
+    .new-template-btn {
+      background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2394a3b8' fill-opacity='0.4' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='1'/%3E%3Ccircle cx='13' cy='13' r='1'/%3E%3C/g%3E%3C/svg%3E");
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      max-height: 200px;
+      overflow: hidden;
+    }
+    
+    .new-template-btn:hover {
+      background-color: rgba(67, 104, 52, 0.03);
+      border-color: rgba(67, 104, 52, 0.4);
+    }
+    
+    .edit-mode-active .new-template-btn {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      max-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      margin-top: 0;
+    }
+    
+    .start-btn {
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dim) 100%);
+      box-shadow: 0 4px 20px -4px rgba(67, 104, 52, 0.3);
+    }
+    
+    .start-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 30px -4px rgba(67, 104, 52, 0.4);
+    }
+    
+    .start-btn:active {
+      transform: scale(0.98);
+    }
+    
+    .fade-in {
+      opacity: 0;
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .template-scroll-area {
+      /* max-height removed for browser scrolling */
+      overflow-y: visible;
+      overflow-x: visible;
+      padding: 12px;
+      margin: 0 -12px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .template-scroll-area::-webkit-scrollbar {
+      display: none;
+    }
+    
+    /* Expand scroll area in edit mode to fill empty space */
+    .edit-mode-active .template-scroll-area {
+      /* max-height removed for browser scrolling */
+    }
+
+    /* View Transition Styles */
+    .view-container {
+      position: relative;
+    }
+
+    .view-panel {
+      display: none;
+      opacity: 0;
+    }
+
+    .view-panel.hidden-view {
+      display: none;
+      opacity: 0;
+    }
+
+    .view-panel.visible-view {
+      display: block;
+      animation: viewFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    @keyframes viewFadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Creation View Styles */
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--color-primary);
+      letter-spacing: 0.025em;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-input {
+      width: 100%;
+      background: var(--color-surface-container-low);
+      border: none;
+      border-radius: 0.75rem;
+      padding: 1rem;
+      font-size: 1rem;
+      color: var(--color-on-surface);
+      outline: none;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .form-input:focus {
+      box-shadow: 0 0 0 2px rgba(67, 104, 52, 0.2);
+    }
+
+    .form-input::placeholder {
+      color: var(--color-outline-variant);
+    }
+
+    .dropzone {
+      border: 2px dashed var(--color-outline-variant);
+      border-radius: 0.75rem;
+      padding: 2.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .dropzone:hover {
+      border-color: rgba(67, 104, 52, 0.5);
+      background: var(--color-surface-container-low);
+    }
+
+    .dropzone.has-file {
+      border-color: var(--color-primary);
+      background: rgba(67, 104, 52, 0.03);
+    }
+
+    .dropzone.drag-over {
+      border-color: var(--color-primary);
+      background: rgba(67, 104, 52, 0.08);
+    }
+
+    .dropzone-icon {
+      width: 4rem;
+      height: 4rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      background: var(--color-surface-container-low);
+      color: var(--color-on-surface-variant);
+      transition: all 0.2s ease;
+    }
+
+    .dropzone:hover .dropzone-icon {
+      background: rgba(67, 104, 52, 0.1);
+      color: var(--color-primary);
+    }
+
+    .file-preview {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .file-preview-icon {
+      width: 4rem;
+      height: 4rem;
+      border-radius: 50%;
+      background: rgba(67, 104, 52, 0.1);
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .file-remove-btn {
+      color: #ef4444;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.375rem;
+      transition: background 0.2s ease;
+    }
+
+    .file-remove-btn:hover {
+      background: #fef2f2;
+    }
+
+    .submit-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 1rem;
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dim) 100%);
+      color: white;
+      font-weight: 600;
+      font-size: 1rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 4px 20px -4px rgba(67, 104, 52, 0.3);
+      transition: all 0.2s ease;
+    }
+
+    .submit-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 30px -4px rgba(67, 104, 52, 0.4);
+    }
+
+    .submit-btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .error-alert {
+      padding: 1rem;
+      background: #fef2f2;
+      color: #b91c1c;
+      border-radius: 0.75rem;
+      border: 1px solid #fecaca;
+      font-size: 0.875rem;
+    }
+
+    .spinner {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* ============================================
+       작성화면(Writing View) 스타일
+       ============================================ */
+
+    /* Depth별 컨테이너 스타일 */
+    /* Depth 0: 루트 - 메인 카드 스타일은 이미 glass-panel로 적용되므로 별도 스타일 불필요 */
+
+    .form-depth-1 {
+      background: var(--color-surface-container-lowest);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      margin-top: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .form-depth-2 {
+      background: var(--color-surface-container-low);
+      border-radius: 0.75rem;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+
+    .form-depth-3 {
+      margin-top: 0.75rem;
+      padding-left: 0.75rem;
+    }
+
+    /* Depth별 타이틀 스타일 */
+    .form-title-0 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--color-on-surface);
+      font-family: 'Manrope', sans-serif;
+      margin-bottom: 1rem;
+    }
+
+    .form-title-1 {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+    }
+
+    .form-title-2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-on-surface);
+      margin-bottom: 0.5rem;
+    }
+
+    .form-title-3 {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--color-on-surface-variant);
+      margin-bottom: 0.5rem;
+    }
+
+    /* 입력 필드 컨테이너 */
+    .input-field-container {
+      margin-top: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .input-field-container:last-child {
+      margin-bottom: 0;
+    }
+
+    /* 입력 필드 라벨 */
+    .input-field-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .input-field-label span {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+    }
+
+    /* OCR 버튼 */
+    .ocr-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--color-secondary, #6b7280);
+      background: var(--color-surface-container);
+      border-radius: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .ocr-btn:hover {
+      background: var(--color-surface-container-high);
+    }
+
+    .ocr-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* 입력 textarea */
+    .input-textarea {
+      width: 100%;
+      background: var(--color-surface-container-low);
+      border: none;
+      border-radius: 0.75rem;
+      padding: 1rem;
+      font-size: 1rem;
+      color: var(--color-on-surface);
+      line-height: 1.6;
+      resize: vertical;
+      min-height: 100px;
+      outline: none;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .input-textarea:focus {
+      box-shadow: 0 0 0 2px rgba(67, 104, 52, 0.15);
+    }
+
+    .input-textarea::placeholder {
+      color: var(--color-outline-variant);
+    }
+
+    /* 연령 선택 드롭다운 */
+    .age-select-container {
+      margin-bottom: 1.5rem;
+      padding: 0.75rem;
+      border-radius: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .age-select-container.error {
+      background: #fef2f2;
+      border: 2px solid #ef4444;
+    }
+
+    .age-select-container label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+      margin-bottom: 0.5rem;
+    }
+
+    .age-select-container.error label {
+      color: #ef4444;
+    }
+
+    .age-select {
+      width: 100%;
+      max-width: 12rem;
+      background: var(--color-surface-container-low);
+      border: none;
+      border-radius: 0.75rem;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      color: var(--color-on-surface);
+      cursor: pointer;
+      outline: none;
+    }
+
+    .age-select:focus {
+      box-shadow: 0 0 0 2px rgba(67, 104, 52, 0.15);
+    }
+
+    /* 모드 토글 버튼 */
+    .mode-toggle-container {
+      display: flex;
+      justify-content: flex-start;
+      margin-bottom: 1.5rem;
+    }
+
+    .mode-toggle {
+      display: flex;
+      background: var(--color-surface-container-low);
+      padding: 0.375rem;
+      border-radius: 9999px;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .mode-btn {
+      padding: 0.5rem 1.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-radius: 9999px;
+      transition: all 0.2s ease;
+      color: var(--color-on-surface-variant);
+    }
+
+    .mode-btn:hover:not(.mode-btn-active) {
+      color: var(--color-on-surface);
+    }
+
+    .mode-btn-active {
+      background: white;
+      color: var(--color-primary);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 하단 액션 바 */
+    .writing-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(172, 179, 177, 0.2);
+      overflow: visible !important;
+    }
+
+    @media (min-width: 640px) {
+      .writing-footer {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+    }
+
+    .footer-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--color-on-surface-variant);
+    }
+
+    .footer-actions {
+      display: flex;
+      gap: 1rem;
+      width: 100%;
+    }
+
+    @media (min-width: 640px) {
+      .footer-actions {
+        width: auto;
+      }
+    }
+
+    .btn-secondary {
+      flex: 1;
+      padding: 0.75rem 2rem;
+      font-weight: 600;
+      color: var(--color-on-surface);
+      border-radius: 0.75rem;
+      transition: background 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: var(--color-surface-container-high);
+    }
+
+    @media (min-width: 640px) {
+      .btn-secondary {
+        flex: none;
+      }
+    }
+
+    .btn-primary {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 2rem;
+      font-weight: 700;
+      color: white;
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dim) 100%);
+      border-radius: 9999px;
+      box-shadow: 0 4px 20px -4px rgba(67, 104, 52, 0.3);
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 30px -4px rgba(67, 104, 52, 0.4);
+    }
+
+    .btn-primary:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    @media (min-width: 640px) {
+      .btn-primary {
+        flex: none;
+      }
+    }
+
+    /* 자동 모드 textarea */
+    .auto-textarea {
+      min-height: 400px;
+    }
+
+    /* ============================================
+       평면화된 경로 표시 스타일
+       ============================================ */
+
+    /* 필드 카드 */
+    .flat-field-card {
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(172, 179, 177, 0.15);
+    }
+
+    .flat-field-card:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    /* 경로 breadcrumb */
+    .field-path {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.25rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .path-segment {
+      font-size: 0.875rem;
+      color: var(--color-on-surface-variant);
+    }
+
+    .path-segment-first {
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+
+    .path-segment-last {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--color-on-surface);
+    }
+
+    .path-separator {
+      color: var(--color-outline-variant);
+      font-size: 0.75rem;
+    }
+
+    /* 모드 전환 애니메이션 */
+    .mode-switch-fade {
+      opacity: 0;
+      animation: modeSwitchFade 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    @keyframes modeSwitchFade {
+      from { 
+        opacity: 0; 
+        transform: translateY(12px); 
+      }
+      to { 
+        opacity: 1; 
+        transform: translateY(0); 
+      }
+    }
+
+    /* Global Overlay Layering */
+    .modal-overlay {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 9999 !important;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    /* Blur and Fade for Transitions */
+    .view-blur {
+      pointer-events: none;
+      opacity: 0.6;
+      transition: opacity 0.4s ease;
+    }
+
+    /* Custom Modal Styles */
+    .modal-overlay {
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .modal-overlay.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 1.5rem;
+      padding: 2rem;
+      width: 90%;
+      max-width: 420px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+      transform: translateY(20px);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      border: 1px solid rgba(172, 179, 177, 0.2);
+    }
+
+    .modal-overlay.visible .modal-content {
+      transform: translateY(0);
+    }
+
+    .modal-btn {
+      flex: 1;
+      padding: 0.875rem;
+      font-weight: 600;
+      border-radius: 0.875rem;
+      transition: all 0.2s ease;
+    }
+
+    /* Result View Sync Breadcrumb Style */
+    .result-path-container {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.25rem;
+      margin-bottom: 0.75rem;
+    }
+
+    /* ============================================
+       결과 확인 뷰(Result View) 스타일
+       ============================================ */
+
+    /* 결과 카드 스타일 */
+    .result-card {
+      background: var(--color-surface-container-lowest);
+      border: 1px solid rgba(172, 179, 177, 0.1);
+      border-radius: 1.25rem;
+      padding: 1.5rem;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .result-card:hover {
+      border-color: rgba(67, 104, 52, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    }
+
+    .result-card.has-comment {
+      border-color: rgba(234, 179, 8, 0.3);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(254, 252, 232, 0.4) 100%);
+    }
+
+    /* Comment vertical bar */
+    .result-card.has-comment::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: #eab308;
+    }
+
+    .result-card.active {
+      box-shadow: 0 0 0 2px var(--color-primary);
+      border-color: transparent;
+    }
+
+    /* 경로 라벨 */
+    .path-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* 본문 텍스트 */
+    .result-content {
+      color: var(--color-on-surface);
+      line-height: 1.7;
+      font-size: 0.9375rem;
+      white-space: pre-wrap;
+    }
+
+    /* 카드 액션 버튼 */
+    .card-actions {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .result-card:hover .card-actions,
+    .result-card.active .card-actions {
+      opacity: 1;
+    }
+
+    .action-btn {
+      padding: 0.5rem;
+      border-radius: 0.625rem;
+      transition: all 0.2s ease;
+      color: var(--color-on-surface-variant);
+    }
+
+    .action-btn:hover {
+      background: var(--color-surface-container-low);
+      color: var(--color-on-surface);
+    }
+
+    .action-btn.comment-trigger:hover,
+    .action-btn.comment-trigger.active {
+      color: #b45309;
+      background: #fef3c7;
+    }
+
+    /* 코멘트 뱃지 */
+    .comment-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      background: #fef3c7;
+      color: #b45309;
+      border-radius: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-top: 1rem;
+      border: 1px solid rgba(234, 179, 8, 0.2);
+    }
+
+    /* 코멘트 입력 오버레이 */
+    .comment-overlay {
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid rgba(172, 179, 177, 0.15);
+      animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .comment-input {
+      width: 100%;
+      background: var(--color-surface-container-low);
+      border: 1px solid transparent;
+      border-radius: 0.875rem;
+      padding: 1rem;
+      font-size: 0.875rem;
+      color: var(--color-on-surface);
+      resize: vertical;
+      min-height: 90px;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    .comment-input:focus {
+      background: white;
+      border-color: #eab308;
+      box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1);
+    }
+
+    /* 버전 네비게이션 */
+    .version-nav {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      background: var(--color-surface-container-low);
+      padding: 0.375rem;
+      border-radius: 0.75rem;
+    }
+
+    .version-btn {
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      transition: all 0.2s ease;
+      color: var(--color-on-surface-variant);
+    }
+
+    .version-btn:hover {
+      color: var(--color-on-surface);
+    }
+
+    .version-btn.active {
+      background: white;
+      color: var(--color-primary);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    /* 결과 화면 하단 액션 바 */
+    .result-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(172, 179, 177, 0.2);
+    }
+
+    @media (min-width: 640px) {
+      .result-footer {
+        flex-direction: row;
+        justify-content: flex-end;
+        align-items: center;
+      }
+    }
+
+    .regenerate-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.875rem 2rem;
+      font-weight: 700;
+      font-size: 1rem;
+      border-radius: 9999px;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+
+    @media (min-width: 640px) {
+      .regenerate-btn {
+        width: auto;
+      }
+    }
+
+    .regenerate-btn.enabled {
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dim) 100%);
+      color: white;
+      box-shadow: 0 4px 20px -4px rgba(67, 104, 52, 0.3);
+      cursor: pointer;
+    }
+
+    .regenerate-btn.enabled:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 30px -4px rgba(67, 104, 52, 0.4);
+    }
+
+    .regenerate-btn.enabled:active {
+      transform: scale(0.98);
+    }
+
+    .regenerate-btn.disabled {
+      background: var(--color-surface-container-low);
+      color: var(--color-on-surface-variant);
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .comment-count-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-right: 0.5rem;
+    }
+
+    .regenerate-btn.enabled .comment-count-badge {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+
+    .regenerate-btn.disabled .comment-count-badge {
+      background: var(--color-surface-container);
+      color: var(--color-on-surface-variant);
+    }
+
+    /* 로딩 오버레이 (뷰포트 전체 덮기) */
+    .result-loading-overlay {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 9999 !important;
+      background: rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .result-loading-overlay.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* 로딩 박스 - 화면 정중앙 */
+    .result-loading-box {
+      background: white;
+      padding: 2.5rem 4rem;
+      border-radius: 1.5rem;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      border: 1px solid rgba(172, 179, 177, 0.2);
+    }
+
+    /* 스크롤 영역 */
+    .results-scroll-area {
+      /* max-height removed for browser scrolling */
+      padding: 4px;
+      margin: 0 -4px;
+    }
+
+    .results-scroll-area::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* 필드 라벨 + OCR 버튼 */
+    .flat-field-header {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Scroll to Top Button */
+    .scroll-top-btn {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: white;
+      border: 1px solid rgba(172, 179, 177, 0.3);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(20px);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 40;
+      color: var(--color-on-surface-variant);
+    }
+
+    .scroll-top-btn:hover {
+      background: var(--color-primary);
+      color: white;
+      border-color: var(--color-primary);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(67, 104, 52, 0.25);
+    }
+
+    .scroll-top-btn:active {
+      transform: translateY(0) scale(0.95);
+    }
+
+    .scroll-top-btn.visible {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 640px) {
+      .scroll-top-btn {
+        bottom: 1.5rem;
+        right: 1.5rem;
+        width: 44px;
+        height: 44px;
+      }
+    }
+
+    /* Toast Notification System */
+    .toast-container {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: rgba(45, 52, 50, 0.95);
+      color: white;
+      padding: 0.75rem 1.25rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: auto;
+    }
+
+    .toast.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.hiding {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+
+    .toast-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Age Select Error - Only on dropdown */
+    .age-select-container.error {
+      background: transparent;
+      border: none;
+    }
+
+    .age-select-container.error .age-select {
+      border: 2px solid #ef4444;
+      background: #fef2f2;
+    }
+
+    .age-select-container.error label {
+      color: #ef4444;
+    }
+  </style>
+</head>
+<body class="min-h-screen py-8 px-4" style="background: var(--color-surface)">
+  <div class="max-w-3xl mx-auto">
+    <!-- Main Container -->
+    <div id="mainContainer" class="glass-panel rounded-3xl shadow-sm border border-white/60 p-8 md:p-12 min-h-[650px] h-auto flex flex-col relative">
+
+      <!-- View Container (This will be blurred) -->
+      <div id="viewContainer" class="view-container flex-1 transition-all duration-500">
+        <!-- Selection View -->
+        <div id="selectionView" class="view-panel visible-view">
+      
+      <!-- Header -->
+      <header class="mb-10 fade-in">
+        <div class="flex items-center justify-between mb-6">
+          <button id="backBtn" class="group flex items-center gap-2 transition-colors" style="color: var(--color-on-surface-variant)" onmouseover="this.style.color='var(--color-primary)'" onmouseout="this.style.color='var(--color-on-surface-variant)'">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" style="background: var(--color-surface-container-low)" onmouseover="this.style.background='rgba(67,104,52,0.08)'" onmouseout="this.style.background='var(--color-surface-container-low)'">
+              <i data-lucide="arrow-left" class="w-5 h-5" id="backIcon"></i>
+            </div>
+          </button>
+          
+          <!-- Manage Button -->
+          <button id="manageBtn" class="manage-btn manage-btn-default" onclick="toggleEditMode()">
+            <i data-lucide="pencil" class="w-4 h-4" id="manageIcon"></i>
+            <span id="manageText">관리</span>
+          </button>
+        </div>
+        
+        <h1 class="font-headline text-3xl font-bold tracking-tight mb-2" style="color: var(--color-on-surface)">
+          템플릿 선택
+        </h1>
+        <div class="flex items-center gap-2">
+          <p class="text-sm" style="color: var(--color-on-surface-variant)">
+            보육일지 작성을 시작할 양식을 선택하세요
+          </p>
+          <!-- TODO: 데모용 버튼 - 최종 통합 시 삭제 -->
+          <button onclick="toggleDemoEmpty()" class="text-xs px-2 py-1 rounded" style="background: var(--color-surface-container); color: var(--color-primary)">
+            데모: 빈 목록
+          </button>
+        </div>
+      </header>
+
+      <!-- Template List (Scrollable) - rendered by JavaScript -->
+      <div id="templateList" class="template-scroll-area space-y-3 flex-1 fade-in" style="animation-delay: 0.1s"></div>
+
+      <!-- New Template Button (Outside scroll area) -->
+      <button class="new-template-btn w-full rounded-2xl p-5 border-2 border-dashed transition-all group mt-6" style="border-color: var(--color-outline-variant); color: var(--color-on-surface-variant)" onmouseover="this.style.color='var(--color-primary)'; this.style.borderColor='var(--color-primary)'" onmouseout="this.style.color='var(--color-on-surface-variant)'; this.style.borderColor='var(--color-outline-variant)'">
+        <div class="flex items-center justify-center gap-3">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" style="background: var(--color-surface-container-low)" onmouseover="this.style.background='rgba(67,104,52,0.08)'" onmouseout="this.style.background='var(--color-surface-container-low)'">
+            <i data-lucide="plus" class="w-5 h-5"></i>
+          </div>
+          <span class="font-medium">새 템플릿 만들기</span>
+        </div>
+      </button>
+
+      <!-- Action Footer -->
+      <footer class="mt-8 pt-6 fade-in" style="animation-delay: 0.2s; border-top: 1px solid rgba(172, 179, 177, 0.2)">
+        <button id="startBtn" class="start-btn w-full py-4 rounded-xl text-white font-semibold text-base transition-all flex items-center justify-center gap-2">
+          <span>'일상생활 관찰일지'로 시작하기</span>
+          <i data-lucide="arrow-right" class="w-5 h-5"></i>
+        </button>
+      </footer>
+
+        </div><!-- End Selection View -->
+
+        <!-- Creation View -->
+        <div id="creationView" class="view-panel hidden-view">
+      
+      <!-- Header -->
+      <header class="mb-10 fade-in">
+        <div class="flex items-center mb-6">
+          <button id="creationBackBtn" class="group flex items-center gap-2 transition-colors" style="color: var(--color-on-surface-variant)" onclick="showSelectionView()" onmouseover="this.style.color='var(--color-primary)'" onmouseout="this.style.color='var(--color-on-surface-variant)'">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" style="background: var(--color-surface-container-low)" onmouseover="this.style.background='rgba(67,104,52,0.08)'" onmouseout="this.style.background='var(--color-surface-container-low)'">
+              <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </div>
+          </button>
+          
+          <h1 class="font-headline text-3xl font-bold tracking-tight ml-4" style="color: var(--color-on-surface)">
+            새 템플릿 생성
+          </h1>
+        </div>
+      </header>
+
+      <!-- Form -->
+      <form id="creationForm" class="space-y-6 max-w-xl mx-auto" onsubmit="handleCreateTemplate(event)">
+        
+        <!-- Error Alert -->
+        <div id="errorAlert" class="error-alert hidden">
+          <span id="errorMessage"></span>
+        </div>
+
+        <!-- Template Name -->
+        <div>
+          <label for="templateName" class="form-label">템플릿 이름</label>
+          <input 
+            type="text" 
+            id="templateName" 
+            class="form-input" 
+            placeholder="예: 영아 관찰일지 양식"
+            disabled
+          >
+        </div>
+
+        <!-- File Upload -->
+        <div>
+          <label class="form-label">템플릿 이미지 업로드</label>
+          
+          <input 
+            type="file" 
+            id="fileInput" 
+            accept="image/*" 
+            class="hidden" 
+            onchange="handleFileChange(event)"
+            disabled
+          >
+          
+          <div 
+            id="dropzone" 
+            class="dropzone"
+            onclick="document.getElementById('fileInput').click()"
+            ondragover="handleDragOver(event)"
+            ondragleave="handleDragLeave(event)"
+            ondrop="handleDrop(event)"
+          >
+            <!-- Empty State -->
+            <div id="dropzoneEmpty" class="flex flex-col items-center gap-3">
+              <div class="dropzone-icon">
+                <i data-lucide="upload-cloud" class="w-8 h-8"></i>
+              </div>
+              <div>
+                <p class="font-semibold mb-1" style="color: var(--color-on-surface)">클릭하거나 이미지를 여기로 드래그하세요</p>
+                <p class="text-sm" style="color: var(--color-on-surface-variant)">PNG, JPG 이미지를 지원합니다</p>
+              </div>
+            </div>
+            
+            <!-- File Preview -->
+            <div id="dropzonePreview" class="file-preview hidden">
+              <div class="file-preview-icon">
+                <i data-lucide="image" class="w-8 h-8"></i>
+              </div>
+              <div>
+                <p id="fileName" class="font-semibold" style="color: var(--color-on-surface)"></p>
+                <p id="fileSize" class="text-sm" style="color: var(--color-on-surface-variant)"></p>
+              </div>
+              <button 
+                type="button" 
+                class="file-remove-btn" 
+                onclick="event.stopPropagation(); removeFile()"
+              >
+                파일 삭제
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="pt-4">
+          <button 
+            type="submit" 
+            id="submitBtn"
+            class="submit-btn"
+            disabled
+          >
+            <span id="submitText">템플릿 생성하기</span>
+            <i id="submitIcon" data-lucide="arrow-right" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+      </form>
+        </div><!-- End Creation View -->
+
+        <!-- Writing View (작성화면) -->
+        <div id="writingView" class="view-panel hidden-view">
+      
+      <!-- Header -->
+      <header class="mb-8 fade-in">
+        <div class="flex items-center justify-between mb-6">
+          <button id="writingBackBtn" class="group flex items-center gap-2 transition-colors" style="color: var(--color-on-surface-variant)" onclick="showSelectionView()" onmouseover="this.style.color='var(--color-primary)'" onmouseout="this.style.color='var(--color-on-surface-variant)'">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" style="background: var(--color-surface-container-low)" onmouseover="this.style.background='rgba(67,104,52,0.08)'" onmouseout="this.style.background='var(--color-surface-container-low)'">
+              <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </div>
+          </button>
+          
+          <!-- Mode Toggle -->
+          <div class="mode-toggle-container">
+            <div class="mode-toggle">
+              <button id="manualModeBtn" class="mode-btn mode-btn-active" onclick="setWritingMode('manual')">직접 입력</button>
+              <button id="autoModeBtn" class="mode-btn" onclick="setWritingMode('auto')">자유 입력</button>
+            </div>
+          </div>
+        </div>
+        
+        <h1 class="font-headline text-3xl font-bold tracking-tight" style="color: var(--color-on-surface)">
+          <span id="writingTemplateName">일상생활 관찰일지</span>
+        </h1>
+        <p class="text-sm mt-2" style="color: var(--color-on-surface-variant)">
+          각 항목에 내용을 입력하세요
+        </p>
+      </header>
+
+      <!-- Age Selection -->
+      <div class="age-select-container fade-in" style="animation-delay: 0.05s">
+        <label>대상 아동 연령 (필수)</label>
+        <select id="childAgeSelect" class="age-select" onchange="clearAgeError()">
+          <option value="">선택하세요</option>
+          <option value="0">0세</option>
+          <option value="1">1세</option>
+          <option value="2">2세</option>
+          <option value="3">3세</option>
+          <option value="4">4세</option>
+          <option value="5">5세</option>
+        </select>
+      </div>
+
+      <!-- Form Container -->
+      <div id="writingFormContainer" class="fade-in" style="animation-delay: 0.1s">
+        <!-- Dynamic form will be rendered here -->
+      </div>
+
+      <!-- Footer -->
+      <footer class="writing-footer fade-in" style="animation-delay: 0.2s">
+        <div class="flex-1"></div>
+        <div class="footer-actions">
+          <button id="finalizeBtn" class="btn-primary" onclick="handleFinalize()">
+            <span>작성 완료</span>
+            <i data-lucide="arrow-right" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </footer>
+
+        </div><!-- End Writing View -->
+
+        <!-- Result View (결과 확인 화면) -->
+        <div id="resultView" class="view-panel hidden-view relative">
+          
+          <!-- Header -->
+          <header class="mb-6 fade-in">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <button id="resultBackBtn" class="group flex items-center gap-2 transition-colors w-fit" style="color: var(--color-on-surface-variant)" onclick="showWritingView()" onmouseover="this.style.color='var(--color-primary)'" onmouseout="this.style.color='var(--color-on-surface-variant)'">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" style="background: var(--color-surface-container-low)" onmouseover="this.style.background='rgba(67,104,52,0.08)'" onmouseout="this.style.background='var(--color-surface-container-low)'">
+                  <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </div>
+              </button>
+              
+              <button class="copy-all-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm font-semibold hover:bg-gray-50 transition-colors" onclick="copyAllResults()">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+                <span>전체 복사</span>
+              </button>
+            </div>
+            
+            <h1 class="font-headline text-3xl font-bold tracking-tight mb-2" style="color: var(--color-on-surface)">
+              생성 결과 확인
+            </h1>
+            <p class="text-sm" style="color: var(--color-on-surface-variant)">
+              AI가 생성한 내용을 확인하고 필요한 경우 코멘트를 남겨주세요
+            </p>
+          </header>
+
+          <!-- Version History & Actions -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 fade-in" style="animation-delay: 0.1s">
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-bold uppercase tracking-wider" style="color: var(--color-on-surface-variant)">버전 히스토리</span>
+              <div id="versionNav" class="version-nav">
+                <!-- Versions will be rendered here -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Results Container (Scrollable) -->
+          <div id="resultsList" class="results-scroll-area space-y-4 flex-1 fade-in" style="animation-delay: 0.15s">
+            <!-- Result cards will be rendered here -->
+          </div>
+
+          <!-- Footer Action Bar -->
+          <footer class="result-footer fade-in" style="animation-delay: 0.2s">
+            <button id="regenerateBtn" class="regenerate-btn disabled" onclick="handleRegenerate()" title="">
+              <span class="comment-count-badge">0</span>
+              <span id="regenerateBtnText">반영하여 다시 만들기</span>
+              <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+            </button>
+          </footer>
+
+        </div><!-- End Result View -->
+
+      </div><!-- End View Container -->
+
+    </div>
+
+  </div>
+
+  <!-- Scroll to Top Button -->
+  <button id="scrollTopBtn" class="scroll-top-btn" onclick="scrollToTop()" title="맨 위로">
+    <i data-lucide="chevron-up" class="w-6 h-6"></i>
+  </button>
+
+  <!-- Custom Modal -->
+  <div id="customModal" class="modal-overlay" onclick="closeModal(false)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div id="modalIcon" class="w-12 h-12 rounded-full flex items-center justify-center mb-4 mx-auto" style="background: var(--color-surface-container)">
+        <i data-lucide="info" class="w-6 h-6"></i>
+      </div>
+      <h3 id="modalTitle" class="text-xl font-bold text-center mb-2" style="color: var(--color-on-surface)">알림</h3>
+      <p id="modalMessage" class="text-center mb-6" style="color: var(--color-on-surface-variant)">메시지 내용입니다.</p>
+      <div id="modalActions" class="flex gap-3">
+        <button id="modalCancelBtn" class="modal-btn hover:bg-gray-100" onclick="closeModal(false)" style="color: var(--color-on-surface-variant)">취소</button>
+        <button id="modalConfirmBtn" class="modal-btn text-white transition-opacity hover:opacity-90" onclick="closeModal(true)" style="background: var(--color-primary)">확인</button>
+      </div>
+    </div>
+      </div><!-- End View Container -->
+
+      <!-- Local Loading Overlay (Inside mainContainer) -->
+      <div id="resultLoadingOverlay" class="result-loading-overlay">
+        <div class="result-loading-box">
+          <i data-lucide="sparkles" class="w-10 h-10 animate-pulse" style="color: var(--color-primary)"></i>
+          <p class="font-bold text-lg" style="color: var(--color-on-surface)">일지를 생성하고 있습니다...</p>
+          <p class="text-sm" style="color: var(--color-on-surface-variant)">잠시만 기다려주세요</p>
+        </div>
+      </div>
+
+    </div><!-- End Main Container -->
+
+  <!-- Toast Container (Outside mainContainer for proper fixed positioning) -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  </div>
+
+  <script>
+    /**
+     * ============================================
+     * 템플릿 선택 목업 - 프론트엔드 통합용
+     * ============================================
+     * 
+     * [뷰 구성]
+     * - Selection View: 템플릿 목록 표시, 선택, 관리모드(순서변경/삭제/이름변경)
+     * - Creation View: 새 템플릿 생성 폼 (이름 입력 + 이미지 업로드)
+     * 
+     * [주요 기능]
+     * - 템플릿 선택 → 시작 버튼 텍스트 업데이트
+     * - 관리모드: 드래그앤드롭 순서변경, 인라인 이름편집, 삭제
+     * - 새 템플릿 생성: 이미지 업로드 → 목록에 추가
+     * 
+     * [데이터 구조]
+     * templates: [{ id, name, createdAt, badge }] - badge는 null 가능
+     */
+
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // ============================================
+    // State Variables
+    // ============================================
+    let isEditMode = false;
+    let selectedTemplateName = null;
+    let sortableInstance = null;
+    let hasChanges = false;
+    let originalTemplates = [];
+
+    let templates = [
+      { id: 1, name: '일상생활 관찰일지', createdAt: '2026년 3월 25일', badge: '가장 최근 사용' },
+      { id: 2, name: '영아 관찰일지 양식', createdAt: '2026년 3월 15일', badge: null },
+      { id: 3, name: '유아 활동 관찰록', createdAt: '2026년 3월 20일', badge: null },
+    ];
+    
+    const originalTemplatesBackup = JSON.parse(JSON.stringify(templates));
+
+    // ============================================
+    // Custom Modal System
+    // ============================================
+    let modalResolver = null;
+
+    function showModal({ title, message, type = 'info' }) {
+      return new Promise(resolve => {
+        const modal = document.getElementById('customModal');
+        const titleEl = document.getElementById('modalTitle');
+        const messageEl = document.getElementById('modalMessage');
+        const iconEl = document.getElementById('modalIcon');
+        const cancelBtn = document.getElementById('modalCancelBtn');
+        const confirmBtn = document.getElementById('modalConfirmBtn');
+        
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        modalResolver = resolve;
+        
+        // Scroll lock
+        document.body.classList.add('modal-open');
+        
+        if (type === 'confirm') {
+          cancelBtn.classList.remove('hidden');
+          confirmBtn.textContent = '확인';
+          confirmBtn.style.background = 'var(--color-primary)';
+          iconEl.innerHTML = '<i data-lucide="help-circle" class="w-6 h-6"></i>';
+        } else if (type === 'error') {
+          cancelBtn.classList.add('hidden');
+          confirmBtn.textContent = '닫기';
+          confirmBtn.style.background = '#ef4444';
+          iconEl.innerHTML = '<i data-lucide="alert-circle" class="w-6 h-6"></i>';
+        } else {
+          cancelBtn.classList.add('hidden');
+          confirmBtn.textContent = '확인';
+          confirmBtn.style.background = 'var(--color-primary)';
+          iconEl.innerHTML = '<i data-lucide="info" class="w-6 h-6"></i>';
+        }
+        
+        modal.classList.add('visible');
+        lucide.createIcons();
+      });
+    }
+
+    function closeModal(result) {
+      const modal = document.getElementById('customModal');
+      modal.classList.remove('visible');
+      document.body.classList.remove('modal-open');
+      if (modalResolver) modalResolver(result);
+      modalResolver = null;
+    }
+
+    // Replace native functions
+    window.alert = (msg) => showModal({ title: '알림', message: msg });
+    window.confirm = (msg) => showModal({ title: '확인', message: msg, type: 'confirm' });
+
+    function selectTemplate(element, name) {
+      if (isEditMode) return; // Prevent selection in edit mode
+      
+      // Remove selected class from all cards
+      document.querySelectorAll('.template-card').forEach(card => {
+        card.classList.remove('selected');
+      });
+      
+      // Add selected class to clicked card
+      element.classList.add('selected');
+      
+      // Update selected template name
+      selectedTemplateName = name;
+      
+      // Update start button text
+      document.querySelector('#startBtn span').textContent = `'${selectedTemplateName}'로 시작하기`;
+    }
+
+    function toggleEditMode() {
+      isEditMode = !isEditMode;
+      const container = document.getElementById('mainContainer');
+      const manageBtn = document.getElementById('manageBtn');
+      const manageIcon = document.getElementById('manageIcon');
+      const manageText = document.getElementById('manageText');
+      const backBtn = document.getElementById('backBtn');
+      
+      if (isEditMode) {
+        // Store original state for potential cancel
+        originalTemplates = JSON.parse(JSON.stringify(templates));
+        hasChanges = false;
+        
+        // Enter edit mode
+        container.classList.add('edit-mode-active');
+        container.classList.add('edit-mode-container');
+        
+        manageBtn.classList.remove('manage-btn-default');
+        manageBtn.classList.add('manage-btn-active');
+        manageIcon.setAttribute('data-lucide', 'check');
+        manageText.textContent = '완료';
+        
+        // Change back button to cancel functionality
+        backBtn.onclick = cancelEditMode;
+        const backIcon = document.getElementById('backIcon');
+        if (backIcon) backIcon.setAttribute('data-lucide', 'x');
+        
+        // Animate cards
+        document.querySelectorAll('.template-card').forEach((card, index) => {
+          setTimeout(() => {
+            card.classList.add('edit-mode-card');
+            card.classList.remove('cursor-pointer');
+            card.onclick = null;
+          }, index * 30);
+        });
+        
+        // Initialize Sortable
+        initSortable();
+        
+        // Re-render icons
+        lucide.createIcons();
+        
+      } else {
+        // Exit edit mode
+        container.classList.remove('edit-mode-container');
+        container.classList.remove('edit-mode-active');
+        
+        manageBtn.classList.remove('manage-btn-active');
+        manageBtn.classList.add('manage-btn-default');
+        manageIcon.setAttribute('data-lucide', 'pencil');
+        manageText.textContent = '관리';
+        
+        // Restore back button
+        backBtn.onclick = null;
+        const backIcon = document.getElementById('backIcon');
+        if (backIcon) backIcon.setAttribute('data-lucide', 'arrow-left');
+        
+        // Animate cards back
+        document.querySelectorAll('.template-card').forEach((card, index) => {
+          setTimeout(() => {
+            card.classList.remove('edit-mode-card');
+            card.classList.add('cursor-pointer');
+            // Restore click handler
+            const name = card.querySelector('.template-name').textContent;
+            card.onclick = function() { selectTemplate(this, name); };
+          }, index * 30);
+        });
+        
+        // Destroy Sortable
+        if (sortableInstance) {
+          sortableInstance.destroy();
+          sortableInstance = null;
+        }
+        
+        // Save order (in real app, would save to backend)
+        saveOrder();
+        
+        // Re-render icons
+        lucide.createIcons();
+      }
+    }
+
+    async function cancelEditMode() {
+      if (hasChanges) {
+        const confirmed = await confirm('변경사항이 저장되지 않습니다. 관리 모드를 종료하시겠습니까?');
+        if (!confirmed) return;
+      }
+      
+      // Restore original templates data
+      templates = JSON.parse(JSON.stringify(originalTemplates));
+      
+      // Re-render cards with original data
+      const cards = document.querySelectorAll('.template-card');
+      cards.forEach((card, index) => {
+        if (templates[index]) {
+          card.querySelector('.template-name').textContent = templates[index].name;
+        }
+      });
+      
+      // Exit edit mode
+      toggleEditMode();
+    }
+
+    function initSortable() {
+      const list = document.getElementById('templateList');
+      
+      sortableInstance = Sortable.create(list, {
+        handle: '.drag-handle',
+        animation: 200,
+        ghostClass: 'sortable-ghost',
+        dragClass: 'sortable-drag',
+        delay: 100,
+        delayOnTouchOnly: true,
+        onEnd: function(evt) {
+          hasChanges = true;
+          // Update templates array order
+          const item = templates.splice(evt.oldIndex, 1)[0];
+          templates.splice(evt.newIndex, 0, item);
+        }
+      });
+    }
+
+    function saveOrder() {
+      console.log('New order:', templates.map(t => t.name));
+    }
+
+    async function deleteTemplate(id) {
+      const confirmed = await confirm('이 템플릿을 삭제하시겠습니까?');
+      if (!confirmed) return;
+      
+      hasChanges = true;
+      const card = document.querySelector(`.template-card[data-id="${id}"]`);
+      if (card) {
+        // Animate removal
+        card.style.transform = 'translateX(-100%)';
+        card.style.opacity = '0';
+        
+        setTimeout(() => {
+          card.remove();
+          // Remove from data
+          templates = templates.filter(t => t.id !== id);
+        }, 250);
+      }
+    }
+
+    function enableInlineEdit(element, id) {
+      if (!isEditMode) return;
+      
+      hasChanges = true;
+      const currentName = element.textContent;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = currentName;
+      input.className = 'name-input';
+      
+      // Replace element with input
+      element.replaceWith(input);
+      input.focus();
+      input.select();
+      
+      function save() {
+        const newName = input.value.trim() || currentName;
+        const newHeading = document.createElement('h3');
+        newHeading.className = 'font-semibold text-base template-name';
+        newHeading.style.color = 'var(--color-on-surface)';
+        newHeading.textContent = newName;
+        newHeading.onclick = function(e) { 
+          e.stopPropagation(); 
+          enableInlineEdit(this, id); 
+        };
+        
+        input.replaceWith(newHeading);
+        
+        // Update data
+        const template = templates.find(t => t.id === id);
+        if (template) {
+          template.name = newName;
+        }
+        
+        // Update card onclick handler
+        const card = document.querySelector(`.template-card[data-id="${id}"]`);
+        if (card && !isEditMode) {
+          card.onclick = function() { selectTemplate(this, newName); };
+        }
+      }
+      
+      input.addEventListener('blur', save);
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          input.blur();
+        }
+        if (e.key === 'Escape') {
+          input.value = currentName;
+          input.blur();
+        }
+      });
+    }
+
+    // ============================================
+    // View Transition Functions
+    // ============================================
+    
+    let currentView = 'selection';
+    let selectedFile = null;
+    let isUploading = false;
+
+    function showCreationView() {
+      if (isEditMode) return;
+      
+      currentView = 'creation';
+      const selectionView = document.getElementById('selectionView');
+      const creationView = document.getElementById('creationView');
+      
+      // Hide selection view
+      selectionView.classList.remove('visible-view');
+      selectionView.classList.add('hidden-view');
+      
+      // Show creation view
+      creationView.classList.remove('hidden-view');
+      creationView.classList.add('visible-view');
+      
+      // Enable form inputs
+      document.getElementById('templateName').disabled = false;
+      document.getElementById('fileInput').disabled = false;
+      
+      // Re-render icons
+      setTimeout(() => lucide.createIcons(), 50);
+    }
+
+    async function showSelectionView() {
+      if (isUploading) {
+        const confirmed = await confirm('템플릿 생성이 진행 중입니다. 취소하시겠습니까?');
+        if (!confirmed) return;
+        isUploading = false;
+      }
+      
+      currentView = 'selection';
+      const selectionView = document.getElementById('selectionView');
+      const creationView = document.getElementById('creationView');
+      const writingView = document.getElementById('writingView');
+      
+      // Hide all other views
+      creationView.classList.remove('visible-view');
+      creationView.classList.add('hidden-view');
+      writingView.classList.remove('visible-view');
+      writingView.classList.add('hidden-view');
+      
+      // Show selection view
+      selectionView.classList.remove('hidden-view');
+      selectionView.classList.add('visible-view');
+      
+      // Reset form
+      resetCreationForm();
+      
+      // Re-render icons
+      setTimeout(() => lucide.createIcons(), 50);
+    }
+
+    function resetCreationForm() {
+      selectedFile = null;
+      isUploading = false;
+      
+      document.getElementById('templateName').value = '';
+      document.getElementById('fileInput').value = '';
+      document.getElementById('errorAlert').classList.add('hidden');
+      
+      // Reset dropzone
+      const dropzone = document.getElementById('dropzone');
+      dropzone.classList.remove('has-file');
+      document.getElementById('dropzoneEmpty').classList.remove('hidden');
+      document.getElementById('dropzonePreview').classList.add('hidden');
+      
+      // Reset submit button
+      updateSubmitButton();
+    }
+
+    // ============================================
+    // File Upload Functions
+    // ============================================
+
+    function handleFileChange(event) {
+      const file = event.target.files[0];
+      if (file) {
+        setFile(file);
+      }
+    }
+
+    function handleDragOver(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const dropzone = document.getElementById('dropzone');
+      dropzone.classList.add('drag-over');
+    }
+
+    function handleDragLeave(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const dropzone = document.getElementById('dropzone');
+      dropzone.classList.remove('drag-over');
+    }
+
+    function handleDrop(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      
+      const dropzone = document.getElementById('dropzone');
+      dropzone.classList.remove('drag-over');
+      
+      const file = event.dataTransfer.files[0];
+      if (file) {
+        if (file.type.startsWith('image/')) {
+          setFile(file);
+        } else {
+          showError('이미지 파일만 업로드 가능합니다.');
+        }
+      }
+    }
+
+    function setFile(file) {
+      selectedFile = file;
+      
+      const dropzone = document.getElementById('dropzone');
+      dropzone.classList.add('has-file');
+      
+      document.getElementById('dropzoneEmpty').classList.add('hidden');
+      document.getElementById('dropzonePreview').classList.remove('hidden');
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileSize').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+      
+      hideError();
+      updateSubmitButton();
+    }
+
+    function removeFile() {
+      selectedFile = null;
+      
+      const dropzone = document.getElementById('dropzone');
+      dropzone.classList.remove('has-file');
+      
+      document.getElementById('dropzoneEmpty').classList.remove('hidden');
+      document.getElementById('dropzonePreview').classList.add('hidden');
+      document.getElementById('fileInput').value = '';
+      
+      updateSubmitButton();
+    }
+
+    // ============================================
+    // Form Validation & Submission
+    // ============================================
+
+    function updateSubmitButton() {
+      const submitBtn = document.getElementById('submitBtn');
+      const submitText = document.getElementById('submitText');
+      const submitIcon = document.getElementById('submitIcon');
+      const templateName = document.getElementById('templateName').value.trim();
+      
+      if (isUploading) {
+        submitBtn.disabled = true;
+        submitText.textContent = '템플릿 분석 및 생성 중...';
+        submitIcon.setAttribute('data-lucide', 'loader-2');
+        submitIcon.classList.add('spinner');
+        lucide.createIcons();
+      } else if (selectedFile && templateName) {
+        submitBtn.disabled = false;
+        submitText.textContent = '템플릿 생성하기';
+        submitIcon.setAttribute('data-lucide', 'arrow-right');
+        submitIcon.classList.remove('spinner');
+        lucide.createIcons();
+      } else {
+        submitBtn.disabled = true;
+        submitText.textContent = '템플릿 생성하기';
+        submitIcon.setAttribute('data-lucide', 'arrow-right');
+        submitIcon.classList.remove('spinner');
+        lucide.createIcons();
+      }
+    }
+
+    function showError(message) {
+      const errorAlert = document.getElementById('errorAlert');
+      const errorMessage = document.getElementById('errorMessage');
+      errorAlert.classList.remove('hidden');
+      errorMessage.textContent = message;
+    }
+
+    function hideError() {
+      document.getElementById('errorAlert').classList.add('hidden');
+    }
+
+    async function handleCreateTemplate(event) {
+      event.preventDefault();
+      
+      const templateName = document.getElementById('templateName').value.trim();
+      
+      if (!selectedFile) {
+        showError('템플릿 이미지를 선택해주세요.');
+        return;
+      }
+      
+      if (!templateName) {
+        showError('템플릿 이름을 입력해주세요.');
+        return;
+      }
+      
+      // Start upload
+      isUploading = true;
+      updateSubmitButton();
+      hideError();
+      
+      // Simulate upload delay (in real app, would call API)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Success - add new template
+      const newId = templates.length + 1;
+      const today = new Date();
+      const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+      
+      templates.unshift({
+        id: newId,
+        name: templateName,
+        createdAt: dateStr,
+        badge: '새로 생성'
+      });
+      
+      // Add new card to list
+      addTemplateCard(newId, templateName, dateStr, '새로 생성');
+      
+      // Reset and go back to selection view
+      isUploading = false;
+      showSelectionView();
+      
+      // Select the new template
+      setTimeout(() => {
+        const newCard = document.querySelector(`.template-card[data-id="${newId}"]`);
+        if (newCard) {
+          selectTemplate(newCard, templateName);
+        }
+      }, 350);
+    }
+
+    /**
+     * 템플릿 카드 DOM 생성
+     * @param {number} id - 템플릿 ID
+     * @param {string} name - 템플릿 이름
+     * @param {string} createdAt - 생성일 문자열
+     * @param {string|null} badge - 뱃지 텍스트 (null이면 미표시)
+     * @param {boolean} isSelected - 초기 선택 여부
+     * @param {boolean} prepend - true면 목록 최상단에 추가 (기본값: true)
+     */
+    function addTemplateCard(id, name, createdAt, badge, isSelected = false, prepend = true) {
+      const templateList = document.getElementById('templateList');
+      
+      const card = document.createElement('div');
+      card.className = `template-card rounded-2xl p-4 cursor-pointer${isSelected ? ' selected' : ''} fade-in`;
+      card.setAttribute('data-id', id);
+      card.style.background = 'var(--color-surface-container-lowest)';
+      card.onclick = function() { selectTemplate(this, name); };
+      
+      // badge가 null이면 뱃지 영역 미표시
+      const badgeHtml = badge 
+        ? `<span class="card-badge badge px-2 py-0.5 rounded-full font-medium text-xs" style="background: var(--color-surface-container-low); color: var(--color-on-surface-variant)">${badge}</span>`
+        : '';
+      
+      card.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="drag-handle hidden-handle">
+            <i data-lucide="grip-vertical" class="w-5 h-5"></i>
+          </div>
+          <div class="card-icon w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style="background: var(--color-surface-container-low); color: var(--color-on-surface-variant)">
+            <i data-lucide="file-text" class="w-6 h-6"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <h3 class="font-semibold text-base template-name" style="color: var(--color-on-surface)" onclick="event.stopPropagation(); enableInlineEdit(this, ${id})">${name}</h3>
+              ${badgeHtml}
+            </div>
+            <p class="text-xs meta-info" style="color: var(--color-outline-variant)">생성일: ${createdAt}</p>
+          </div>
+          <div class="flex items-center gap-1 hidden-handle action-buttons">
+            <button class="action-btn edit-name-btn" onclick="event.stopPropagation(); enableInlineEdit(this.closest('.template-card').querySelector('.template-name'), ${id})" title="이름 변경">
+              <i data-lucide="pencil" class="w-5 h-5" style="color: #6b7280;"></i>
+            </button>
+            <button class="action-btn delete-btn" onclick="event.stopPropagation(); deleteTemplate(${id})" title="삭제">
+              <i data-lucide="trash-2" class="w-5 h-5"></i>
+            </button>
+          </div>
+          <div class="selection-indicator w-6 h-6 rounded-full text-white flex items-center justify-center shrink-0" style="background: var(--color-primary)">
+            <i data-lucide="check" class="w-4 h-4"></i>
+          </div>
+        </div>
+      `;
+      
+      // prepend가 true면 최상단에, false면 순서대로 추가
+      if (prepend) {
+        templateList.insertBefore(card, templateList.firstChild);
+      } else {
+        templateList.appendChild(card);
+      }
+      
+      // Re-render icons
+      lucide.createIcons();
+    }
+
+    /**
+     * 초기 템플릿 목록 렌더링
+     * templates 배열을 순회하며 카드 생성 (순서 유지)
+     */
+    function renderInitialTemplates() {
+      const templateList = document.getElementById('templateList');
+      
+      // Clear existing content
+      templateList.innerHTML = '';
+      
+      if (templates.length === 0) {
+        // Empty state: show guidance inside template list container
+        templateList.innerHTML = `
+          <div class="empty-state-container flex flex-col items-center justify-center py-12 text-center">
+            <div class="w-16 h-16 rounded-full flex items-center justify-center mb-4" style="background: var(--color-surface-container)">
+              <i data-lucide="file-plus" class="w-8 h-8" style="color: var(--color-on-surface-variant)"></i>
+            </div>
+            <h3 class="font-semibold text-lg mb-2" style="color: var(--color-on-surface)">아직 템플릿이 없습니다</h3>
+            <p class="text-sm" style="color: var(--color-on-surface-variant)">아래 <strong style="color: var(--color-primary)">새 템플릿 만들기</strong> 버튼을 눌러 시작해보세요</p>
+          </div>
+        `;
+        lucide.createIcons();
+        selectedTemplateName = null;
+        updateStartButton();
+        return;
+      }
+      
+      templates.forEach((template, index) => {
+        const isSelected = index === 0; // 첫 번째 템플릿 기본 선택
+        addTemplateCard(template.id, template.name, template.createdAt, template.badge, isSelected, false);
+      });
+      
+      // 초기 선택 상태 설정
+      selectedTemplateName = templates[0].name;
+    }
+    
+    function updateStartButton() {
+      const startBtn = document.getElementById('startBtn');
+      const span = startBtn.querySelector('span');
+      if (selectedTemplateName) {
+        span.textContent = `'${selectedTemplateName}'로 시작하기`;
+        startBtn.disabled = false;
+      } else {
+        span.textContent = '템플릿을 선택해주세요';
+        startBtn.disabled = true;
+      }
+    }
+    
+    // TODO: 데모용 - 최종 통합 시 삭제
+    let isDemoEmpty = false;
+    function toggleDemoEmpty() {
+      isDemoEmpty = !isDemoEmpty;
+      if (isDemoEmpty) {
+        templates = [];
+      } else {
+        templates = JSON.parse(JSON.stringify(originalTemplatesBackup));
+      }
+      renderInitialTemplates();
+    }
+
+    // ============================================
+    // Event Listeners & Initialization
+    // ============================================
+    
+    // New template button click
+    document.querySelector('.new-template-btn').addEventListener('click', showCreationView);
+    
+    // Template name input change
+    document.getElementById('templateName').addEventListener('input', updateSubmitButton);
+    
+    // 초기 렌더링 실행
+    renderInitialTemplates();
+
+    // ============================================
+    // Scroll to Top Button
+    // ============================================
+
+    const SCROLL_THRESHOLD = 300; // 버튼 표시 시작 스크롤 위치
+
+    function handleScrollButtonVisibility() {
+      const btn = document.getElementById('scrollTopBtn');
+      if (!btn) return;
+
+      const scrollY = window.scrollY || document.documentElement.scrollTop;
+
+      if (scrollY > SCROLL_THRESHOLD) {
+        btn.classList.add('visible');
+      } else {
+        btn.classList.remove('visible');
+      }
+    }
+
+    function scrollToTop() {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+
+    // 스크롤 이벤트 리스너 (throttle 적용)
+    let scrollTimeout = null;
+    window.addEventListener('scroll', function() {
+      if (scrollTimeout) return;
+      scrollTimeout = setTimeout(() => {
+        handleScrollButtonVisibility();
+        scrollTimeout = null;
+      }, 100);
+    }, { passive: true });
+
+    // 초기 체크
+    handleScrollButtonVisibility();
+
+    // ============================================
+    // Writing View (작성화면) 기능
+    // ============================================
+
+    // 샘플 semantic_json 데이터 - 복잡한 중첩 구조 테스트용
+    const sampleSemanticJson = {
+      "보육일지": {
+        "놀이": {
+          "활동": {
+            "내용": "활동 내용을 입력하세요"
+          },
+          "실내놀이": {
+            "놀이상황": "실내 놀이 상황을 입력하세요",
+            "놀이지원": "놀이 지원 내용을 입력하세요"
+          },
+          "바깥놀이(대체)": {
+            "놀이상황": "바깥 놀이 상황을 입력하세요"
+          }
+        },
+        "일상생활": {
+          "간식": "간식 시간 내용을 입력하세요",
+          "점심식사": "점심 식사 내용을 입력하세요",
+          "낮잠 및 휴식": "낮잠 및 휴식 내용을 입력하세요"
+        },
+        "통합보육": {
+          "등원": "등원 시간 내용을 입력하세요",
+          "하원": "하원 시간 내용을 입력하세요"
+        },
+        "반 운영 특이사항": "특이사항을 입력하세요",
+        "놀이 평가 및 다음날 지원 계획": "평가 및 계획을 입력하세요"
+      }
+    };
+
+    // 더 복잡한 중첩 구조 테스트용 데이터
+    const complexSemanticJson = {
+      "영아 발달 관찰일지": {
+        "신체 발달": {
+          "대근육 활동": {
+            "이동하기": {
+              "기어다니기": "기어다니기 관찰 내용",
+              "서기": "서기 관찰 내용",
+              "걷기": "걷기 관찰 내용"
+            },
+            "던지기잡기": "던지기/잡기 관찰 내용"
+          },
+          "소근육 활동": {
+            "손 조작": {
+              "집기": "집기 관찰 내용",
+              "조작하기": "조작하기 관찰 내용"
+            }
+          }
+        },
+        "인지 발달": {
+          "탐색 활동": {
+            "시각 탐색": "시각 탐색 내용",
+            "청각 탐색": "청각 탐색 내용"
+          },
+          "문제 해결": "문제 해결 관찰 내용"
+        },
+        "정서 사회성 발달": {
+          "자기 조절": "자기 조절 관찰 내용",
+          "사회적 상호작용": "사회적 상호작용 관찰 내용"
+        }
+      }
+    };
+
+    // 상태 변수
+    let writingMode = 'manual';           // 'manual' | 'auto'
+    let manualInputs = {};                // 입력값 저장 객체
+    let autoInputText = '';               // 자동 모드 입력값
+    let currentSemanticJson = null;        // 현재 선택된 템플릿의 semantic_json
+
+    // ============================================
+    // 뷰 전환 함수
+    // ============================================
+
+    /**
+     * 모든 뷰 패널을 숨깁니다. (display: none 지원)
+     */
+    function hideAllViews() {
+      const viewIds = ['selectionView', 'creationView', 'writingView', 'resultView'];
+      viewIds.forEach(id => {
+        const view = document.getElementById(id);
+        if (view) {
+          view.classList.remove('visible-view');
+          view.classList.add('hidden-view');
+        }
+      });
+      
+      // 뷰 전환 시 스크롤을 최상단으로 이동
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showCreationView() {
+      if (isEditMode) return;
+      
+      currentView = 'creation';
+      hideAllViews();
+      
+      const creationView = document.getElementById('creationView');
+      creationView.classList.remove('hidden-view');
+      creationView.classList.add('visible-view');
+      
+      // Enable form inputs
+      document.getElementById('templateName').disabled = false;
+      document.getElementById('fileInput').disabled = false;
+      
+      // Re-render icons
+      setTimeout(() => lucide.createIcons(), 50);
+    }
+
+    async function showSelectionView() {
+      if (isUploading) {
+        const confirmed = await confirm('템플릿 생성이 진행 중입니다. 취소하시겠습니까?');
+        if (!confirmed) return;
+        isUploading = false;
+      }
+      
+      currentView = 'selection';
+      hideAllViews();
+      
+      const selectionView = document.getElementById('selectionView');
+      selectionView.classList.remove('hidden-view');
+      selectionView.classList.add('visible-view');
+      
+      // Reset form
+      resetCreationForm();
+      
+      // Re-render icons
+      setTimeout(() => lucide.createIcons(), 50);
+    }
+
+    // ============================================
+    // Writing View (작성화면) 기능
+    // ============================================
+
+    function showWritingView() {
+      if (!selectedTemplateName) {
+        alert('템플릿을 선택해주세요.');
+        return;
+      }
+
+      const prevView = currentView;
+      currentView = 'writing';
+      hideAllViews();
+
+      const writingView = document.getElementById('writingView');
+      writingView.classList.remove('hidden-view');
+      writingView.classList.add('visible-view');
+
+      // Update template name in header
+      document.getElementById('writingTemplateName').textContent = selectedTemplateName;
+
+      // Load semantic_json
+      currentSemanticJson = sampleSemanticJson;
+      
+      // Reset state ONLY if coming from selection (new start)
+      if (prevView === 'selection') {
+        manualInputs = {};
+        autoInputText = '';
+        writingMode = 'manual';
+      }
+      
+      updateModeToggle();
+      renderWritingForm();
+
+      // Re-render icons
+      setTimeout(() => lucide.createIcons(), 50);
+    }
+
+    function hideWritingView() {
+      showSelectionView();
+    }
+
+    // ============================================
+    // 모드 전환
+    // ============================================
+
+    function updateModeToggle() {
+      const manualBtn = document.getElementById('manualModeBtn');
+      const autoBtn = document.getElementById('autoModeBtn');
+
+      if (writingMode === 'manual') {
+        manualBtn.classList.add('mode-btn-active');
+        autoBtn.classList.remove('mode-btn-active');
+      } else {
+        manualBtn.classList.remove('mode-btn-active');
+        autoBtn.classList.add('mode-btn-active');
+      }
+    }
+
+    // ============================================
+    // 동적 폼 렌더러
+    // ============================================
+
+    /**
+     * 작성 폼 렌더링 - 평면화된 경로 표시 방식
+     */
+    function renderWritingForm() {
+      const container = document.getElementById('writingFormContainer');
+
+      if (writingMode === 'auto') {
+        // 자동 모드: 단일 textarea
+        container.innerHTML = `
+          <div class="mode-switch-fade">
+            <div class="input-field-container">
+              <div class="flat-field-header">
+                <button class="ocr-btn" onclick="handleOcrUpload('auto')">
+                  <i data-lucide="file-text" class="w-4 h-4"></i>
+                  OCR 업로드
+                </button>
+              </div>
+              <textarea 
+                id="autoTextarea"
+                class="input-textarea auto-textarea"
+                placeholder="관찰 내용을 자유롭게 입력하거나 OCR로 업로드하세요..."
+                onchange="autoInputText = this.value"
+              >${autoInputText}</textarea>
+            </div>
+          </div>
+        `;
+      } else {
+        // 직접 입력 모드: 평면화된 경로 표시
+        if (!currentSemanticJson) {
+          container.innerHTML = '<p style="color: var(--color-on-surface-variant)">템플릿 구조를 불러올 수 없습니다.</p>';
+          return;
+        }
+        
+        // 모든 단말 노드를 경로와 함께 추출
+        const flatFields = getFlatFields(currentSemanticJson);
+        const renderedFields = renderFlatFields(flatFields);
+        
+        // 애니메이션 래퍼 추가
+        container.innerHTML = `<div class="mode-switch-fade">${renderedFields}</div>`;
+      }
+
+      // Re-render icons
+      lucide.createIcons();
+    }
+
+    /**
+     * JSON 트리에서 모든 단말 노드(입력 필드)를 경로와 함께 추출
+     * @param {Object} data - semantic_json 데이터
+     * @param {Array} currentPath - 현재 경로
+     * @returns {Array} [{path: ['보육일지', '놀이', '활동', '내용'], value: '기본값'}]
+     */
+    function getFlatFields(data, currentPath = []) {
+      let fields = [];
+
+      if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+        for (const [key, value] of Object.entries(data)) {
+          const newPath = [...currentPath, key];
+          
+          if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            // 중간 노드: 재귀 호출
+            fields = [...fields, ...getFlatFields(value, newPath)];
+          } else {
+            // 단말 노드: 경로와 함께 저장
+            fields.push({
+              path: newPath,
+              value: Array.isArray(value) ? value.join(', ') : String(value),
+              flatKey: newPath.join('.')
+            });
+          }
+        }
+      }
+
+      return fields;
+    }
+
+    /**
+     * 평면화된 필드 목록 렌더링
+     * @param {Array} fields - getFlatFields 결과
+     * @returns {string} HTML 문자열
+     */
+    function renderFlatFields(fields) {
+      let html = '';
+
+      fields.forEach((field, index) => {
+        const path = field.path;
+        const currentValue = manualInputs[field.flatKey] || '';
+        
+        // 경로 표시 (breadcrumb 스타일)
+        const pathHtml = renderPathBreadcrumb(path);
+        
+        html += `
+          <div class="flat-field-card fade-in" style="animation-delay: ${index * 0.03}s">
+            <div class="field-path">
+              ${pathHtml}
+            </div>
+            <div class="flat-field-header">
+              <button class="ocr-btn" onclick="handleOcrUpload('${field.flatKey}')">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+                OCR 업로드
+              </button>
+            </div>
+            <textarea 
+              class="input-textarea"
+              placeholder="${field.value}"
+              onchange="handleInputChange('${field.flatKey}', this.value)"
+            >${currentValue}</textarea>
+          </div>
+        `;
+      });
+
+      return html;
+    }
+
+    /**
+     * 경로 breadcrumb 렌더링
+     * 첫 번째와 마지막 키 강조
+     * @param {Array} path - ['보육일지', '놀이', '활동', '내용']
+     * @returns {string} HTML 문자열
+     */
+    function renderPathBreadcrumb(path) {
+      if (path.length === 0) return '';
+      
+      let html = '';
+      
+      // 첫 번째(루트) 건너뛰기
+      const visiblePath = path.slice(1);
+      
+      visiblePath.forEach((segment, index) => {
+        const isFirst = index === 0;
+        const isLast = index === visiblePath.length - 1;
+        
+        if (isFirst) {
+          // 첫 번째: primary 색상, 굵게
+          html += `<span class="path-segment path-segment-first">${segment}</span>`;
+        } else if (isLast) {
+          // 마지막: on-surface 색상, 더 굵게, 크게
+          html += `<span class="path-separator">›</span>`;
+          html += `<span class="path-segment path-segment-last">${segment}</span>`;
+        } else {
+          // 중간: 회색, 보통
+          html += `<span class="path-separator">›</span>`;
+          html += `<span class="path-segment">${segment}</span>`;
+        }
+      });
+      
+      return html;
+    }
+
+    // ============================================
+    // 입력값 처리
+    // ============================================
+
+    function handleInputChange(key, value) {
+      manualInputs[key] = value;
+    }
+
+    function handleOcrUpload(fieldKey) {
+      // 데모용: 실제로는 파일 업로드 후 OCR 처리
+      alert(`OCR 업로드: ${fieldKey}\n(데모 모드 - 실제 파일 업로드는 구현되지 않음)`);
+    }
+
+    // ============================================
+    // 작성 완료 처리
+    // ============================================
+
+    function clearAgeError() {
+      const ageContainer = document.querySelector('.age-select-container');
+      const ageSelect = document.getElementById('childAgeSelect');
+      if (ageSelect.value) {
+        ageContainer.classList.remove('error');
+      }
+    }
+
+    async function handleFinalize() {
+      const ageSelect = document.getElementById('childAgeSelect');
+      const ageContainer = document.querySelector('.age-select-container');
+      const selectedAge = ageSelect.value;
+
+      if (!selectedAge) {
+        // 빨간 테두리 표시
+        ageContainer.classList.add('error');
+        // 스크롤 이동
+        ageContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
+      // 선택 완료 시 에러 효과 해제
+      ageContainer.classList.remove('error');
+
+      // 빈 필드 체크 (manual 모드)
+      if (writingMode === 'manual' && currentSemanticJson) {
+        const emptyFields = checkEmptyFields(currentSemanticJson);
+        if (emptyFields.length > 0) {
+          const confirmed = await confirm(`다음 필드가 비어있습니다:\n${emptyFields.join('\n')}\n\n계속 진행하시겠습니까?`);
+          if (!confirmed) return;
+        }
+      }
+
+      // 결과 확인 뷰 표시
+      showResultView();
+    }
+
+    /**
+     * 빈 필드 체크
+     */
+    function checkEmptyFields(data) {
+      const fields = getFlatFields(data);
+      return fields
+        .filter(f => !manualInputs[f.flatKey] || !manualInputs[f.flatKey].trim())
+        .map(f => f.path.slice(1).join(' > '));
+    }
+
+    // ============================================
+    // Result View (결과 확인 화면) 기능
+    // ============================================
+
+    // 상태 변수
+    let currentVersion = 0;               // 현재 표시 중인 버전 인덱스
+    let versions = [];                    // 생성된 버전 히스토리 [{ content: {}, comments: {} }]
+    let activeResultCommentId = null;     // 현재 열려있는 코멘트 입력창 ID
+
+    /**
+     * 결과 확인 뷰 표시 (일지 생성 시뮬레이션 포함)
+     */
+    async function showResultView() {
+      const viewContainer = document.getElementById('viewContainer');
+      const overlay = document.getElementById('resultLoadingOverlay');
+
+      // 1. 현재 위치에서 즉시 로딩 시작 (스크롤 이동 없음)
+      viewContainer.classList.add('view-blur');
+      overlay.classList.add('visible');
+      document.body.classList.add('modal-open');
+      lucide.createIcons();
+      
+      // 2. 일지 생성 시뮬레이션 (현재 위치 대기)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // 3. 첫 번째 버전 생성 (테스트용 5개)
+      const initialContent = generateMockResultContent();
+      versions = [];
+      for (let i = 0; i < 5; i++) {
+        versions.push({
+          content: initialContent,
+          comments: {}
+        });
+      }
+      currentVersion = 0;
+
+      // 4. 뷰 전환 및 상단 스냅 (Snap to top)
+      currentView = 'result';
+      hideAllViews();
+      
+      const resultView = document.getElementById('resultView');
+      resultView.classList.remove('hidden-view');
+      resultView.classList.add('visible-view');
+      
+      // 뷰가 바뀐 직후 상단으로 즉시 이동 (부드러운 이동 대신 즉시 이동으로 렌더링 오류 방지)
+      window.scrollTo(0, 0);
+
+      // 5. 로딩 해제, Blur 제거 및 스크롤 잠금 해제
+      overlay.classList.remove('visible');
+      setTimeout(() => {
+        viewContainer.classList.remove('view-blur');
+        document.body.classList.remove('modal-open');
+      }, 300);
+
+      renderResultView();
+      
+      // Re-render icons
+      setTimeout(() => lucide.createIcons(), 50);
+    }
+
+    /**
+     * 입력값 기반 가상 결과 데이터 생성
+     */
+    function generateMockResultContent() {
+      const flatFields = getFlatFields(currentSemanticJson);
+      const content = {};
+      
+      flatFields.forEach(field => {
+        const inputVal = manualInputs[field.flatKey];
+        if (inputVal && inputVal.trim()) {
+          // 입력값이 있으면 그럴싸한 문장으로 변환 시뮬레이션
+          content[field.flatKey] = `[AI 생성] "${inputVal}" 사실을 바탕으로 관찰 내용을 작성했습니다. 영유아의 발달 상황과 표준보육과정 지침을 준수하여 상세하게 기술되었습니다.`;
+        } else {
+          // 입력값이 없으면 기본 샘플 문구
+          content[field.flatKey] = `${field.path.slice(1).join(' › ')}에 대한 관찰 기록이 생성되었습니다. 입력된 정보가 부족하여 일반적인 발달 특성을 기반으로 작성되었습니다.`;
+        }
+      });
+      
+      return content;
+    }
+
+    /**
+     * 결과 확인 뷰 전체 렌더링
+     */
+    function renderResultView() {
+      renderVersionNav();
+      renderResultsList();
+      updateResultFab();
+    }
+
+    /**
+     * 버전 네비게이션 렌더링 (네이티브 select 방식)
+     */
+    function renderVersionNav() {
+      const nav = document.getElementById('versionNav');
+      nav.innerHTML = '';
+      
+      // 네이티브 select 요소 생성
+      const select = document.createElement('select');
+      select.className = 'age-select';
+      select.style.maxWidth = '8rem';
+      select.onchange = (e) => {
+        const index = parseInt(e.target.value, 10);
+        switchResultVersion(index);
+      };
+      
+      versions.forEach((_, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = `v${index + 1}`;
+        if (index === currentVersion) {
+          option.selected = true;
+        }
+        select.appendChild(option);
+      });
+      
+      nav.appendChild(select);
+    }
+
+    /**
+     * 버전 전환
+     */
+    function switchResultVersion(index) {
+      if (currentVersion === index) return;
+      
+      currentVersion = index;
+      activeResultCommentId = null;
+      
+      const list = document.getElementById('resultsList');
+      list.style.opacity = '0.5';
+      
+      setTimeout(() => {
+        renderResultView();
+        list.style.opacity = '1';
+        lucide.createIcons();
+      }, 150);
+    }
+
+    /**
+     * 결과 목록 렌더링
+     * @param {boolean} animate - fade-in 애니메이션 적용 여부 (기본값: true)
+     */
+    function renderResultsList(animate = true) {
+      const list = document.getElementById('resultsList');
+      const versionData = versions[currentVersion];
+      const flatFields = getFlatFields(currentSemanticJson);
+      
+      list.innerHTML = '';
+      
+      flatFields.forEach((field, index) => {
+        const content = versionData.content[field.flatKey];
+        const comment = versionData.comments[field.flatKey];
+        const isActive = activeResultCommentId === field.flatKey;
+        
+        const card = document.createElement('div');
+        // 애니메이션은 초기 렌더링 시에만 적용
+        const animClass = animate ? ' fade-in' : '';
+        card.className = `result-card${comment ? ' has-comment' : ''}${isActive ? ' active' : ''}${animClass}`;
+        if (animate) {
+          card.style.animationDelay = `${index * 0.05}s`;
+        }
+        card.onclick = () => toggleResultComment(field.flatKey);
+        
+        // Consistent breadcrumb style
+        const pathHtml = renderPathBreadcrumb(field.path);
+        
+        card.innerHTML = `
+          <div class="flex justify-between items-start mb-3">
+            <div class="result-path-container">${pathHtml}</div>
+            <div class="card-actions flex items-center gap-1">
+              <button class="action-btn comment-trigger${comment ? ' active' : ''}" 
+                      onclick="event.stopPropagation(); toggleResultComment('${field.flatKey}')" 
+                      title="수정 요청">
+                <i data-lucide="message-square-plus" class="w-4 h-4"></i>
+              </button>
+              <button class="action-btn" onclick="event.stopPropagation(); copySingleResult(this)" title="복사">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+          <p class="result-content">${content}</p>
+          
+          <!-- Comment Overlay -->
+          <div class="comment-overlay${isActive ? '' : ' hidden'}" onclick="event.stopPropagation()">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background: #fef3c7">
+                <i data-lucide="pencil" class="w-5 h-5" style="color: #b45309"></i>
+              </div>
+              <div class="flex-1">
+                <textarea class="comment-input" placeholder="수정하고 싶은 내용을 입력하세요...">${comment || ''}</textarea>
+                <div class="flex justify-end gap-2 mt-3">
+                  <button class="px-4 py-2 text-sm font-semibold rounded-xl hover:bg-gray-100 transition-colors" 
+                          onclick="cancelResultComment('${field.flatKey}')">취소</button>
+                  <button class="px-4 py-2 text-sm font-bold bg-zinc-900 text-white rounded-xl hover:bg-zinc-800 transition-colors" 
+                          onclick="saveResultComment('${field.flatKey}')">확인</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Comment Badge -->
+          ${comment ? `
+            <div class="comment-badge">
+              <i data-lucide="message-square-plus" class="w-3 h-3"></i>
+              <span class="truncate max-w-[300px]">${comment}</span>
+            </div>
+          ` : ''}
+        `;
+        
+        list.appendChild(card);
+      });
+    }
+
+    /**
+     * 코멘트 입력창 토글
+     */
+    function toggleResultComment(key) {
+      if (activeResultCommentId === key) {
+        activeResultCommentId = null;
+      } else {
+        activeResultCommentId = key;
+      }
+      // 애니메이션 없이 렌더링 (전체 요소가 다시 나타나는 버그 방지)
+      renderResultsList(false);
+      lucide.createIcons();
+      
+      // 포커스
+      if (activeResultCommentId) {
+        setTimeout(() => {
+          const textarea = document.querySelector('.comment-overlay:not(.hidden) textarea');
+          if (textarea) textarea.focus();
+        }, 50);
+      }
+    }
+
+    function cancelResultComment(key) {
+      activeResultCommentId = null;
+      renderResultsList(false);
+      lucide.createIcons();
+    }
+
+    function saveResultComment(key) {
+      const textarea = document.querySelector('.comment-overlay:not(.hidden) textarea');
+      const val = textarea.value.trim();
+      
+      if (val) {
+        versions[currentVersion].comments[key] = val;
+      } else {
+        delete versions[currentVersion].comments[key];
+      }
+      
+      activeResultCommentId = null;
+      // 애니메이션 없이 렌더링 (전체 요소가 다시 나타나는 버그 방지)
+      renderResultsList(false);
+      updateResultFab();
+      lucide.createIcons();
+    }
+
+    async function handleRegenerate() {
+      const viewContainer = document.getElementById('viewContainer');
+      const overlay = document.getElementById('resultLoadingOverlay');
+
+      // 1. 현재 위치에서 로딩 시작
+      viewContainer.classList.add('view-blur');
+      overlay.classList.add('visible');
+      document.body.classList.add('modal-open');
+      lucide.createIcons();
+      
+      // 2. 시뮬레이션 (대기)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // 새 버전 추가 로직
+      const prevVersion = versions[currentVersion];
+      const newContent = {};
+      
+      Object.keys(prevVersion.content).forEach(key => {
+        if (prevVersion.comments[key]) {
+          newContent[key] = `[수정 완료] "${prevVersion.comments[key]}" 코멘트를 반영하여 내용을 다듬었습니다. ${prevVersion.content[key]}`;
+        } else {
+          newContent[key] = prevVersion.content[key];
+        }
+      });
+      
+      versions.push({
+        content: newContent,
+        comments: {}
+      });
+      
+      currentVersion = versions.length - 1;
+
+      // 3. 상단 스냅 (Snap to top)
+      window.scrollTo(0, 0);
+      
+      // 4. 로딩 해제 및 Blur 제거
+      overlay.classList.remove('visible');
+      setTimeout(() => {
+        viewContainer.classList.remove('view-blur');
+        document.body.classList.remove('modal-open');
+      }, 300);
+
+      renderResultView();
+      lucide.createIcons();
+    }
+
+    /**
+     * 재생성 버튼 업데이트
+     */
+    function updateResultFab() {
+      const btn = document.getElementById('regenerateBtn');
+      const btnText = document.getElementById('regenerateBtnText');
+      const badge = btn.querySelector('.comment-count-badge');
+      const count = Object.keys(versions[currentVersion].comments).length;
+      
+      badge.textContent = count;
+      
+      if (count > 0) {
+        btn.classList.remove('disabled');
+        btn.classList.add('enabled');
+        btn.disabled = false;
+        btn.title = '';
+        btnText.textContent = '반영하여 다시 만들기';
+      } else {
+        btn.classList.remove('enabled');
+        btn.classList.add('disabled');
+        btn.disabled = true;
+        btn.title = '수정 요청 내용을 입력해주세요';
+        btnText.textContent = '반영하여 다시 만들기';
+      }
+    }
+
+    function copySingleResult(btn) {
+      const card = btn.closest('.result-card');
+      const contentEl = card ? card.querySelector('.result-content') : null;
+      const content = contentEl ? contentEl.textContent : '';
+      
+      if (content) {
+        navigator.clipboard.writeText(content).catch(() => {});
+      }
+      
+      // 아이콘 변경
+      const icon = btn.querySelector('i');
+      if (icon) {
+        icon.setAttribute('data-lucide', 'check');
+        lucide.createIcons();
+        setTimeout(() => {
+          icon.setAttribute('data-lucide', 'copy');
+          lucide.createIcons();
+        }, 1500);
+      }
+      
+      // 토스트 알림 표시
+      showToast('복사되었습니다');
+    }
+
+    function copyAllResults() {
+      const allContent = Object.values(versions[currentVersion].content).join('\n\n');
+      navigator.clipboard.writeText(allContent);
+      showToast('전체 내용이 복사되었습니다');
+    }
+
+    // ============================================
+    // 템플릿 데이터에 semantic_json 추가
+    // ============================================
+
+    // 템플릿 데이터 확장
+    templates.forEach(t => {
+      t.semantic_json = sampleSemanticJson;
+    });
+
+    // ============================================
+    // 시작 버튼 클릭 시 작성화면으로 이동
+    // ============================================
+
+    // 기존 startBtn에 이벤트 추가
+    document.getElementById('startBtn').addEventListener('click', showWritingView);
+
+    // ============================================
+    // Toast Notification System
+    // ============================================
+
+    function showToast(message, duration = 2000) {
+      const container = document.getElementById('toastContainer');
+      
+      // 기존 토스트 제거 (안드로이드 방식)
+      container.innerHTML = '';
+      
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `
+        <i data-lucide="check-circle" class="toast-icon"></i>
+        <span>${message}</span>
+      `;
+      
+      container.appendChild(toast);
+      lucide.createIcons();
+      
+      // Trigger animation
+      requestAnimationFrame(() => {
+        toast.classList.add('visible');
+      });
+      
+      // Auto remove
+      setTimeout(() => {
+        toast.classList.remove('visible');
+        toast.classList.add('hiding');
+        setTimeout(() => {
+          toast.remove();
+        }, 300);
+      }, duration);
+    }
+
+    // ============================================
+    // Mode Switch Animation Enhancement
+    // ============================================
+
+    function setWritingMode(mode) {
+      if (writingMode === mode) return;
+      
+      writingMode = mode;
+      updateModeToggle();
+      
+      // renderWritingForm이 mode-switch-fade 애니메이션을 처리함
+      renderWritingForm();
+    }
+
+      </script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+const translation = {
+  nav: {
+    dashboard: '대시보드',
+    observations: '관찰',
+    logs: '일지',
+    insights: '인사이트',
+    settings: '설정',
+    home: '홈',
+    account: '계정',
+  },
+  topNav: {
+    profileAvatarAlt: '교사 프로필 아바타',
+  },
+  sideNav: {
+    assistantName: '누리 도우미',
+    assistantSubtitle: '보육 전문가',
+    newObservation: '새 관찰 작성',
+    helpCenter: '도움말 센터',
+    signOut: '로그아웃',
+  },
+  app: {
+    dashboardTitle: '대시보드',
+    logsTitle: '일지',
+    insightsTitle: '인사이트',
+  },
+  observation: {
+    title: '관찰일지 작성',
+    sessionLabel: '세션: 아침 탐색 • 2024년 3월 14일',
+    modeManual: '수동',
+    modeAuto: '자동',
+    freeformNotes: '자유 입력 메모',
+    ocrUpload: 'OCR 업로드',
+    autoPlaceholder: '관찰 메모를 자유롭게 입력해 주세요...',
+    notSaved: '저장되지 않음',
+    saveDraft: '임시 저장',
+    finalize: '완료하기',
+    generatedTitle: '생성 완료',
+    copy: '복사',
+    copied: '복사됨',
+    aiInsights: 'AI 인사이트',
+    gettingStartedTitle: '시작하기',
+    gettingStartedDescription: '손글씨 메모 이미지를 업로드하거나 바로 입력을 시작해 주세요. 전문적인 관찰일지 형식으로 정리해 드립니다.',
+    noTemplateStructure: '불러온 템플릿 구조가 없습니다.',
+    // Template selection
+    templateSelection: '템플릿 선택',
+    templateManage: '관리',
+    templateManageDone: '완료',
+    templateStart: '이 템플릿으로 시작',
+    noTemplates: '저장된 템플릿이 없습니다.',
+    createTemplatePrompt: '새 템플릿을 생성해주세요.',
+    newTemplate: '새 템플릿 만들기',
+    templateTypeDaycare: '보육일지',
+    defaultBadge: '기본',
+    recentlyUsedBadge: '최근 사용',
+    recentlyCreatedBadge: '최근 생성',
+    // Template creation
+    createTemplateTitle: '새 템플릿 생성',
+    templateNameLabel: '템플릿 이름',
+    templateNamePlaceholder: '예: 영아 관찰일지 양식',
+    templateUploadLabel: '템플릿 이미지 업로드',
+    templateUploadPrompt: '클릭하거나 이미지를 여기로 드래그하세요',
+    templateUploadFormats: 'PNG, JPG 다큐먼트 이미지를 지원합니다',
+    createTemplateButton: '템플릿 생성하기',
+    creatingTemplate: '템플릿 분석 및 생성 중... (최대 1분 소요)',
+    // Delete modal
+    deleteTemplateTitle: '템플릿 삭제',
+    deleteTemplateConfirm: '정말 이 템플릿을 삭제하시겠습니까? 삭제된 템플릿은 복구할 수 없습니다.',
+    delete: '삭제',
+    cancel: '취소',
+    // Common errors
+    errorTemplateCreate: '템플릿 생성에 실패했습니다. 다시 시도해주세요.',
+    errorTemplateLoad: '템플릿을 불러오는 데 실패했습니다.',
+    errorOcrUpload: '파일 업로드 및 텍스트 변환에 실패했습니다.',
+    errorLogGenerate: '관찰일지 생성에 실패했습니다.',
+    errorRegenerate: '재생성 중 오류가 발생했습니다.',
+    blocks: {
+      observation: {
+        label: '관찰 내용',
+        placeholder: '아동의 활동, 상호작용, 구체적인 행동 관찰 내용을 작성해 주세요...',
+      },
+      evaluation: {
+        label: '평가 내용',
+        placeholder: '해당 관찰이 교육과정 성취기준 또는 발달 목표와 어떻게 연결되는지 작성해 주세요...',
+      },
+      development: {
+        label: '발달 영역',
+        placeholder: '추후 집중이 필요한 발달 영역을 구체적으로 작성해 주세요...',
+      },
+      notes: {
+        label: '메모 및 맥락',
+        placeholder: '환경 요인, 집단 역학 등 참고할 만한 상황을 작성해 주세요...',
+      },
+    },
+  },
+} as const;
+
+export default translation;
