@@ -57,8 +57,8 @@
 
 | Method | Path | Description | Content-Type | 인증 필요 | 주요 파라미터 |
 |--------|------|-------------|-------------|-----------|--------------|
-| POST | `/api/generate/log` | 관찰일지 생성 (자동 저장). `template_id`로 생성 시 해당 템플릿의 `last_used_at` 자동 업데이트 | `application/json` | ✅ | `semantic_json?`, `ocr_text?`, `template_id?`, `additional_guidelines?`, `child_age` (0-5, 필수) (응답에 `updated_activities`, `journal_id` 포함) |
-| POST | `/api/generate/regenerate` | 코멘트 기반 부분 재생성 | `application/json` | ✅ | `original_semantic_json`, `current_activities`, `comments`, `additional_guidelines?` |
+| POST | `/api/generate/log` | 관찰일지 생성 (자동 저장). `template_id`로 생성 시 해당 템플릿의 `last_used_at` 자동 업데이트 | `application/json` | ✅ | `semantic_json?`, `ocr_text?`, `template_id?`, `additional_guidelines?`, `child_age` (0-5, 필수) (응답에 `updated_activities`, `journal_id`, `group_id` 포함) |
+| POST | `/api/generate/regenerate` | 코멘트 기반 부분 재생성 (버전 관리 지원). `group_id` 제공 시 새 버전 저장 | `application/json` | ✅ | `original_semantic_json`, `current_activities`, `comments`, `additional_guidelines?`, `group_id?` (응답에 `journal_id`, `group_id` 포함) |
 
 ### Journal (API) — prefix: `/api/journals`
 
@@ -86,6 +86,6 @@
 ---
 
 
-> 마지막 업데이트: 2026-04-09 (파일 검증 개선 - MIME 타입에서 확장자 추론 지원, blob 파일명 처리)
+> 마지막 업데이트: 2026-04-10 (버전 관리 기능 추가 - group_id, journal_id 필드 추가, regenerate 시 버전 저장 로직 구현)
 >
-> 이전 업데이트: 2026-04-07 (사용자 role 필드 추가 - admin/org_manager/user, DB 마이그레이션 적용)
+> 이전 업데이트: 2026-04-09 (파일 검증 개선 - MIME 타입에서 확장자 추론 지원, blob 파일명 처리)

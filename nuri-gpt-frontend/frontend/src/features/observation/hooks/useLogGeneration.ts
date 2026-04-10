@@ -24,6 +24,7 @@ export function useLogGeneration({
 }: UseLogGenerationProps) {
   const [generationHistory, setGenerationHistory] = useState<GenerateLogResponse[]>([]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
+  const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
 
   const generate = useCallback(
     async (payload: {
@@ -47,6 +48,7 @@ export function useLogGeneration({
 
         setGenerationHistory([response]);
         setCurrentHistoryIndex(0);
+        setCurrentGroupId(response.group_id || null);
 
         // 스크롤도 맨 위로
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -104,6 +106,7 @@ export function useLogGeneration({
           additional_guidelines: '',
           child_age: childAge ?? undefined,
           is_aggressive: isAggressiveMode ? 'true' : 'false',
+          group_id: currentGroupId || undefined,
         };
 
         const startTime = Date.now();
@@ -114,6 +117,9 @@ export function useLogGeneration({
           {
             ...currentResult,
             updated_activities: newResult.updated_activities,
+            log_id: newResult.log_id,
+            journal_id: newResult.journal_id,
+            group_id: newResult.group_id,
           },
         ];
 
@@ -144,6 +150,7 @@ export function useLogGeneration({
       selectedTemplate,
       generationHistory,
       setError,
+      currentGroupId,
     ]
   );
 
@@ -154,6 +161,7 @@ export function useLogGeneration({
   const clearHistory = useCallback(() => {
     setGenerationHistory([]);
     setCurrentHistoryIndex(0);
+    setCurrentGroupId(null);
   }, []);
 
   return {
@@ -164,4 +172,4 @@ export function useLogGeneration({
     navigateHistory,
     clearHistory,
   };
-}
+  };

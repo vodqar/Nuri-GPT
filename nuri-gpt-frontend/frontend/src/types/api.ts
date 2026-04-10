@@ -36,6 +36,9 @@ export interface GenerateLogResponse {
   observation_content?: string;
   evaluation_content?: string;
   development_areas?: string[];
+  log_id: string;
+  journal_id?: string;
+  group_id?: string;
 }
 
 export interface ActivityComment {
@@ -50,11 +53,14 @@ export interface RegenerateLogRequest {
   additional_guidelines?: string;
   child_age?: number;
   is_aggressive?: string;
+  group_id?: string;
 }
 
 export interface RegenerateLogResponse {
   updated_activities: Record<string, unknown>[];
   log_id: string;
+  journal_id?: string;
+  group_id?: string;
 }
 
 export interface JournalResponse {

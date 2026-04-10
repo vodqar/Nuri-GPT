@@ -92,3 +92,21 @@ class JournalRepository:
             .execute()
         )
         return len(result.data)
+
+    async def get_max_version(self, group_id: UUID) -> int:
+        """특정 그룹의 최대 버전 번호 조회"""
+        result = (
+            self.client.table(self.table)
+            .select("version")
+            .eq("group_id", str(group_id))
+            .order("version", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if not result.data:
+            return 0
+        return result.data[0].get("version", 0)
+
+    async def mark_as_not_final(self, group_id: UUID) -> None:
+        """그룹 내 모든 레코드의 is_final을 False로 설정"""
+        self.client.table(self.table).update({"is_final": False}).eq("group_id", str(group_id)).execute()

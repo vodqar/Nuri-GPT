@@ -97,3 +97,12 @@ For substantive coding or multi-step changes:
 3. **Commit**: Ask user to confirm commit after completion
 
 Does not apply to simple questions, quick lookups, or trivial one-line edits.
+
+---
+
+## 6. Model Escalation
+
+**Know your limits. Escalate when stuck.**
+
+If you are in Claude Opus 4.6 / Gemini 3.1 Pro / GPT-5.4 model, ignore this rule.
+If during the course of performing work you encounter complex problems that consistently fail or cannot be resolved even through reasoning, stop the work and ask the user to switch to a higher-level model to attempt the task.

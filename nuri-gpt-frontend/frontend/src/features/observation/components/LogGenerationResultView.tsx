@@ -182,8 +182,11 @@ export function LogGenerationResultView({
         </div>
       </div>
 
-      {/* Results Container */}
-      <div className="results-scroll-area space-y-4 flex-1 fade-in" style={{ animationDelay: '0.15s' }}>
+      {/* Results Container - Animated on version change */}
+      <div
+        key={currentIndex}
+        className="results-scroll-area space-y-4 flex-1 animate-view-enter"
+      >
         {resultItems.map((item) => {
           if (!item.value) return null;
 

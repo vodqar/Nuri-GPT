@@ -127,6 +127,7 @@ export function JournalHistoryPage() {
 
       // GenerateLogResponse 형식으로 변환
       const mappedHistory: GenerateLogResponse[] = history.map((j) => ({
+        log_id: j.id,
         updated_activities: j.updated_activities || [],
         template_mapping: j.template_mapping || {},
         semantic_json: j.semantic_json || {},

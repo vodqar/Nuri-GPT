@@ -103,6 +103,7 @@ async def generate_observation_log(
                 updated_activities=updated_activities,
                 log_id=log_entry.id,
                 journal_id=journal_entry.id,
+                group_id=journal_entry.group_id,
             )
 
         if request.template_id:
@@ -185,6 +186,7 @@ async def generate_observation_log(
                 updated_activities=updated_activities,
                 log_id=log_entry.id,
                 journal_id=journal_entry.id,
+                group_id=journal_entry.group_id,
             )
             
         else:
@@ -239,6 +241,7 @@ async def generate_observation_log(
                 development_areas=llm_result.get("development_areas", []),
                 log_id=log_entry.id,
                 journal_id=journal_entry.id,
+                group_id=journal_entry.group_id,
             )
 
     except RuntimeError as e:
@@ -264,6 +267,7 @@ async def regenerate_observation_log(
     current_user: dict = Depends(get_current_user),
     llm_service: LlmService = Depends(get_llm_service),
     log_repository: LogRepository = Depends(get_log_repository),
+    journal_repository: JournalRepository = Depends(get_journal_repository),
 ) -> RegenerateLogResponse:
     """
     코멘트 기반으로 기존 생성된 관찰일지를 부분 재생성합니다.
@@ -331,9 +335,44 @@ async def regenerate_observation_log(
             metadata=metadata,
         )
 
+        # group_id가 제공되면 observation_journals에 새 버전 저장
+        new_journal_id = None
+        if request.group_id:
+            # 기존 버전의 is_final을 False로 설정
+            await journal_repository.mark_as_not_final(request.group_id)
+            
+            # 최대 버전 조회
+            max_version = await journal_repository.get_max_version(request.group_id)
+            new_version = max_version + 1
+            
+            # 새 버전 레코드 생성 (기존 journal 데이터 재사용)
+            # 원본 journal 조회
+            original_journals = await journal_repository.get_by_group_id(request.group_id)
+            if original_journals:
+                original = original_journals[0]  # 최신 버전 사용
+                journal_data = JournalCreate(
+                    user_id=user_id,
+                    group_id=request.group_id,
+                    version=new_version,
+                    is_final=True,
+                    source_type=original.source_type,
+                    semantic_json=original.semantic_json or {},
+                    updated_activities=[{"target_id": act.target_id, "updated_text": act.updated_text} for act in updated_activities],
+                    additional_guidelines=original.additional_guidelines,
+                    template_id=original.template_id,
+                    template_mapping=original.template_mapping,
+                    observation_content=original.observation_content,
+                    evaluation_content=original.evaluation_content,
+                    development_areas=original.development_areas,
+                )
+                new_journal = await journal_repository.create(journal_data)
+                new_journal_id = new_journal.id
+
         return RegenerateLogResponse(
             updated_activities=updated_activities,
             log_id=log_entry.id,
+            journal_id=new_journal_id,
+            group_id=request.group_id,
         )
 
     except RuntimeError as e:

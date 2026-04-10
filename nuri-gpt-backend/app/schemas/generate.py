@@ -80,6 +80,10 @@ class RegenerateLogRequest(BaseModel):
         default="false",
         description="스마트 채우기 활성화 여부 ('true' 또는 'false')"
     )
+    group_id: Optional[UUID] = Field(
+        default=None,
+        description="원본 일지의 그룹 ID (버전 관리용)"
+    )
 
 
 class GenerateLogResponse(BaseModel):
@@ -100,6 +104,7 @@ class GenerateLogResponse(BaseModel):
     
     log_id: UUID = Field(description="해당 생성 액션의 로깅 ID")
     journal_id: Optional[UUID] = Field(default=None, description="저장된 관찰일지 ID")
+    group_id: Optional[UUID] = Field(default=None, description="저장된 관찰일지의 그룹 ID (버전 관리용)")
 
 
 class RegenerateLogResponse(BaseModel):
@@ -109,3 +114,5 @@ class RegenerateLogResponse(BaseModel):
         description="재생성된 활동 텍스트 목록",
     )
     log_id: UUID = Field(description="해당 재생성 액션의 로깅 ID")
+    journal_id: Optional[UUID] = Field(default=None, description="저장된 관찰일지 ID")
+    group_id: Optional[UUID] = Field(default=None, description="저장된 관찰일지의 그룹 ID (버전 관리용)")

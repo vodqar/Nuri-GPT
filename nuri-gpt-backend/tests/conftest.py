@@ -6,6 +6,7 @@ import os
 
 import pytest
 from fastapi.testclient import TestClient
+from unittest.mock import MagicMock
 
 # 테스트 환경에서 DEBUG 모드 활성화 (API 문서 접근용)
 os.environ["DEBUG"] = "True"
@@ -17,3 +18,9 @@ from app.main import app
 def client():
     """FastAPI 테스트 클라이언트 픽스처"""
     return TestClient(app)
+
+
+@pytest.fixture
+def mock_journal_repo():
+    """JournalRepository mock 픽스처"""
+    return MagicMock()
