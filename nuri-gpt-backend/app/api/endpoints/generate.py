@@ -159,12 +159,19 @@ async def generate_observation_log(
                 metadata=metadata
             )
             
+            # 키 순서 보장을 위해 template_mapping을 updated_activities 배열로 변환
+            updated_activities = [
+                {"target_id": key, "updated_text": value}
+                for key, value in llm_result.items()
+            ]
+
             # 자동 저장: observation_journals 테이블에 일지 저장
             journal_data = JournalCreate(
                 user_id=user_id,
                 template_id=request.template_id,
                 source_type="generate_log_api_with_template",
                 template_mapping=llm_result,
+                updated_activities=updated_activities,
                 ocr_text=request.ocr_text,
                 additional_guidelines=request.additional_guidelines,
             )
@@ -172,9 +179,10 @@ async def generate_observation_log(
             
             # 템플릿 사용 시간 업데이트
             await template_repository.update_last_used_at(request.template_id)
-            
+
             return GenerateLogResponse(
                 template_mapping=llm_result,
+                updated_activities=updated_activities,
                 log_id=log_entry.id,
                 journal_id=journal_entry.id,
             )
