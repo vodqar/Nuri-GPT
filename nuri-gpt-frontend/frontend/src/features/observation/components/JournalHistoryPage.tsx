@@ -20,26 +20,13 @@ export function JournalHistoryPage() {
   const [offset, setOffset] = useState(0);
   const [selectedGroup, setSelectedGroup] = useState<JournalResponse[] | null>(null);
   const [groupHistory, setGroupHistory] = useState<GenerateLogResponse[]>([]);
+  const [currentDetailIndex, setCurrentDetailIndex] = useState(0);
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const isFetchingRef = useRef(false);
   const limit = 20;
 
-  // 무한 스크롤을 위한 ref
-  const lastItemRef = useCallback((node: HTMLDivElement | null) => {
-    if (loading || isFailed) return;
-    if (observerRef.current) observerRef.current.disconnect();
-
-    observerRef.current = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && hasMore) {
-        loadMoreJournals();
-      }
-    });
-
-    if (node) observerRef.current.observe(node);
-  }, [loading, isFailed, hasMore]);
-
-  const loadJournals = async (currentOffset: number, isRetry = false) => {
+  const loadJournals = useCallback(async (currentOffset: number, isRetry = false) => {
     // 중복 호출 방지
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
@@ -83,19 +70,33 @@ export function JournalHistoryPage() {
       setLoading(false);
       isFetchingRef.current = false;
     }
-  };
+  }, [hasMore, limit]);
+
+  const loadMoreJournals = useCallback(() => {
+    if (!loading && !isFailed && hasMore) {
+      loadJournals(offset);
+    }
+  }, [loading, isFailed, hasMore, offset, loadJournals]);
+
+  // 무한 스크롤을 위한 ref
+  const lastItemRef = useCallback((node: HTMLDivElement | null) => {
+    if (loading || isFailed) return;
+    if (observerRef.current) observerRef.current.disconnect();
+
+    observerRef.current = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMore) {
+        loadMoreJournals();
+      }
+    });
+
+    if (node) observerRef.current.observe(node);
+  }, [loading, isFailed, hasMore, loadMoreJournals]);
 
   // 수동 재시도
   const handleRetry = () => {
     setIsFailed(false);
     retryCountRef.current = 0;
     loadJournals(0, false);
-  };
-
-  const loadMoreJournals = () => {
-    if (!loading && !isFailed && hasMore) {
-      loadJournals(offset);
-    }
   };
 
   useEffect(() => {
@@ -138,6 +139,7 @@ export function JournalHistoryPage() {
 
       setGroupHistory(mappedHistory);
       setSelectedGroup(history);
+      setCurrentDetailIndex(mappedHistory.length - 1);
       transitionTo('detail');
     } catch (error) {
       showToast('히스토리를 불러오는 중 오류가 발생했습니다.', 'error');
@@ -211,8 +213,8 @@ export function JournalHistoryPage() {
           {viewState === 'detail' && selectedGroup && groupHistory.length > 0 && (
             <LogGenerationResultView
               history={groupHistory}
-              currentIndex={0}
-              onNavigateHistory={() => {}}
+              currentIndex={currentDetailIndex}
+              onNavigateHistory={setCurrentDetailIndex}
               onRegenerate={async () => {}}
               isRegenerating={false}
             />
