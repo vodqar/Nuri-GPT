@@ -72,3 +72,14 @@ htmlcov/
 tmp/
 temp/
 *.tmp
+
+# Personal file's
+notepad.md
+Makefile
+dev.sh
+download
+prompts
+
+# AI-IDE
+.windsurf
+.playwright-mcp
