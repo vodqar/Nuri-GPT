@@ -66,7 +66,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
       const data = await response.json();
       if (data.access_token) {
-        set({ accessToken: data.access_token, isAuthenticated: true });
+        const update: Partial<AuthState> = { accessToken: data.access_token, isAuthenticated: true };
+        if (data.user) {
+          update.user = data.user as User;
+        }
+        set(update);
         return true;
       }
       return false;

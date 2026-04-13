@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useLayoutStore } from '../../store/layoutStore';
 import { cn } from '../../utils/cn';
+import { logout as logoutApi } from '../../services/api';
 
 export function SideNavBar() {
   const location = useLocation();
@@ -40,9 +41,15 @@ export function SideNavBar() {
     );
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logoutApi();
+    } catch {
+      // 세션 만료 등 서버 오류여도 로컬 상태는 초기화
+    } finally {
+      logout();
+      navigate('/login');
+    }
   };
 
   const navItems: { id: string; label: string; path: string; icon: string }[] = [];

@@ -28,8 +28,7 @@ export const useLoginForm = () => {
       // MSW로 모킹된 API 호출
       const response = await loginApi(values);
       
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      login(response.access_token, response.user as any);
+      login(response.access_token, { ...response.user, role: 'user' as const });
       
       // 상태 저장 여부에 따른 처리
       if (values.remember) {
