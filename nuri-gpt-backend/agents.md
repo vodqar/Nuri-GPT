@@ -46,4 +46,4 @@
 | 문서 | 변경 사항이 `docs/` 내 관련 문서에 반영되고 최하단에 업데이트 날짜 기록 |
 
 > 문서가 업데이트되지 않았으면 작업 완료가 아닙니다.
-> 문서 경로: `/home/kj/Projects/Nuri-GPT/nuri-gpt-backend/docs`
+> 문서 경로: `/home/mbk7990/workspace/Nuri-GPT/nuri-gpt-backend/docs`

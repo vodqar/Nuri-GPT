@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-  ],
+  ] as any,
   test: {
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
@@ -15,6 +15,7 @@ export default defineConfig({
     css: true,
   },
   server: {
+    host: '0.0.0.0',
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:8001',

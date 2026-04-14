@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Check, X, Loader2, FolderOpen, ChevronRight, List } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { showToast } from '../../../components/global/ToastContainer';
 import { createTemplate } from '../../../services/api';
 import type { TreeNode } from '../utils/templateStructureUtils';
@@ -239,36 +239,103 @@ export function TemplateStructureEditor({
           </div>
         </div>
 
-        {/* 카드 목록 컨테이너 */}
-        <div className="relative space-y-4">
+        {/* 표 형태 구조 편집 테이블 */}
+        <div className="doc-table">
           {tree.map((category) => (
-            <CategoryCard
-              key={category.id}
-              node={category}
-              editingId={editingId}
-              editingLabel={editingLabel}
-              editInputRef={editingId?.startsWith(category.id) ? editInputRef : undefined}
-              onEditStart={(id, label) => startEdit(id, label)}
-              onEditChange={setEditingLabel}
-              onEditCommit={commitEdit}
-              onEditCancel={cancelEdit}
-              onAddSubcategory={() => addSubcategory(category.id)}
-              onAddItem={(subId) => addItem(subId)}
-              onDelete={(id) => deleteNode(id)}
-            />
+            <div key={category.id} className="doc-row">
+              {/* 대분류 헤더 컬럼 */}
+              <div className="doc-header-col">
+                <EditableLabel
+                  label={category.label}
+                  isEditing={editingId === category.id}
+                  editingValue={editingLabel}
+                  placeholder="대분류"
+                  onStartEdit={() => startEdit(category.id, category.label)}
+                  onChange={setEditingLabel}
+                  onCommit={commitEdit}
+                  onCancel={cancelEdit}
+                  onDelete={() => deleteNode(category.id)}
+                />
+              </div>
+
+              {/* 소분류 및 항목 영역 */}
+              <div className="flex flex-col flex-1">
+                {category.children.map((sub, subIdx) => (
+                  <div
+                    key={sub.id}
+                    className="flex"
+                    style={subIdx === 0 ? undefined : { borderTop: '1px solid rgba(150, 160, 155, 0.25)' }}
+                  >
+                    {/* 소분류 헤더 컬럼 */}
+                    <div className="doc-sub-header-col">
+                      <EditableLabel
+                        label={sub.label}
+                        isEditing={editingId === sub.id}
+                        editingValue={editingLabel}
+                        placeholder="소분류"
+                        onStartEdit={() => startEdit(sub.id, sub.label)}
+                        onChange={setEditingLabel}
+                        onCommit={commitEdit}
+                        onCancel={cancelEdit}
+                        onDelete={() => deleteNode(sub.id)}
+                      />
+                    </div>
+
+                    {/* 항목 리스트 컬럼 */}
+                    <div className="doc-content-col">
+                      {sub.children.length > 0 ? (
+                        <div className="flex flex-col">
+                          {sub.children.map((item) => (
+                            <div key={item.id} className="doc-edit-row">
+                              <EditableLabel
+                                label={item.label}
+                                isEditing={editingId === item.id}
+                                editingValue={editingLabel}
+                                placeholder="항목"
+                                onStartEdit={() => startEdit(item.id, item.label)}
+                                onChange={setEditingLabel}
+                                onCommit={commitEdit}
+                                onCancel={cancelEdit}
+                                onDelete={() => deleteNode(item.id)}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      {/* 항목 추가 버튼 */}
+                      <button
+                        type="button"
+                        onClick={() => addItem(sub.id)}
+                        className="doc-add-item-btn"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>항목 추가</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* 소분류 추가 버튼 */}
+                <button
+                  type="button"
+                  onClick={() => addSubcategory(category.id)}
+                  className="doc-add-item-btn"
+                  style={{ margin: '0.5rem 0.75rem', justifyContent: 'center' }}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>소분류 추가</span>
+                </button>
+              </div>
+            </div>
           ))}
-
-          {/* + 카테고리 추가 버튼 */}
-          <button
-            type="button"
-            onClick={addCategory}
-            className="w-full py-4 px-5 flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[var(--color-outline-variant)] hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-surface-container-low)] transition-all text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)]"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="font-medium">카테고리 추가</span>
-          </button>
-
         </div>
+
+        {/* + 카테고리(대분류) 추가 버튼 */}
+        <button type="button" onClick={addCategory} className="doc-add-category-btn">
+          <Plus className="w-5 h-5" />
+          <span>카테고리(대분류) 추가</span>
+        </button>
       </div>
 
       {/* 푸터 버튼 */}
@@ -296,323 +363,87 @@ export function TemplateStructureEditor({
 }
 
 // ─────────────────────────────────────────
-// 카테고리 카드 컴포넌트 (대분류)
+// 인라인 라벨 편집 컴포넌트
 // ─────────────────────────────────────────
-interface CategoryCardProps {
-  node: TreeNode;
-  editingId: string | null;
-  editingLabel: string;
-  editInputRef?: React.RefObject<HTMLInputElement | null>;
-  onEditStart: (id: string, label: string) => void;
-  onEditChange: (val: string) => void;
-  onEditCommit: () => void;
-  onEditCancel: () => void;
-  onAddSubcategory: () => void;
-  onAddItem: (subcategoryId: string) => void;
-  onDelete: (id: string) => void;
-}
-
-function CategoryCard({
-  node,
-  editingId,
-  editingLabel,
-  editInputRef,
-  onEditStart,
-  onEditChange,
-  onEditCommit,
-  onEditCancel,
-  onAddSubcategory,
-  onAddItem,
-  onDelete,
-}: CategoryCardProps) {
-  const isEditing = editingId === node.id;
-
-  return (
-    <div className="w-full overflow-hidden rounded-2xl bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)]/50">
-      {/* 카드 헤더 (대분류 이름) */}
-      <div className="px-4 py-3 bg-[var(--color-primary)]/5 border-b border-[var(--color-outline-variant)]/30 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-[var(--color-primary)]/15 flex items-center justify-center shrink-0">
-          <FolderOpen className="w-4 h-4 text-[var(--color-primary)]" />
-        </div>
-
-        {isEditing ? (
-          <input
-            ref={editInputRef}
-            type="text"
-            value={editingLabel}
-            onChange={(e) => onEditChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') onEditCommit();
-              if (e.key === 'Escape') onEditCancel();
-            }}
-            onBlur={onEditCommit}
-            placeholder="카테고리 이름"
-            className="flex-1 px-3 py-1.5 text-sm font-bold rounded-lg bg-white border border-[var(--color-primary)]/30 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30"
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={() => onEditStart(node.id, node.label)}
-            className="flex-1 text-left font-bold text-[var(--color-on-surface)] hover:text-[var(--color-primary)] transition-colors truncate"
-          >
-            {node.label || <span className="text-[var(--color-on-surface-variant)]/50 italic">카테고리 이름</span>}
-          </button>
-        )}
-
-        {isEditing ? (
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              type="button"
-              onClick={onEditCommit}
-              className="p-1.5 rounded-lg text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10"
-            >
-              <Check className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={onEditCancel}
-              className="p-1.5 rounded-lg text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container-high)]"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => onDelete(node.id)}
-            className="p-1.5 rounded-lg text-[var(--color-error)] hover:bg-[var(--color-error-container)] opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity shrink-0"
-            title="카테고리 삭제"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
-      {/* 카드 본문 (소분류 목록) */}
-      <div className="p-3 space-y-3">
-        {node.children.map((sub) => (
-          <SubcategoryCard
-            key={sub.id}
-            node={sub}
-            editingId={editingId}
-            editingLabel={editingLabel}
-            onEditStart={onEditStart}
-            onEditChange={onEditChange}
-            onEditCommit={onEditCommit}
-            onEditCancel={onEditCancel}
-            onAddItem={() => onAddItem(sub.id)}
-            onDelete={onDelete}
-          />
-        ))}
-
-        {/* 소분류 추가 버튼 */}
-        <button
-          type="button"
-          onClick={onAddSubcategory}
-          className="w-full py-2.5 px-3 flex items-center gap-2 rounded-xl border border-dashed border-[var(--color-outline-variant)] hover:border-[var(--color-primary)]/40 hover:bg-[var(--color-primary)]/5 transition-all text-sm text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)]"
-        >
-          <Plus className="w-4 h-4" />
-          <span>소분류 추가</span>
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────
-// 소분류 미니카드 컴포넌트
-// ─────────────────────────────────────────
-interface SubcategoryCardProps {
-  node: TreeNode;
-  editingId: string | null;
-  editingLabel: string;
-  onEditStart: (id: string, label: string) => void;
-  onEditChange: (val: string) => void;
-  onEditCommit: () => void;
-  onEditCancel: () => void;
-  onAddItem: () => void;
-  onDelete: (id: string) => void;
-}
-
-function SubcategoryCard({
-  node,
-  editingId,
-  editingLabel,
-  onEditStart,
-  onEditChange,
-  onEditCommit,
-  onEditCancel,
-  onAddItem,
-  onDelete,
-}: SubcategoryCardProps) {
-  const isEditing = editingId === node.id;
-
-  return (
-    <div className="w-full overflow-hidden rounded-xl bg-[var(--color-surface)] border border-[var(--color-outline-variant)]/30">
-      {/* 소분류 헤더 */}
-      <div className="px-3 py-2 border-b border-[var(--color-outline-variant)]/20 flex items-center gap-2">
-        <ChevronRight className="w-4 h-4 text-[var(--color-on-surface-variant)]/50 shrink-0" />
-
-        {isEditing ? (
-          <input
-            type="text"
-            value={editingLabel}
-            onChange={(e) => onEditChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') onEditCommit();
-              if (e.key === 'Escape') onEditCancel();
-            }}
-            onBlur={onEditCommit}
-            placeholder="소분류 이름"
-            className="flex-1 px-2 py-1 text-sm rounded-md bg-[var(--color-surface-container-low)] border border-[var(--color-primary)]/30 focus:outline-none"
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={() => onEditStart(node.id, node.label)}
-            className="flex-1 text-left text-sm font-medium text-[var(--color-on-surface)] hover:text-[var(--color-primary)] transition-colors truncate"
-          >
-            {node.label || <span className="text-[var(--color-on-surface-variant)]/50 italic">소분류 이름</span>}
-          </button>
-        )}
-
-        {isEditing ? (
-          <div className="flex items-center gap-0.5 shrink-0">
-            <button
-              type="button"
-              onClick={onEditCommit}
-              className="p-1 rounded text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10"
-            >
-              <Check className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={onEditCancel}
-              className="p-1 rounded text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container-high)]"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => onDelete(node.id)}
-            className="p-1 rounded text-[var(--color-error)] hover:bg-[var(--color-error-container)] opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity shrink-0"
-            title="소분류 삭제"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        )}
-      </div>
-
-      {/* 항목 목록 */}
-      <div className="p-2 space-y-1">
-        {node.children.map((item) => (
-          <ItemRow
-            key={item.id}
-            node={item}
-            isEditing={editingId === item.id}
-            editingLabel={editingLabel}
-            onEditStart={() => onEditStart(item.id, item.label)}
-            onEditChange={onEditChange}
-            onEditCommit={onEditCommit}
-            onEditCancel={onEditCancel}
-            onDelete={() => onDelete(item.id)}
-          />
-        ))}
-
-        {/* 항목 추가 버튼 */}
-        <button
-          type="button"
-          onClick={onAddItem}
-          className="w-full py-2 px-2 flex items-center gap-2 rounded-lg hover:bg-[var(--color-surface-container-low)] transition-colors text-sm text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)]"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>항목 추가</span>
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────
-// 항목 라인 컴포넌트 (leaf)
-// ─────────────────────────────────────────
-interface ItemRowProps {
-  node: TreeNode;
+interface EditableLabelProps {
+  label: string;
   isEditing: boolean;
-  editingLabel: string;
-  onEditStart: () => void;
-  onEditChange: (val: string) => void;
-  onEditCommit: () => void;
-  onEditCancel: () => void;
+  editingValue: string;
+  placeholder?: string;
+  onStartEdit: () => void;
+  onChange: (val: string) => void;
+  onCommit: () => void;
+  onCancel: () => void;
   onDelete: () => void;
 }
 
-function ItemRow({
-  node,
+function EditableLabel({
+  label,
   isEditing,
-  editingLabel,
-  onEditStart,
-  onEditChange,
-  onEditCommit,
-  onEditCancel,
+  editingValue,
+  placeholder = '항목',
+  onStartEdit,
+  onChange,
+  onCommit,
+  onCancel,
   onDelete,
-}: ItemRowProps) {
-  return (
-    <div className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-[var(--color-surface-container-low)] group">
-      <List className="w-3.5 h-3.5 text-[var(--color-on-surface-variant)]/40 shrink-0" />
+}: EditableLabelProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
 
-      {isEditing ? (
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  if (isEditing) {
+    return (
+      <div className="flex items-center w-full">
         <input
+          ref={inputRef}
           type="text"
-          value={editingLabel}
-          onChange={(e) => onEditChange(e.target.value)}
+          value={editingValue}
+          onChange={(e) => onChange(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') onEditCommit();
-            if (e.key === 'Escape') onEditCancel();
+            if (e.key === 'Enter') onCommit();
+            if (e.key === 'Escape') onCancel();
           }}
-          onBlur={onEditCommit}
-          placeholder="항목 이름"
-          className="flex-1 px-2 py-0.5 text-sm rounded bg-[var(--color-surface-container-low)] border border-[var(--color-primary)]/30 focus:outline-none"
+          onBlur={onCommit}
+          placeholder={placeholder}
+          className="doc-edit-input"
         />
-      ) : (
-        <button
-          type="button"
-          onClick={onEditStart}
-          className="flex-1 text-left text-sm text-[var(--color-on-surface)] hover:text-[var(--color-primary)] transition-colors truncate"
-        >
-          {node.label || <span className="text-[var(--color-on-surface-variant)]/50 italic">항목 이름</span>}
-        </button>
-      )}
-
-      {isEditing ? (
-        <div className="flex items-center gap-0.5 shrink-0">
-          <button
-            type="button"
-            onClick={onEditCommit}
-            className="p-0.5 rounded text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10"
-          >
-            <Check className="w-3 h-3" />
-          </button>
-          <button
-            type="button"
-            onClick={onEditCancel}
-            className="p-0.5 rounded text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container-high)]"
-          >
-            <X className="w-3 h-3" />
-          </button>
-        </div>
-      ) : (
         <button
           type="button"
           onClick={onDelete}
-          className="p-0.5 rounded text-[var(--color-error)] hover:bg-[var(--color-error-container)] opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shrink-0"
-          title="항목 삭제"
+          className="doc-delete-btn ml-2"
+          title="삭제"
         >
-          <Trash2 className="w-3 h-3" />
+          <Trash2 className="w-4 h-4" />
         </button>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center w-full group">
+      <button
+        type="button"
+        onClick={onStartEdit}
+        className={`doc-edit-label flex-1 text-left ${!label ? 'doc-edit-label-empty' : ''}`}
+      >
+        {label || `${placeholder} 입력...`}
+      </button>
+      <div className="doc-edit-actions">
+        <button
+          type="button"
+          onClick={onDelete}
+          className="doc-delete-btn"
+          title="삭제"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 }

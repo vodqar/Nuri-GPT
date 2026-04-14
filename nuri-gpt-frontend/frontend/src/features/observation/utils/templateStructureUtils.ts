@@ -11,6 +11,14 @@ export interface TreeNode {
   children: TreeNode[];
 }
 
+function generateId(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export const MAX_DEPTH = 4;
 export const MAX_DEPTH_CARD = 2; // 카드 UI: 대분류(0) → 소분류(1) → 항목(2)
 
@@ -56,7 +64,7 @@ export function treeToFlat(tree: Record<string, unknown>, depth = 0): FlatItem[]
   const result: FlatItem[] = [];
 
   for (const [key, value] of Object.entries(tree)) {
-    result.push({ id: crypto.randomUUID(), label: key, depth });
+    result.push({ id: generateId(), label: key, depth });
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       result.push(...treeToFlat(value as Record<string, unknown>, depth + 1));
     }
@@ -69,14 +77,14 @@ export function treeToFlat(tree: Record<string, unknown>, depth = 0): FlatItem[]
  * 새 FlatItem 생성 헬퍼
  */
 export function createFlatItem(label = '', depth = 0): FlatItem {
-  return { id: crypto.randomUUID(), label, depth };
+  return { id: generateId(), label, depth };
 }
 
 /**
  * 새 TreeNode 생성 헬퍼
  */
 export function createTreeNode(label = ''): TreeNode {
-  return { id: crypto.randomUUID(), label, children: [] };
+  return { id: generateId(), label, children: [] };
 }
 
 /**
