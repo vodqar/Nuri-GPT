@@ -107,7 +107,7 @@ export function AccountPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         {/* Subscription & Billing */}
         <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-sm border border-zinc-100 dark:border-zinc-800 space-y-6">
           <div className="flex items-center justify-between">
@@ -155,8 +155,8 @@ export function AccountPage() {
         </div>
 
         {/* Usage & Quotas */}
-        <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-sm border border-zinc-100 dark:border-zinc-800 space-y-6 md:p-8 relative overflow-hidden flex flex-col">
-          <div className={cn("space-y-6 flex-1 transition-all duration-300", !usage && loading && "blur-[2px] opacity-60 pointer-events-none")}>
+        <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-sm border border-zinc-100 dark:border-zinc-800 md:p-8 relative overflow-hidden">
+          <div className={cn("space-y-6 transition-all duration-300", !usage && loading && "blur-[2px] opacity-60 pointer-events-none")}>
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold flex items-center gap-2">
                 <span className="material-symbols-outlined text-[var(--color-primary)]">analytics</span>
@@ -219,20 +219,6 @@ export function AccountPage() {
                   </div>
                 </div>
               ))}
-              
-              {!usage && loading && (
-                <div className="space-y-6">
-                  {[1, 2].map((i) => (
-                    <div key={i} className="animate-pulse space-y-2">
-                      <div className="flex justify-between">
-                        <div className="h-3 w-24 bg-zinc-100 dark:bg-zinc-800 rounded-full" />
-                        <div className="h-3 w-12 bg-zinc-100 dark:bg-zinc-800 rounded-full" />
-                      </div>
-                      <div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded-full" />
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
             </div>
             

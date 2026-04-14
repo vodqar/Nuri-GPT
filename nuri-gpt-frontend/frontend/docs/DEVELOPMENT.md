@@ -59,6 +59,11 @@
 
 *마지막 업데이트: 2026-04-15*
 
+- **계정 설정 로딩 UX 개선 (`AccountPage.tsx`, `LoadingSpinner.tsx`)**:
+  - `LoadingSpinner` 글로벌 컴포넌트 추가 및 4단계 크기(`sm`, `md`, `lg`, `xl`) 지원.
+  - 사용량 할당량(Quota) 카드에 `backdrop-blur` 기반의 로컬 로딩 오버레이 적용.
+  - 로딩 중 레이아웃 깨짐(Layout Shift) 방지를 위해 그리드 정렬(`items-start`) 및 스켈레톤 최적화.
+
 ### 주요 변경사항 (2026-04-15)
 - **사용자 계정 및 할당량 관리 화면 구현 (`AccountPage.tsx`)**:
   - `authStore` 기반 프로필 정보 연동 및 UI 구성.
