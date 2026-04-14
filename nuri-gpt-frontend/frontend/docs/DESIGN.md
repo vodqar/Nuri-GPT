@@ -86,6 +86,12 @@ The pipeline operates as a unified SPA view (`ObservationPage`) handling transit
   - `ImageCropperModal`을 통해 이미지 업로드 전 편집 단계를 제공한다.
   - **Interaction**: 회전(90도 단위), 영역 선택(Drag to Resize), 자동 Aspect Ratio(옵션).
   - **Visuals**: 다크 배경의 집중형 모달, Glassmorphism 액션바, `Lucide` 아이콘 사용.
+- **Account & Usage View**:
+  - **Layout**: 카드 기반의 동적 레이아웃으로 섹션별 관심사 분리.
+  - **Profile Hero**: `primary-container` 색상 및 원형 아바타를 활용하여 사용자 식별성 강화.
+  - **Subscription Cards**: 서브스크립션 상태 및 결제 정보를 별도 카드로 시각화.
+  - **Quota Visualization**: 일간(Circular), 주간(Horizontal) 프로그레스 바를 통해 LLM 할당량 시각적 표현.
+  - **Responsive Design**: 데스크탑 2열, 모바일 1열 스택 구조로 자동 전환.
 
 ---
 
@@ -110,4 +116,4 @@ The pipeline operates as a unified SPA view (`ObservationPage`) handling transit
 
 ---
 
-*Last Updated: 2026-04-07*
+*Last Updated: 2026-04-15*

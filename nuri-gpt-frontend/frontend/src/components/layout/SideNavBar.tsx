@@ -228,7 +228,7 @@ export function SideNavBar() {
           {/* Settings Submenu (Accordion above button) */}
           <div aria-expanded={isSettingsOpen && !isSidebarCollapsed} className="menu-content overflow-hidden">
             <div className="menu-inner pl-11 py-1 space-y-1">
-              <Link to="#" onClick={isMobileMenuOpen ? closeMobileMenu : undefined} className="block py-1.5 text-xs text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)]">계정</Link>
+              <Link to="/settings/account" onClick={isMobileMenuOpen ? closeMobileMenu : undefined} className="block py-1.5 text-xs text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)]">계정</Link>
               <Link to="#" onClick={isMobileMenuOpen ? closeMobileMenu : undefined} className="block py-1.5 text-xs text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)]">환경설정</Link>
             </div>
           </div>

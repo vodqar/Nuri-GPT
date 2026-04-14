@@ -4,6 +4,7 @@ import { AppLayout } from './components/layout/AppLayout';
 import { ObservationPage } from './features/observation/ObservationPage';
 import { JournalHistoryPage } from './features/observation/components/JournalHistoryPage';
 import { LoginPage } from './features/auth/pages/LoginPage';
+import { AccountPage } from './features/settings/pages/AccountPage';
 import { PrivateRoute } from './routes/PrivateRoute';
 import { PublicRoute } from './routes/PublicRoute';
 import { useAuthInterceptor } from './hooks/useAuthInterceptor';
@@ -32,6 +33,7 @@ function AppRoutes() {
           <Route path="observations/history" element={<JournalHistoryPage />} />
           <Route path="logs" element={<div className="p-10"><h1 className="text-2xl font-bold">{t('app.logsTitle')}</h1></div>} />
           <Route path="insights" element={<div className="p-10"><h1 className="text-2xl font-bold">{t('app.insightsTitle')}</h1></div>} />
+          <Route path="settings/account" element={<AccountPage />} />
         </Route>
       </Route>
       

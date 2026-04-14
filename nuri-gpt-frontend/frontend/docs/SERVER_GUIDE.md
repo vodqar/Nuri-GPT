@@ -58,15 +58,11 @@ npm run dev
 | `net::ERR_FAILED` / `Failed to fetch` (MSW) | MSW 핸들러 경로와 실제 API 호출 경로 불일치 확인. 특히 `/templates` vs `/templates/` (슬래시 유무) 일치 여부 체크 |
 | MSW가 요청을 가로챔 | `src/mocks/handlers.ts`의 핸들러 경로가 `api.ts`의 요청 경로와 **정확히** 일치하는지 확인 |
 
-## 로그인 우회 (개발 편의)
+## 로그인 상태 확인 (인증)
 
-현재 `PrivateRoute.tsx`에 로그인 인증 우회가 적용된 상태 → `/dashboard` 등 직접 접근 가능.
+현재 `PrivateRoute.tsx`는 실제 `authStore`의 `isAuthenticated` 상태를 기반으로 인증 여부를 확인합니다.
 
-- **위치**: `src/routes/PrivateRoute.tsx`
-- **복구**: 파일 내 `[LOGIN_BYPASS_DEV]` 주석 아래 `if (!isAuthenticated) { ... }` 블록 주석 해제
+- **위치**: `src/routes/PrivateRoute.tsx` 
+- **로직**: 미인증 시 `/login`으로 리디렉션하며, 새로고침 시 `refreshAccessToken`을 통해 세션 복원을 시도합니다.
 
-*
-
-*
-
-*마지막 업데이트: 2026-04-03* (Makefile 통합 실행 추가)
+*마지막 업데이트: 2026-04-15* (로그인 우회 정보 최신화)
