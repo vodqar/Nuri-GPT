@@ -56,11 +56,16 @@
 
 ## ✅ 해결된 문제
 
-### 1. 카드 컴포넌트 너비 오버플로우 (2026-04-14 수정)
+### 1. 수동 템플릿 생성 후 결과 화면 비어있음 (2026-04-14 수정)
+- **원인**: `generate_journal_content`에서 LLM이 중첩된 JSON(`{"놀이.실내 놀이": {"놀이 내용": "..."}}`)을 반환하지만, 코드가 `parsed_data.get("놀이.실내 놀이.놀이 내용")`로 평면 키를 조회하여 빈 문자열 반환
+- **수정**: `_flatten_dict` 헬퍼 추가하여 중첩된 dict를 점(.) 표기법 평면 dict로 변환 후 태그 매칭
+- **파일**: `nuri-gpt-backend/app/services/llm.py` (line 234-244, 799-805)
+
+### 2. 카드 컴포넌트 너비 오버플로우 (2026-04-14 수정)
 - **원인**: `SubcategoryCard`, `CategoryCard` 내 flex 자식에 `w-full` / `overflow-hidden` 미적용
 - **수정**: 각 카드 컴포넌트 루트 `<div>`에 `w-full overflow-hidden` 추가
 
-### 2. 예시 오버레이 컨테이너 오버플로우 (2026-04-14 수정)
+### 3. 예시 오버레이 컨테이너 오버플로우 (2026-04-14 수정)
 - **원인**: `ExampleOverlay`의 콘텐츠(놀이+일상생활 카드)가 부모 컨테이너 높이를 초과하여 하단 버튼("취소"/"저장하기")과 겹침
 - **수정**: 카드 목록 컨테이너(`relative space-y-4`)와 `ExampleOverlay` 루트 div 양쪽에 `overflow-hidden` 추가
 - **참고**: `frontend/docs/GUARDRAILS.md` — UI Layout Overflow 섹션
