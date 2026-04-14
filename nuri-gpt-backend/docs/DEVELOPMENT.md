@@ -127,5 +127,22 @@ pytest --cov=app --cov-report=html
 | `test_llm.py` | LLM 서비스 | 단위 | mock (Gemini) |
 | `test_template_upload.py` | Vision Template Upload API | 단위+통합 | mock (Gemini) |
 | `test_generate.py` | Generate API | 통합 | mock services |
+| `test_generate_api.py` | Generate/Regenerate API | 단위 | mock services |
 | `test_e2e.py` | 전체 워크플로우 | E2E | 전체 |
 ```
+
+---
+
+### 변경 이력
+
+#### 2026-04-14 — 재생성 응답 파싱 로직 수정
+
+- **`app/services/llm.py`** `generate_regenerated_activities()` 응답 파싱 개선
+  - Dify 시스템 프롬프트에 Jinja `is_regeneration` 분기 추가 이후, 응답 형식이 `{"updated_activities": [...]}` 리스트 형식으로 올 수 있음
+  - 기존: 평면 `{target_id: text}` dict 형식만 처리 → silent fallback 발생 가능
+  - 수정: `updated_activities` 리스트 형식 우선 처리, 평면 dict는 레거시 호환으로 유지
+- **`tests/test_generate_api.py`** 재생성 테스트 강화
+  - `test_regenerate_log_success`: `is_aggressive`, `child_age` 파라미터 전달 여부 검증 추가
+  - `test_regenerate_log_list_format_response`: 리스트 형식 응답 파싱 케이스 신규 추가
+
+*Last Updated: 2026-04-14*

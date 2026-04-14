@@ -207,12 +207,13 @@ class LlmService:
             logger.warning(f"Gemini candidates 기반 텍스트 추출 실패: {exc}")
             return ""
 
-    def _parse_json_response(self, response_text: str) -> Optional[Dict[str, Any]]:
+    @staticmethod
+    def _parse_json_response(response_text: str) -> Optional[Dict[str, Any]]:
         """Gemini 응답 문자열에서 JSON 객체를 최대한 견고하게 파싱합니다."""
         if not response_text:
             return None
 
-        cleaned = self._strip_code_fence(response_text)
+        cleaned = LlmService._strip_code_fence(response_text)
         candidates = [cleaned]
 
         start = cleaned.find("{")
@@ -229,6 +230,18 @@ class LlmService:
                 continue
 
         return None
+
+    @staticmethod
+    def _flatten_dict(data: Dict[str, Any], prefix: str = "") -> Dict[str, str]:
+        """중첩된 dict를 점(.) 표기법 평면 dict로 변환합니다."""
+        result: Dict[str, str] = {}
+        for key, value in data.items():
+            full_key = f"{prefix}.{key}" if prefix else key
+            if isinstance(value, dict):
+                result.update(LlmService._flatten_dict(value, full_key))
+            else:
+                result[full_key] = str(value) if value is not None else ""
+        return result
 
     def generate_updated_activities(
         self,
@@ -566,16 +579,27 @@ class LlmService:
                     ]
 
                 # 결과 조합 - 기존 Chatflow 응답 형식을 updated_activities 형태로 변환
-                # 응답은 JSON 객체 형태 (키: target_id, 값: updated_text)
+                # 응답은 JSON 객체 형태 (키: target_id, 값: updated_text) 또는
+                # {"updated_activities": [...]} 리스트 형식 (Jinja 분기 이후)
                 result_map = dict(content_map)
                 
-                # 응답이 딕셔너리 형태인 경우 (기존 생성 Chatflow의 응답 형식)
                 if isinstance(parsed_data, dict):
-                    for target_id, updated_text in parsed_data.items():
-                        # target_id 형태의 키만 처리 (보육일지.XXX.XXX 패턴)
-                        if isinstance(target_id, str) and target_id in result_map:
-                            result_map[target_id] = str(updated_text) if updated_text is not None else ""
-                            logger.debug(f"[Dify Regenerate] Updated {target_id}: {str(updated_text)[:50]}...")
+                    raw_list = parsed_data.get("updated_activities")
+                    if isinstance(raw_list, list):
+                        # updated_activities 리스트 형식
+                        for item in raw_list:
+                            if not isinstance(item, dict):
+                                continue
+                            tid = str(item.get("target_id", "")).strip()
+                            if tid in result_map:
+                                result_map[tid] = str(item.get("updated_text", ""))
+                                logger.debug(f"[Dify Regenerate] Updated {tid}: {str(item.get('updated_text', ''))[:50]}...")
+                    else:
+                        # 평면 dict 형식 (레거시 호환: 키=target_id, 값=updated_text)
+                        for target_id, updated_text in parsed_data.items():
+                            if isinstance(target_id, str) and target_id in result_map:
+                                result_map[target_id] = str(updated_text) if updated_text is not None else ""
+                                logger.debug(f"[Dify Regenerate] Updated {target_id}: {str(updated_text)[:50]}...")
                 
 
 
@@ -772,10 +796,12 @@ class LlmService:
                     )
                     return {k: "" for k in tags}
 
-                # Ensure all tags exist in the output
+                # Flatten nested LLM response to dot-notation keys for tag matching
+                flat_data = self._flatten_dict(parsed_data)
+
                 result = {}
                 for tag in tags:
-                    result[tag] = str(parsed_data.get(tag, ""))
+                    result[tag] = flat_data.get(tag, str(parsed_data.get(tag, "")))
                 return result
 
         except requests.exceptions.RequestException as e:

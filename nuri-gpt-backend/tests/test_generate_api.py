@@ -306,10 +306,52 @@ def test_regenerate_log_success(mock_llm_service, mock_log_repo, mock_journal_re
 
     mock_llm_service.generate_regenerated_activities.assert_called_once()
     
+    # Verify is_aggressive and child_age are passed correctly
+    regen_call_kwargs = mock_llm_service.generate_regenerated_activities.call_args.kwargs
+    assert regen_call_kwargs["is_aggressive"] == "false"
+    assert regen_call_kwargs["child_age"] is None
+
     # Verify log_action was called with correct action name
     mock_log_repo.log_action.assert_called_once()
     call_kwargs = mock_log_repo.log_action.call_args.kwargs
     assert call_kwargs["action"] == "regenerate_journal_from_semantic"
+
+    app.dependency_overrides.clear()
+
+
+def test_regenerate_log_list_format_response(mock_log_repo, mock_journal_repo, mock_current_user):
+    """재생성 API 테스트 - updated_activities 리스트 형식 응답 파싱"""
+    mock_llm_service = MagicMock()
+    mock_llm_service.generate_regenerated_activities.return_value = [
+        {"target_id": "t_20", "updated_text": "리스트 형식 응답 간식"},
+        {"target_id": "t_31", "updated_text": "리스트 형식 응답 실내놀이"},
+    ]
+
+    app.dependency_overrides[get_llm_service] = lambda: mock_llm_service
+    app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
+    app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
+    app.dependency_overrides[get_current_user] = lambda: mock_current_user
+
+    response = client.post(
+        "/api/generate/regenerate",
+        json={
+            "original_semantic_json": {},
+            "current_activities": [
+                {"target_id": "t_20", "updated_text": "원본 간식"},
+                {"target_id": "t_31", "updated_text": "원본 실내놀이"},
+            ],
+            "comments": [
+                {"target_id": "t_20", "comment": "수정 요청"},
+            ],
+            "additional_guidelines": "",
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["updated_activities"]) == 2
+    assert data["updated_activities"][0]["updated_text"] == "리스트 형식 응답 간식"
+    assert data["updated_activities"][1]["updated_text"] == "리스트 형식 응답 실내놀이"
 
     app.dependency_overrides.clear()
 
