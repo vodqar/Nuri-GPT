@@ -8,6 +8,12 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 
 ### Root
 - **TESTING_GUIDE.md** — Guide for running tests, mocking strategies, and debugging procedures
+- **SPEC_DRIVEN_DEVELOPMENT.md** — Define problem, scope, non-goals, and verification before implementation
+- **PLANNING_AND_TASK_BREAKDOWN.md** — Break larger work into verifiable, outcome-oriented steps
+- **CODE_REVIEW_AND_QUALITY.md** — Final quality gate for scope, verification, and documentation sync
+- **BROWSER_TESTING_WITH_PLAYWRIGHT_MCP.md** — Browser-facing verification guide using available Playwright MCP tools
+- **DOCUMENTATION_AND_ADRS.md** — Document decisions, rationale, and when to create ADR-style records
+- **RECURRING_FAILURES_AND_GUARDRAILS.md** — Promote repeated mistakes and late-discovered constraints into durable working guidance
 
 ### Backend (`nuri-gpt-backend/`)
 - **agents.md** — Backend-specific guidelines (dependency management, testing isolation, DB schema, framework specs, DoD)
@@ -28,6 +34,21 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 - **docs/DESIGN.md** — UI/UX design philosophy (Color, Typography, Elevation)
 
 > **Note**: After completing work, update the relevant documents in this ToC that were affected by your changes. If no documentation was updated, the task is not complete.
+
+## On-Demand Skill Document Loading
+
+Before implementation, load the matching root `docs/` document when the task requires additional process guidance.
+
+- If the task is ambiguous, changes user-facing behavior, or has multiple valid interpretations, read `docs/SPEC_DRIVEN_DEVELOPMENT.md`.
+- If the work spans multiple files or needs staged delivery, read `docs/PLANNING_AND_TASK_BREAKDOWN.md`.
+- Before declaring implementation complete, read `docs/CODE_REVIEW_AND_QUALITY.md`.
+- If the task affects browser UI, layout, interactions, or frontend network behavior, read `docs/BROWSER_TESTING_WITH_PLAYWRIGHT_MCP.md`.
+- If the task changes architecture, decision rationale, or project documentation structure, read `docs/DOCUMENTATION_AND_ADRS.md`.
+- If the task touches a failure-prone workflow, a temporary workaround, a dev-only path, or a lesson already seen in handoff/postmortem notes, read `docs/RECURRING_FAILURES_AND_GUARDRAILS.md`.
+
+These root docs complement existing root, backend, and frontend `agents.md` files. They do not override project-specific implementation rules in the backend or frontend documentation sets.
+
+When the same mistake, workaround, or late-discovered constraint appears more than once, promote it into the appropriate Root / Backend / Frontend `docs/` or `agents.md` instead of leaving it only in a handoff or plan file.
 
 ---
 

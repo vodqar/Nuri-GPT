@@ -41,12 +41,14 @@
 |--------|------|-------------|-------------|-----------|--------------|
 | POST | `/api/upload/memo` | 수기 메모 이미지 업로드 + OCR | `multipart/form-data` | ✅ | `file` (user_id는 JWT에서 추출) |
 | POST | `/api/upload/memo/text` | 텍스트 직접 입력 + 정규화 | `application/json` | ❌ | `text`, `child_name?` |
-| POST | `/api/upload/template` | 빈 템플릿 이미지 업로드 + 계층 구조 분석 + DB 등록 | `multipart/form-data` | ✅ | `file`, `template_name` (user_id는 JWT에서 추출) |
+| POST | `/api/upload/template` | 빈 템플릿 이미지 업로드 + 계층 구조 분석 + DB 등록 (deprecated) | `multipart/form-data` | ✅ | `file`, `template_name` (user_id는 JWT에서 추출) |
+| POST | `/api/upload/template/analyze` | 템플릿 이미지 분석 전용 — `structure_json`만 반환, DB/Storage 저장 없음 | `multipart/form-data` | ✅ | `file` (user_id는 JWT에서 추출) |
 
 ### Template (API) — prefix: `/api/templates`
 
 | Method | Path | Description | Content-Type | 인증 필요 | 주요 파라미터 |
 |--------|------|-------------|-------------|-----------|--------------|
+| POST | `/api/templates` | 템플릿 생성 — `structure_json` + 선택적 이미지로 DB 등록. 이미지 없으면 수동 트랙 (file_storage_path=null) | `multipart/form-data` | ✅ | `template_name`, `structure_json` (JSON 문자열), `file?` (user_id는 JWT에서 추출) |
 | GET | `/api/templates` | 템플릿 목록 조회 (활성화된 템플릿만, sort_order 순) | `application/json` | ✅ | `template_type?`, `is_default?`, `is_active?` (기본값 true, user_id는 JWT에서 추출) |
 | GET | `/api/templates/{template_id}` | 특정 템플릿 상세 조회 | `application/json` | ✅ | `template_id` (UUID, path) |
 | DELETE | `/api/templates/{template_id}` | 템플릿 소프트 삭제 (is_active=false) | - | ✅ | `template_id` (UUID, path) |
@@ -86,6 +88,6 @@
 ---
 
 
-> 마지막 업데이트: 2026-04-10 (버전 관리 기능 추가 - group_id, journal_id 필드 추가, regenerate 시 버전 저장 로직 구현)
+> 마지막 업데이트: 2026-04-14 (반자동 템플릿 생성 지원 — POST /upload/template/analyze 신설, POST /templates 신설, file_storage_path optional화)
 >
-> 이전 업데이트: 2026-04-09 (파일 검증 개선 - MIME 타입에서 확장자 추론 지원, blob 파일명 처리)
+> 이전 업데이트: 2026-04-10 (버전 관리 기능 추가 - group_id, journal_id 필드 추가, regenerate 시 버전 저장 로직 구현)

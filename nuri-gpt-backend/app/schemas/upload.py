@@ -42,6 +42,12 @@ class TemplateUploadResponse(BaseModel):
     template_name: str = Field(..., description="템플릿 이름")
     structure_json: dict = Field(..., description="Vision LLM에서 추출한 계층 구조 JSON 데이터")
 
+class TemplateAnalyzeResponse(BaseModel):
+    """템플릿 이미지 분석 응답 스키마 (저장 없이 structure_json만 반환)"""
+
+    structure_json: dict = Field(..., description="Vision LLM에서 추출한 계층 구조 JSON 데이터")
+
+
 class SemanticActivity(BaseModel):
     """Semantic JSON 내 활동 스키마"""
     target_id: Optional[str] = Field(None, description="수정 대상 텍스트 노드 타겟 ID")

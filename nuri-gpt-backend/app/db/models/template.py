@@ -22,7 +22,7 @@ class TemplateBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     template_type: str = Field(..., min_length=1, max_length=20)
     structure_json: Dict[str, Any] = Field(default_factory=dict, description="추출된 템플릿 계층 구조 JSON")
-    file_storage_path: str = Field(..., min_length=1, max_length=255)
+    file_storage_path: Optional[str] = Field(default=None, max_length=255)
     is_default: bool = False
     sort_order: int = Field(default=0, description="템플릿 표시 순서")
     is_active: bool = Field(default=True, description="템플릿 활성화 여부")

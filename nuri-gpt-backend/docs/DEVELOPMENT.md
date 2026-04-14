@@ -73,6 +73,8 @@ get_vision_service()      → VisionService()
 - **스펙**: Python 3.11+, FastAPI 0.104+
 - **문서 동기화**: 코드 변경 시 README + handoff 문서 함께 업데이트
 - **인증 미구현**: `security.py`는 현재 빈 파일, Generate/Export API는 `MOCK_USER_ID` 사용 중
+- **계층 경계 안정화**: 프론트엔드나 API 소비자가 일정한 구조를 기대한다면, 그 구조를 어디서 안정화할지 명확히 하고 숨은 가정으로 남기지 않음
+- **제약의 승격**: 작업 후반에야 드러난 구조적 제약은 handoff 메모에서 끝내지 말고 관련 문서의 판단 기준으로 승격
 
 ---
 

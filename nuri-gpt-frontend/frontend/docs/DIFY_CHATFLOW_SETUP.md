@@ -38,9 +38,9 @@
 ```
 
 3. 입력 변수 설정:
-   - `original_semantic_json` (Object)
-   - `current_activities` (Array)
-   - `comments` (Array)
+   - `is_aggressive` (String, 기본값 `"false"`)
+   - `child_age` (String)
+   - `is_regeneration` (String, 기본값 `"false"`) ← **필수**: 재생성 모드 분기에 사용
 
 4. API Key 발급 후 `.env`에 설정
 
@@ -112,4 +112,27 @@ curl -X POST http://localhost:8000/api/generate/regenerate \
 
 ---
 
-*Last Updated: 2026-03-27 (재생성 파이프라인 구현 완료)*
+---
+
+## 5. `is_regeneration` 플래그 동작 방식
+
+백엔드는 Dify에 요청할 때 항상 `is_regeneration` 입력변수를 전달합니다.
+
+| 호출 경로 | `is_regeneration` 값 |
+|-----------|---------------------|
+| 최초 생성 (`generate_observation_log`, `generate_journal_content`) | `"false"` |
+| 재생성 (`generate_regenerated_activities`) | `"true"` |
+
+Dify 시스템 프롬프트는 Jinja 템플릿으로 이 값을 분기하여 재생성 전용 지침을 적용합니다:
+
+```jinja
+{% if is_regeneration == "true" %}
+## [재생성 모드] - 최우선 적용
+...
+{% endif %}
+```
+
+또한 백엔드는 재생성 요청 시 코멘트가 없는 항목에 `-> [수정 불필요: 원문 유지]` 마킹을 삽입하여
+LLM이 불필요한 확장을 하지 않도록 유도합니다.
+
+*Last Updated: 2026-04-14 (is_regeneration 플래그 통합 완료)*

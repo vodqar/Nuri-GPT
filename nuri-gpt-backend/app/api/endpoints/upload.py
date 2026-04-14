@@ -21,6 +21,7 @@ from app.db.models.template import TemplateCreate
 from app.db.repositories.template_repository import TemplateRepository
 from app.schemas.upload import (
     MemoUploadResponse,
+    TemplateAnalyzeResponse,
     TemplateUploadResponse,
     TextMemoRequest,
     TextMemoResponse,
@@ -115,6 +116,41 @@ async def upload_memo_text(
         normalized_text=normalized_text,
         child_name=request.child_name,
     )
+
+
+@router.post(
+    "/upload/template/analyze",
+    response_model=TemplateAnalyzeResponse,
+    summary="템플릿 이미지 분석 (저장 없음)",
+    description="템플릿 이미지를 Vision API로 분석하여 계층 구조 JSON만 반환합니다. 저장은 하지 않습니다.",
+)
+async def analyze_template(
+    file: UploadFile,
+    current_user: dict = Depends(get_current_user),
+    vision_service: VisionService = Depends(get_vision_service),
+):
+    """템플릿 이미지 업로드 + Vision LLM 파싱 → structure_json 반환 (저장 X)"""
+    from app.utils.file_validator import FileType, validate_file
+
+    valid, error_msg = await validate_file(file, FileType.TEMPLATE)
+    if not valid:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=error_msg or "유효하지 않은 파일입니다.",
+        )
+
+    file_bytes = await file.read()
+    mime_type = file.content_type or "image/jpeg"
+
+    try:
+        structure_json = vision_service.extract_template_structure(file_bytes, mime_type)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"템플릿 구조 추출 실패: {str(e)}",
+        )
+
+    return TemplateAnalyzeResponse(structure_json=structure_json)
 
 
 @router.post(

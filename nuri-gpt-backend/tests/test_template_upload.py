@@ -1,3 +1,4 @@
+import json
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 from uuid import uuid4
@@ -87,4 +88,99 @@ def test_upload_template_with_vision(mock_template_repo, mock_storage_service, m
     repo_call_args = mock_template_repo.create.call_args[0][0]
     assert repo_call_args.structure_json == {"area": "놀이"}
     
+    app.dependency_overrides.clear()
+
+
+def test_analyze_template_returns_structure_json_only(mock_vision_service, mock_current_user):
+    """POST /upload/template/analyze — Vision 결과만 반환, DB/Storage 저장 없음"""
+    app.dependency_overrides[get_vision_service] = lambda: mock_vision_service
+    app.dependency_overrides[get_current_user] = lambda: mock_current_user
+
+    response = client.post(
+        "/api/upload/template/analyze",
+        files={"file": ("test.jpg", b"dummy_content", "image/jpeg")}
+    )
+
+    if response.status_code != 200:
+        print("RESPONSE JSON:", response.json())
+    assert response.status_code == 200
+    data = response.json()
+    assert "structure_json" in data
+    assert data["structure_json"] == {"area": "놀이"}
+    assert "template_id" not in data
+
+    mock_vision_service.extract_template_structure.assert_called_once_with(b"dummy_content", "image/jpeg")
+
+    app.dependency_overrides.clear()
+
+
+def test_create_template_without_image(mock_template_repo, mock_storage_service, mock_current_user):
+    """POST /templates — 이미지 없이 structure_json만으로 저장 (수동 트랙)"""
+    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
+    app.dependency_overrides[get_storage_service] = lambda: mock_storage_service
+    app.dependency_overrides[get_current_user] = lambda: mock_current_user
+
+    structure = {"놀이": {"실내놀이": ""}}
+
+    response = client.post(
+        "/api/templates/",
+        data={
+            "template_name": "수동 템플릿",
+            "structure_json": json.dumps(structure, ensure_ascii=False),
+        },
+    )
+
+    if response.status_code != 201:
+        print("RESPONSE JSON:", response.json())
+    assert response.status_code == 201
+
+    repo_call_args = mock_template_repo.create.call_args[0][0]
+    assert repo_call_args.structure_json == structure
+    assert repo_call_args.file_storage_path is None
+
+    app.dependency_overrides.clear()
+
+
+def test_create_template_with_image(mock_template_repo, mock_storage_service, mock_current_user):
+    """POST /templates — 이미지 포함 저장 (이미지 기반 트랙)"""
+    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
+    app.dependency_overrides[get_storage_service] = lambda: mock_storage_service
+    app.dependency_overrides[get_current_user] = lambda: mock_current_user
+
+    structure = {"놀이": {"실내놀이": ""}}
+
+    response = client.post(
+        "/api/templates/",
+        data={
+            "template_name": "이미지 템플릿",
+            "structure_json": json.dumps(structure, ensure_ascii=False),
+        },
+        files={"file": ("test.jpg", b"dummy_content", "image/jpeg")},
+    )
+
+    if response.status_code != 201:
+        print("RESPONSE JSON:", response.json())
+    assert response.status_code == 201
+
+    mock_storage_service.upload_template.assert_called_once()
+
+    app.dependency_overrides.clear()
+
+
+def test_create_template_empty_structure_json_rejected(mock_template_repo, mock_storage_service, mock_current_user):
+    """POST /templates — 빈 structure_json은 422 반환"""
+    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
+    app.dependency_overrides[get_storage_service] = lambda: mock_storage_service
+    app.dependency_overrides[get_current_user] = lambda: mock_current_user
+
+    response = client.post(
+        "/api/templates/",
+        data={
+            "template_name": "빈 구조",
+            "structure_json": json.dumps({}),
+        },
+    )
+
+    assert response.status_code == 422
+
     app.dependency_overrides.clear()

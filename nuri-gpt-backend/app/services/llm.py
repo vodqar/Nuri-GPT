@@ -70,7 +70,8 @@ class LlmService:
         payload = {
             "inputs": {
                 "is_aggressive": is_aggressive,
-                "child_age": str(child_age)
+                "child_age": str(child_age),
+                "is_regeneration": "false"
             },
             "query": query_text,
             "response_mode": "streaming",
@@ -444,6 +445,7 @@ class LlmService:
             return []
 
         # 코멘트를 해당 키의 값에 삽입
+        comment_target_ids: set = set()
         for comment in comments:
             target_id = comment.get("target_id")
             comment_text = comment.get("comment", "").strip()
@@ -451,7 +453,13 @@ class LlmService:
                 original_text = content_map[target_id]
                 # 코멘트 삽입 형식: 기존 텍스트 + 수정 요청 문구
                 content_map[target_id] = f'{original_text} -> 다음 내용을 반영하여 수정합니다: "{comment_text}"'
+                comment_target_ids.add(target_id)
                 logger.info(f"[Dify Regenerate] Comment applied to {target_id}: {comment_text[:50]}...")
+
+        # 코멘트가 없는 항목에 원문 유지 마킹 추가 (Dify 재생성 모드 지침 적용)
+        for target_id in content_map:
+            if target_id not in comment_target_ids:
+                content_map[target_id] = f'{content_map[target_id]} -> [수정 불필요: 원문 유지]'
 
         # query 필드 구성: JSON 형태의 콘텐츠 맵
         # 기존 생성 파이프라인과 동일한 형식으로 통일
@@ -481,7 +489,8 @@ class LlmService:
         payload = {
             "inputs": {
                 "is_aggressive": is_aggressive,
-                "child_age": str(child_age) if child_age is not None else ""
+                "child_age": str(child_age) if child_age is not None else "",
+                "is_regeneration": "true"
             },
             "query": query_text,
             "response_mode": "streaming",
@@ -678,7 +687,8 @@ class LlmService:
             payload = {
                 "inputs": {
                     "is_aggressive": is_aggressive,
-                    "child_age": str(child_age)
+                    "child_age": str(child_age),
+                    "is_regeneration": "false"
                 },
                 "query": user_prompt,
                 "response_mode": "streaming",

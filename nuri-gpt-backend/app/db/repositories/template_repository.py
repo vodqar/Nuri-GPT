@@ -25,7 +25,7 @@ class TemplateRepository:
 
     async def create(self, template_data: TemplateCreate) -> TemplateResponse:
         """새 템플릿 생성"""
-        data = template_data.model_dump(mode="json")
+        data = template_data.model_dump(mode="json", exclude_none=True)
         result = self.client.table(self.table).insert(data).execute()
 
         if not result.data:

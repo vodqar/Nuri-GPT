@@ -196,13 +196,41 @@ export const generateLog = async (data: Record<string, unknown>) => {
 };
 
 /**
- * 템플릿 업로드 (JWT에서 user_id 추출)
+ * 템플릿 업로드 (JWT에서 user_id 추출) — deprecated: createTemplate 사용 권장
  */
 export const uploadTemplate = async (file: File, templateName: string) => {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('template_name', templateName);
   return fetchFormData('/upload/template', formData);
+};
+
+/**
+ * 템플릿 이미지 분석 전용 (저장 없음)
+ * structure_json만 반환
+ */
+export const analyzeTemplateImage = async (file: File): Promise<{ structure_json: Record<string, unknown> }> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return fetchFormData('/upload/template/analyze', formData) as Promise<{ structure_json: Record<string, unknown> }>;
+};
+
+/**
+ * 템플릿 생성 (저장 전용)
+ * structure_json + 선택적 이미지. 이미지 없으면 수동 트랙.
+ */
+export const createTemplate = async (params: {
+  templateName: string;
+  structureJson: Record<string, unknown>;
+  file?: File;
+}) => {
+  const formData = new FormData();
+  formData.append('template_name', params.templateName);
+  formData.append('structure_json', JSON.stringify(params.structureJson));
+  if (params.file) {
+    formData.append('file', params.file);
+  }
+  return fetchFormData('/templates/', formData);
 };
 
 /**

@@ -1,6 +1,7 @@
 """Template API Endpoints
 
 템플릿 CRUD API 엔드포인트
+- POST /templates         : 템플릿 생성 (이미지 선택적)
 - GET /templates          : 템플릿 목록 조회
 - GET /templates/{id}     : 템플릿 상세 조회
 - DELETE /templates/{id} : 템플릿 소프트 삭제
@@ -8,17 +9,36 @@
 - PUT /templates/order   : 템플릿 순서 일괄 변경
 """
 
-from typing import List
+import json
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, UploadFile, status
 from pydantic import BaseModel
 
-from app.core.dependencies import get_current_user, get_template_repository
+from app.core.dependencies import get_current_user, get_storage_service, get_template_repository
+from app.db.models.template import TemplateCreate, TemplateResponse, TemplateFilter, TemplateUpdate
 from app.db.repositories.template_repository import TemplateRepository
-from app.db.models.template import TemplateResponse, TemplateFilter, TemplateUpdate
+from app.services.storage import StorageService
 
 router = APIRouter()
+
+MAX_STRUCTURE_DEPTH = 5
+
+
+def _validate_structure_json(data: Dict[str, Any], depth: int = 0) -> None:
+    """structure_json 최소 유효성 검증.
+
+    - 빈 dict 거부 (최상위)
+    - 최대 depth(MAX_STRUCTURE_DEPTH) 초과 시 거부
+    """
+    if depth == 0 and not data:
+        raise ValueError("structure_json은 최소 1개의 항목을 포함해야 합니다.")
+    if depth > MAX_STRUCTURE_DEPTH:
+        raise ValueError(f"structure_json의 depth는 최대 {MAX_STRUCTURE_DEPTH}단계까지 허용됩니다.")
+    for value in data.values():
+        if isinstance(value, dict):
+            _validate_structure_json(value, depth + 1)
 
 
 class TemplateOrderItem(BaseModel):
@@ -35,6 +55,78 @@ class TemplateOrderRequest(BaseModel):
 class TemplateOrderResponse(BaseModel):
     """템플릿 순서 변경 응답"""
     updated_count: int
+
+
+@router.post(
+    "/",
+    response_model=TemplateResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="템플릿 생성",
+    description="structure_json과 선택적 이미지로 템플릿을 생성합니다. 이미지가 없는 경우 수동 입력 트랙으로 처리됩니다.",
+)
+async def create_template(
+    template_name: str = Form(..., min_length=1, max_length=100, description="템플릿 이름"),
+    structure_json: str = Form(..., description="계층 구조 JSON 문자열"),
+    file: Optional[UploadFile] = None,
+    current_user: dict = Depends(get_current_user),
+    template_repo: TemplateRepository = Depends(get_template_repository),
+    storage_service: StorageService = Depends(get_storage_service),
+):
+    """structure_json + 선택적 이미지로 템플릿 DB 등록"""
+    from uuid import UUID as _UUID
+    from app.utils.file_validator import FileType, validate_file
+
+    user_id = _UUID(current_user["id"])
+
+    try:
+        parsed_structure = json.loads(structure_json)
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="structure_json이 유효한 JSON 형식이 아닙니다.",
+        )
+
+    try:
+        _validate_structure_json(parsed_structure)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
+        )
+
+    file_storage_path: Optional[str] = None
+    if file is not None and file.filename:
+        valid, error_msg = await validate_file(file, FileType.TEMPLATE)
+        if not valid:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=error_msg or "유효하지 않은 파일입니다.",
+            )
+        try:
+            storage_result = await storage_service.upload_template(file=file, user_id=user_id)
+            file_storage_path = storage_result.file_path
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"파일 Storage 저장 실패: {str(e)}",
+            )
+
+    template_data = TemplateCreate(
+        user_id=user_id,
+        name=template_name,
+        template_type="observation_log",
+        structure_json=parsed_structure,
+        file_storage_path=file_storage_path,
+        is_default=False,
+    )
+
+    try:
+        return await template_repo.create(template_data)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"템플릿 DB 등록 실패: {str(e)}",
+        )
 
 
 @router.get(

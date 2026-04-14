@@ -48,14 +48,37 @@
 
 ---
 
-## 치트 기능 (테스트용)
+## 임시 개발 장치
 
-재생성 파이프라인 테스트를 위한 샘플 데이터 바로 진입 기능.
+개발 편의용 우회, 실험 흐름, 샘플 진입점은 완전히 금지되는 것이 아니라 다음 원칙을 따른다.
 
-- **접속**: `http://localhost:5173/observations?cheat=regenerate`
-- **제거**: `ObservationPage.tsx`에서 `// === CHEAT ===` 블록 2개 삭제
+- 기본 사용자 흐름과 의도 없이 섞이지 않게 유지한다.
+- 목적, 범위, 제거 또는 유지 조건이 설명 가능해야 한다.
+- 장기간 유지되거나 반복해서 문제를 만든다면 개별 메모가 아니라 상위 문서의 규칙으로 승격한다.
+- 특정 장치의 존재 자체보다, 그것이 사용자 경험과 운영 판단을 흐리지 않는지가 더 중요하다.
 
-*마지막 업데이트: 2026-04-10*
+*마지막 업데이트: 2026-04-14*
+
+### 주요 변경사항 (2026-04-14)
+- **템플릿 생성 반자동화**: `TemplateCreationView` → 트랙 선택 진입점으로 재정의
+  - **트랙 1 (이미지)**: 이미지 업로드 → `/upload/template/analyze` 호출 → LLM 분석 중 로딩 → `TemplateStructureEditor`
+  - **트랙 2 (수동)**: 빈 상태로 `TemplateStructureEditor` 바로 진입
+  - `CreationStep` 타입: `'entry' | 'image-upload' | 'analyzing' | 'editing'`
+- **`TemplateStructureEditor` 카드 UI 리디자인** (`features/observation/components/`):
+  - **카테고리 카드**: 대분류를 폴더 아이콘(`FolderOpen`) + 색상 배경의 카드로 표현
+  - **소분류 미니카드**: 대분류 카드 안에 중첩된 형태로 표현 (`ChevronRight` 구분자)
+  - **항목 라인**: `List` 아이콘 + 텍스트, 최소 UI로 간결하게 표현
+  - **역할별 추가 버튼**: "+ 카테고리/소분류/항목 추가" 3단계 명확 분리
+  - 수동 트랙 빈 상태에서 카드 형태 예시 오버레이 표시
+  - 인라인 편집 (Enter 저장, ESC 취소), 호버 시 삭제 버튼
+  - localStorage 디바운스 자동저장 + 복원 (수동 트랙 전용)
+  - `POST /templates/` 호출로 저장 (이미지 있으면 함께 전송)
+- **`templateStructureUtils.ts` 업데이트** (`features/observation/utils/`):
+  - `TreeNode` 타입 추가 (`{id, label, children[]}`) — 카드 UI 전용
+  - `structureToTreeNodes` / `treeNodesToStructure` 변환 함수
+  - `createTreeNode` 헬퍼
+  - 기존 `flatToTree` / `treeToFlat` 유지 (하위 호환성)
+- **`api.ts` 신규 함수**: `analyzeTemplateImage`, `createTemplate`
 
 ### 주요 변경사항 (2026-04-10)
 - **일지 작성 필드 테이블 레이아웃 적용**: `LogInputView.tsx`의 manual 모드 입력 영역을 아코디언 카드에서 doc-table 구조로 교체
