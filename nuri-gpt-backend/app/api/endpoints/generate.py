@@ -14,6 +14,7 @@ from app.core.dependencies import (
     get_llm_service,
     get_log_repository,
     get_template_repository,
+    get_usage_service,
 )
 from app.db.models.journal import JournalCreate
 from app.db.repositories.journal_repository import JournalRepository
@@ -27,6 +28,7 @@ from app.schemas.generate import (
     UpdatedActivity,
 )
 from app.services.llm import LlmService
+from app.services.usage_service import UsageService
 
 logger = logging.getLogger(__name__)
 
@@ -40,11 +42,23 @@ async def generate_observation_log(
     log_repository: LogRepository = Depends(get_log_repository),
     template_repository: TemplateRepository = Depends(get_template_repository),
     journal_repository: JournalRepository = Depends(get_journal_repository),
+    usage_service: UsageService = Depends(get_usage_service),
 ) -> GenerateLogResponse:
     """
     텍스트 데이터와 가이드라인을 바탕으로 관찰일지 초안을 생성합니다.
     template_id가 주어지면 해당 템플릿의 청사진에 맞춰 일지를 생성합니다.
     """
+    from uuid import UUID
+    user_id = UUID(current_user["id"])
+
+    # 할당량 확인
+    is_available = await usage_service.check_quota_available(user_id, "text_generate")
+    if not is_available:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="일일 생성 할당량을 모두 소진했습니다. 내일 다시 시도해주세요."
+        )
+
     try:
         if not request.semantic_json and not request.template_id and not request.ocr_text.strip():
             raise HTTPException(
@@ -99,12 +113,14 @@ async def generate_observation_log(
             )
             journal_entry = await journal_repository.create(journal_data)
 
-            return GenerateLogResponse(
+            response = GenerateLogResponse(
                 updated_activities=updated_activities,
                 log_id=log_entry.id,
                 journal_id=journal_entry.id,
                 group_id=journal_entry.group_id,
             )
+            await usage_service.increment_usage(user_id, "text_generate", status="success")
+            return response
 
         if request.template_id:
             # 1. 템플릿 기반 생성
@@ -181,13 +197,15 @@ async def generate_observation_log(
             # 템플릿 사용 시간 업데이트
             await template_repository.update_last_used_at(request.template_id)
 
-            return GenerateLogResponse(
+            response = GenerateLogResponse(
                 template_mapping=llm_result,
                 updated_activities=updated_activities,
                 log_id=log_entry.id,
                 journal_id=journal_entry.id,
                 group_id=journal_entry.group_id,
             )
+            await usage_service.increment_usage(user_id, "text_generate", status="success")
+            return response
             
         else:
             # 2. 기본 관찰일지 생성
@@ -234,7 +252,7 @@ async def generate_observation_log(
             )
             journal_entry = await journal_repository.create(journal_data)
 
-            return GenerateLogResponse(
+            response = GenerateLogResponse(
                 title=llm_result.get("title", ""),
                 observation_content=llm_result.get("observation_content", ""),
                 evaluation_content=llm_result.get("evaluation_content", ""),
@@ -243,17 +261,25 @@ async def generate_observation_log(
                 journal_id=journal_entry.id,
                 group_id=journal_entry.group_id,
             )
+            await usage_service.increment_usage(user_id, "text_generate", status="success")
+            return response
 
     except RuntimeError as e:
+        # 실패 시 실패 카운트 증가
+        await usage_service.increment_usage(user_id, "text_generate", status="fail")
         logger.error(f"RuntimeError during LLM generation: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"LLM 생성 서비스 예외: {str(e)}"
         )
-    except HTTPException:
-        # 위에서 명시적으로 발생시킨 예외는 그대로 패스
-        raise
+    except HTTPException as e:
+        # 429 에러(할당량 부족)가 아닌 다른 HTTP 예외인 경우만 실패로 기록 (선택 사항)
+        if e.status_code != status.HTTP_429_TOO_MANY_REQUESTS:
+            await usage_service.increment_usage(user_id, "text_generate", status="fail")
+        raise e
     except Exception as e:
+        # 실패 시 실패 카운트 증가
+        await usage_service.increment_usage(user_id, "text_generate", status="fail")
         logger.error(f"Unexpected error during log generation: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -268,13 +294,22 @@ async def regenerate_observation_log(
     llm_service: LlmService = Depends(get_llm_service),
     log_repository: LogRepository = Depends(get_log_repository),
     journal_repository: JournalRepository = Depends(get_journal_repository),
+    usage_service: UsageService = Depends(get_usage_service),
 ) -> RegenerateLogResponse:
     """
     코멘트 기반으로 기존 생성된 관찰일지를 부분 재생성합니다.
-
-    프론트엔드에서 제공하는 코멘트 목록을 기반으로 Dify Chatflow를 호출하여
-    특정 항목만 수정하고, 전체 맥락의 자연스러움을 교정합니다.
     """
+    from uuid import UUID
+    user_id = UUID(current_user["id"])
+
+    # 할당량 확인
+    is_available = await usage_service.check_quota_available(user_id, "text_generate")
+    if not is_available:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="일일 재생성 할당량을 모두 소진했습니다. 내일 다시 시도해주세요."
+        )
+
     try:
         # 입력 검증
         if not request.current_activities:
@@ -368,22 +403,28 @@ async def regenerate_observation_log(
                 new_journal = await journal_repository.create(journal_data)
                 new_journal_id = new_journal.id
 
-        return RegenerateLogResponse(
+        response = RegenerateLogResponse(
             updated_activities=updated_activities,
             log_id=log_entry.id,
             journal_id=new_journal_id,
             group_id=request.group_id,
         )
+        await usage_service.increment_usage(user_id, "text_generate", status="success")
+        return response
 
     except RuntimeError as e:
+        await usage_service.increment_usage(user_id, "text_generate", status="fail")
         logger.error(f"[Regenerate] RuntimeError: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"LLM 재생성 서비스 예외: {str(e)}"
         )
-    except HTTPException:
-        raise
+    except HTTPException as e:
+        if e.status_code != status.HTTP_429_TOO_MANY_REQUESTS:
+            await usage_service.increment_usage(user_id, "text_generate", status="fail")
+        raise e
     except Exception as e:
+        await usage_service.increment_usage(user_id, "text_generate", status="fail")
         logger.error(f"[Regenerate] Unexpected error: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

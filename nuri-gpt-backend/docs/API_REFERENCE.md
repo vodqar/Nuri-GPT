@@ -39,10 +39,10 @@
 
 | Method | Path | Description | Content-Type | 인증 필요 | 주요 파라미터 |
 |--------|------|-------------|-------------|-----------|--------------|
-| POST | `/api/upload/memo` | 수기 메모 이미지 업로드 + OCR | `multipart/form-data` | ✅ | `file` (user_id는 JWT에서 추출) |
-| POST | `/api/upload/memo/text` | 텍스트 직접 입력 + 정규화 | `application/json` | ❌ | `text`, `child_name?` |
-| POST | `/api/upload/template` | 빈 템플릿 이미지 업로드 + 계층 구조 분석 + DB 등록 (deprecated) | `multipart/form-data` | ✅ | `file`, `template_name` (user_id는 JWT에서 추출) |
-| POST | `/api/upload/template/analyze` | 템플릿 이미지 분석 전용 — `structure_json`만 반환, DB/Storage 저장 없음 | `multipart/form-data` | ✅ | `file` (user_id는 JWT에서 추출) |
+| POST | `/api/upload/memo` | 수기 메모 이미지 업로드 + OCR (분석 할당량 차감) | `multipart/form-data` | ✅ | `file` (user_id는 JWT에서 추출) |
+| POST | `/api/upload/memo/text` | 텍스트 직접 입력 + 정규화 (LLM 미사용) | `application/json` | ❌ | `text`, `child_name?` |
+| POST | `/api/upload/template` | 빈 템플릿 이미지 업로드 + 분석 + DB 등록 (분석 할당량 차감) | `multipart/form-data` | ✅ | `file`, `template_name` |
+| POST | `/api/upload/template/analyze` | 템플릿 이미지 분석 전용 (분석 할당량 차감) | `multipart/form-data` | ✅ | `file` |
 
 ### Template (API) — prefix: `/api/templates`
 
@@ -59,8 +59,8 @@
 
 | Method | Path | Description | Content-Type | 인증 필요 | 주요 파라미터 |
 |--------|------|-------------|-------------|-----------|--------------|
-| POST | `/api/generate/log` | 관찰일지 생성 (자동 저장). `template_id`로 생성 시 해당 템플릿의 `last_used_at` 자동 업데이트 | `application/json` | ✅ | `semantic_json?`, `ocr_text?`, `template_id?`, `additional_guidelines?`, `child_age` (0-5, 필수) (응답에 `updated_activities`, `journal_id`, `group_id` 포함) |
-| POST | `/api/generate/regenerate` | 코멘트 기반 부분 재생성 (버전 관리 지원). `group_id` 제공 시 새 버전 저장 | `application/json` | ✅ | `original_semantic_json`, `current_activities`, `comments`, `additional_guidelines?`, `group_id?` (응답에 `journal_id`, `group_id` 포함) |
+| POST | `/api/generate/log` | 관찰일지 생성 (자동 저장). (생성 할당량 차감) | `application/json` | ✅ | `semantic_json?`, `ocr_text?`, `template_id?`, `child_age` (필수) |
+| POST | `/api/generate/regenerate` | 코멘트 기반 부분 재생성 (버전 관리 지원). (생성 할당량 차감) | `application/json` | ✅ | `original_semantic_json`, `current_activities`, `comments`, `group_id?` |
 
 ### Journal (API) — prefix: `/api/journals`
 
@@ -76,10 +76,11 @@
 | Method | Path | Description | Content-Type | 인증 필요 | 주요 파라미터 |
 |--------|------|-------------|-------------|-----------|--------------|
 | GET | `/api/users/me` | 현재 사용자 정보(톤앤매너 포함) 조회 | `application/json` | ✅ | - (JWT에서 user_id 추출) |
-| PUT | `/api/users/me` | 현재 사용자 정보(원장님 지침 등) 업데이트 | `application/json` | ✅ | `tone_and_manner?`, `kindergarten_name?`, `role?` (admin/org_manager/user) |
+| GET | `/api/users/me/usage` | 현재 사용자 사용량(할당량) 정보 조회 | `application/json` | ✅ | - (JWT에서 user_id 추출) |
+| PUT | `/api/users/me` | 현재 사용자 정보(원장님 지침 등) 업데이트 | `application/json` | ✅ | `tone_and_manner?`, `kindergarten_name?`, `role?` |
 | DELETE | `/api/users/me` | 현재 사용자 계정 삭제 | - | ✅ | - |
-| GET | `/api/users/{user_id}` | 특정 사용자 정보 조회 (본인만) | `application/json` | ✅ | `user_id` (UUID, path) - 본인 확인 |
-| PUT | `/api/users/{user_id}` | 특정 사용자 정보 업데이트 (본인만) | `application/json` | ✅ | `user_id` (UUID, path), `tone_and_manner?`, `kindergarten_name?` - 본인 확인 |
+| GET | `/api/users/{user_id}` | 특정 사용자 정보 조회 (본인만) | `application/json` | ✅ | `user_id` |
+| PUT | `/api/users/{user_id}` | 특정 사용자 정보 업데이트 (본인만) | `application/json` | ✅ | `user_id`, `tone_and_manner?` |
 
 ### 상세 스키마
 
@@ -88,6 +89,7 @@
 ---
 
 
-> 마지막 업데이트: 2026-04-14 (반자동 템플릿 생성 지원 — POST /upload/template/analyze 신설, POST /templates 신설, file_storage_path optional화)
+> 마지막 업데이트: 2026-04-15 (할당량 관리 시스템 구축 — /api/users/me/usage 신설, LLM 기반 API에 Quota Check 로직 통합)
 >
+> 이전 업데이트: 2026-04-14 (반자동 템플릿 생성 지원 — POST /upload/template/analyze 신설, POST /templates 신설, file_storage_path optional화)
 > 이전 업데이트: 2026-04-10 (버전 관리 기능 추가 - group_id, journal_id 필드 추가, regenerate 시 버전 저장 로직 구현)

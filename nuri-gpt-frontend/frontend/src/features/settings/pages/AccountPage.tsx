@@ -1,19 +1,60 @@
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '../../../store/authStore';
+import { LoadingSpinner } from '../../../components/global/LoadingSpinner';
 import { cn } from '../../../utils/cn';
 
-export function AccountPage() {
-  const { user } = useAuthStore();
+interface UsageDetail {
+  used_today: number;
+  limit_today: number;
+  next_reset_kst: string;
+}
 
-  // Mock data for Quotas and Subscription
-  const usageData = {
-    daily: { current: 7, total: 10, label: '일간 사용량' },
-    weekly: { current: 48, total: 70, label: '주간 사용량' },
-    apiRequests: { current: 29, total: 30, label: 'API 요청' }
+interface UserUsageResponse {
+  plan: string;
+  features: {
+    [key: string]: UsageDetail;
+  };
+}
+
+export function AccountPage() {
+  const { user, accessToken } = useAuthStore();
+  const [usage, setUsage] = useState<UserUsageResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUsage = async () => {
+      try {
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+        const response = await fetch(`${API_BASE_URL}/users/me/usage`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setUsage(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch usage:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (accessToken) {
+      fetchUsage();
+    }
+  }, [accessToken]);
+
+  // Map backend features to UI labels
+  const featureLabels: Record<string, string> = {
+    text_generate: '관찰일지 생성',
+    vision_analyze: '이미지/템플릿 분석',
   };
 
   const subscriptionData = {
-    plan: 'Premium (Annual)',
-    renewalDate: '2024년 10월 15일',
+    plan: usage?.plan ? usage.plan.charAt(0).toUpperCase() + usage.plan.slice(1) : 'Basic',
+    renewalDate: '매월 1일', // Placeholder for actual subscription logic
     paymentMethod: {
       type: 'MasterCard',
       last4: '4892',
@@ -114,16 +155,17 @@ export function AccountPage() {
         </div>
 
         {/* Usage & Quotas */}
-        <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-sm border border-zinc-100 dark:border-zinc-800 space-y-6 md:p-8">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold flex items-center gap-2">
-              <span className="material-symbols-outlined text-[var(--color-primary)]">analytics</span>
-              사용 현황 및 할당량
-            </h3>
-          </div>
+        <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-sm border border-zinc-100 dark:border-zinc-800 space-y-6 md:p-8 relative overflow-hidden flex flex-col">
+          <div className={cn("space-y-6 flex-1 transition-all duration-300", !usage && loading && "blur-[2px] opacity-60 pointer-events-none")}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <span className="material-symbols-outlined text-[var(--color-primary)]">analytics</span>
+                사용 현황 및 할당량
+              </h3>
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Daily Quota Circle */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Main AI Quota Circle (text_generate) */}
             <div className="flex flex-col items-center justify-center space-y-3">
               <div className="relative w-32 h-32">
                 <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 100 100">
@@ -136,65 +178,83 @@ export function AccountPage() {
                     cx="50"
                     cy="50"
                   />
-                  <circle
-                    className="text-[var(--color-primary)]"
-                    strokeWidth="8"
-                    strokeDasharray={2 * Math.PI * 40}
-                    strokeDashoffset={2 * Math.PI * 40 * (1 - usageData.daily.current / usageData.daily.total)}
-                    strokeLinecap="round"
-                    stroke="currentColor"
-                    fill="transparent"
-                    r="40"
-                    cx="50"
-                    cy="50"
-                  />
+                  {usage?.features?.text_generate && (
+                    <circle
+                      className="text-[var(--color-primary)]"
+                      strokeWidth="8"
+                      strokeDasharray={2 * Math.PI * 40}
+                      strokeDashoffset={2 * Math.PI * 40 * (1 - usage.features.text_generate.used_today / usage.features.text_generate.limit_today)}
+                      strokeLinecap="round"
+                      stroke="currentColor"
+                      fill="transparent"
+                      r="40"
+                      cx="50"
+                      cy="50"
+                    />
+                  )}
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{usageData.daily.current}/{usageData.daily.total}</span>
+                  <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                    {usage?.features?.text_generate ? `${usage.features.text_generate.used_today}/${usage.features.text_generate.limit_today}` : '--/--'}
+                  </span>
                   <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest">오늘</span>
                 </div>
               </div>
-              <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{usageData.daily.label}</p>
+              <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{featureLabels.text_generate}</p>
             </div>
 
-            {/* Other stats */}
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-semibold">
-                  <span className="text-zinc-500">{usageData.weekly.label}</span>
-                  <span className="text-zinc-900 dark:text-zinc-100">{usageData.weekly.current} / {usageData.weekly.total}</span>
+            {/* Other AI features progress bars (vision_analyze etc) */}
+            <div className="space-y-6 self-center">
+              {Object.entries(usage?.features || {}).filter(([key]) => key !== 'text_generate').map(([key, feature]) => (
+                <div key={key} className="space-y-2">
+                  <div className="flex justify-between text-xs font-semibold">
+                    <span className="text-zinc-500 uppercase tracking-tight">{featureLabels[key] || key}</span>
+                    <span className="text-zinc-900 dark:text-zinc-100">{feature.used_today} / {feature.limit_today}</span>
+                  </div>
+                  <div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-[var(--color-primary)] rounded-full transition-all duration-1000"
+                      style={{ width: `${(feature.used_today / feature.limit_today) * 100}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-[var(--color-primary)] rounded-full transition-all duration-1000"
-                    style={{ width: `${(usageData.weekly.current / usageData.weekly.total) * 100}%` }}
-                  />
+              ))}
+              
+              {!usage && loading && (
+                <div className="space-y-6">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="animate-pulse space-y-2">
+                      <div className="flex justify-between">
+                        <div className="h-3 w-24 bg-zinc-100 dark:bg-zinc-800 rounded-full" />
+                        <div className="h-3 w-12 bg-zinc-100 dark:bg-zinc-800 rounded-full" />
+                      </div>
+                      <div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded-full" />
+                    </div>
+                  ))}
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-semibold">
-                  <span className="text-zinc-500">{usageData.apiRequests.label}</span>
-                  <span className="text-zinc-900 dark:text-zinc-100">{usageData.apiRequests.current} / {usageData.apiRequests.total}</span>
-                </div>
-                <div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-[var(--color-secondary)] rounded-full transition-all duration-1000"
-                    style={{ width: `${(usageData.apiRequests.current / usageData.apiRequests.total) * 100}%` }}
-                  />
-                </div>
-              </div>
+              )}
+            </div>
+            </div>
+            
+            <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800">
+               <div className="flex items-start gap-3">
+                 <span className="material-symbols-outlined text-zinc-400 text-sm mt-0.5">info</span>
+                 <p className="text-[11px] text-zinc-500 leading-relaxed">
+                   할당량은 매일 자정(KST)을 기준으로 초기화됩니다. 할당량이 부족할 경우 플랜을 업그레이드하여 한도를 늘릴 수 있습니다.
+                 </p>
+               </div>
             </div>
           </div>
-          
-          <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800">
-             <div className="flex items-start gap-3">
-               <span className="material-symbols-outlined text-zinc-400 text-sm mt-0.5">info</span>
-               <p className="text-[11px] text-zinc-500 leading-relaxed">
-                 할당량은 매일 자정(KST)을 기준으로 초기화됩니다. 주간 할당량은 매주 월요일 새벽에 초기화됩니다. 할당량이 부족할 경우 플랜을 업그레이드하여 한도를 늘릴 수 있습니다.
-               </p>
-             </div>
-          </div>
+
+          {/* Blur Overlay & Spinner */}
+          {!usage && loading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/40 dark:bg-zinc-900/40 backdrop-blur-[2px]">
+              <div className="flex flex-col items-center gap-4">
+                <LoadingSpinner size="xl" />
+                <span className="text-sm font-bold text-zinc-600 dark:text-zinc-300 animate-pulse tracking-tight">정보를 불러오는 중...</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

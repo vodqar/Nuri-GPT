@@ -10,10 +10,12 @@ from app.db.repositories.journal_repository import JournalRepository
 from app.db.repositories.log_repository import LogRepository
 from app.db.repositories.template_repository import TemplateRepository
 from app.db.repositories.user_repository import UserRepository
+from app.db.repositories.usage_repository import UsageRepository
 from app.services.llm import LlmService
 from app.services.vision import VisionService
 from app.services.ocr import OcrService
 from app.services.storage import StorageService
+from app.services.usage_service import UsageService
 from app.utils.exceptions import AuthenticationError
 
 # Bearer 토큰 보안 스키마
@@ -90,6 +92,20 @@ async def get_journal_repository() -> AsyncGenerator[JournalRepository, None]:
     """Journal 리포지토리 의존성"""
     client = get_supabase_client()
     yield JournalRepository(client)
+
+
+async def get_usage_repository() -> AsyncGenerator[UsageRepository, None]:
+    """Usage 리포지토리 의존성"""
+    client = get_supabase_client()
+    yield UsageRepository(client)
+
+
+async def get_usage_service(
+    usage_repo: UsageRepository = Depends(get_usage_repository),
+    user_repo: UserRepository = Depends(get_user_repository),
+) -> AsyncGenerator[UsageService, None]:
+    """Usage 서비스 의존성"""
+    yield UsageService(usage_repo, user_repo)
 
 
 def get_storage_service() -> StorageService:

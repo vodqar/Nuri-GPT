@@ -25,6 +25,7 @@
 | Vision OCR | Gemini Flash로 수기 메모 이미지 → 텍스트 변환 및 정규화 | 정제된 텍스트 |
 | 관찰일지 생성 | 팩트 + 평가제 가이드라인 결합 프롬프트 → JSON 구조화 출력 | `title`, `observation_content`, `evaluation_content`, `development_areas` |
 | 빈 템플릿 분석 | Gemini Vision으로 양식 이미지의 선/병합 셀 분석 → 계층 구조 추출 | `structure_json` |
+| 할당량 관리 | 요금제별 일일/주간 사용량 제한 및 성공 시에만 차감 정책 (KST 기준) | `user_usages`, `plan_quotas` |
 | 데이터 관리 | Supabase(PostgreSQL): 사용자/템플릿/로그; Storage 버킷: `memos`, `templates`, `exports` | — |
 
 ***
@@ -99,6 +100,6 @@ uvicorn app.main:app --reload
 | PoC 테스트 페이지 | http://localhost:8000/poc |
 
 ***
-*Last updated: 2026-03-27*
+*Last updated: 2026-04-15*
 
 ***

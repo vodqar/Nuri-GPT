@@ -1,59 +1,51 @@
-# Handoff Document — User Account Settings & Quota Management UI
+# Handoff Document — Quota Management System Implementation
 
-*Last Updated: 2024-04-15*
+*Last Updated: 2026-04-15*
 
 ---
 
 ## 🎯 Goal
 
-사용자가 자신의 프로필을 관리하고, 서비스 이용량(할당량) 및 구독 정보를 시각적으로 확인할 수 있는 프리미엄 계정 설정 화면을 구현합니다. 향후 추가될 구독, 결제, 할당량 제한 기능을 위한 확장성 있는 UI 기반을 마련합니다.
+사용자별 AI 서비스(관찰일지 생성, 이미지 분석 등)의 사용량을 추적하고, 요금제별 할당량에 따라 사용을 제한하는 시스템을 구축했습니다. 관리자가 손쉽게 할당량을 조절할 수 있는 기반을 마련하고, 사용자에게는 투명한 사용 현황을 제공합니다.
 
 ---
 
-## ✅ Current Progress
+## ✅ Progress Summary
 
-### 1. 신규 페이지 구현
-- **[AccountPage.tsx](file:///home/mbk7990/workspace/Nuri-GPT/nuri-gpt-frontend/frontend/src/features/settings/pages/AccountPage.tsx)**: 
-  - 카드 기반 레이아웃의 계정 설정 메인 화면.
-  - 프로필 관리 섹션 (이름, 이메일, 역할 표시).
-  - 구독 및 결제 세션 (현재 플랜, 갱신일, 결제 수단 플레이스홀더).
-  - 이용 현황 및 할당량 섹션 (일간/주간 프로그레스 바 시각화).
-  - 계정 삭제(Danger Zone) 섹션 추가.
+### 1. 백엔드 시스템 구축
+- **데이터베이스 (Supabase)**:
+  - `plan_quotas`: 요금제별(Trial, Basic, Premium) 기능별 할당량 정의.
+  - `user_usages`: 사용자별 성공(`success_count`) 및 실패(`fail_count`) 횟수 추적.
+- **서비스 및 의존성**:
+  - `UsageRepository`: DB 연동 CRUD.
+  - `UsageService`: KST 기준 날짜 계산, 할당량 초과 확인, 사용량 증가 로직.
+- **API 통합**:
+  - `GET /api/users/me/usage`: 현재 사용자 사용량 정보 제공.
+  - LLM 호출 API(`generate/log`, `generate/regenerate`, `upload/memo`, `upload/template`)에 Quota Check 및 Increment 로직 통합 완료.
 
-### 2. 라우팅 및 내비게이션 연결
-- **[App.tsx](file:///home/mbk7990/workspace/Nuri-GPT/nuri-gpt-frontend/frontend/src/App.tsx)**: `/settings/account` 경로 추가.
-- **[SideNavBar.tsx](file:///home/mbk7990/workspace/Nuri-GPT/nuri-gpt-frontend/frontend/src/components/layout/SideNavBar.tsx)**: '설정 > 계정' 메뉴 클릭 시 해당 페이지로 연결되도록 수정.
+### 2. 프론트엔드 연동
+- **[AccountPage.tsx](file:///home/mbk7990/workspace/Nuri-GPT/nuri-gpt-frontend/frontend/src/features/settings/pages/AccountPage.tsx)**:
+  - 백엔드 API로부터 실시간 할당량 데이터를 호출하여 프로그레스 바 렌더링.
+  - 관찰일지 생성(Text)과 이미지 분석(Vision)을 구분하여 시각화.
 
-### 3. 문서화 완료
-- `OVERVIEW.md`, `ARCHITECTURE.md`, `DESIGN.md`, `DEVELOPMENT.md`, `README.md`, `SUMMARY.md`, `SERVER_GUIDE.md` 등 모든 관련 문서에 최신 변경 사항 반영 완료.
-
----
-
-## 🔧 What Worked
-
-1. **디자인 일관성**: 기존 `Material Symbols`와 `Tailwind v4` 테마 변수를 활용하여 기존 UI와 완벽하게 어우러지는 프리미엄 디자인 구현.
-2. **반응형 최적화**: 데스크탑의 2열 그리드와 모바일의 1열 스택 레이아웃을 성공적으로 적용.
-3. **Zustand 연동**: `authStore`에서 사용자 정보를 가져와 프로필 섹션에 동적으로 표시.
+### 3. 문서화 업데이트
+- `API_REFERENCE.md`, `ARCHITECTURE.md`, `OVERVIEW.md`에 할당량 관련 명세 및 정책 반영 완료.
 
 ---
 
-## ⚠️ Notes / Pending Logic
+## 🔧 Policy Details
 
-1. **할당량(Quota) 데이터**: 현재 표시되는 이용량(7/10 등)은 프론트엔드 모크 데이터입니다. 백엔드의 실제 사용량 추적 API가 구현되면 연동이 필요합니다.
-2. **구독/결제 로직**: 현재는 UI 플레이스홀더만 존재하며, 실제 스트라이프(Stripe)나 포트원(PortOne) 등 결제 게이트웨이 연동이 수반되어야 합니다.
-3. **할당량 초기화**: 일간/주간 할당량 초기화 안내 문구가 포함되어 있으나, 실제 백엔드 크론탭(Crontab) 등의 스케줄러 작업이 필요합니다.
+1. **미차감 정책 (Success-only)**: LLM 처리가 성공한 경우에만 사용량을 차감합니다. 실패 건은 수집되지만 사용자 할당량에는 영향이 없습니다.
+2. **KST 00:00 리셋**: 모든 일일 할당량은 한국 표준시(KST) 자정을 기준으로 리셋됩니다.
+3. **HTTP 429 응답**: 할당량 소진 시 `429 Too Many Requests`를 반환하며, 프론트엔드에서는 안내 메시지를 표시합니다.
 
 ---
 
 ## 📋 Next Steps
 
-### 1. 백엔드 연동
-- [ ] `GET /api/users/me/usage` 등 사용량 조회 API 설계 및 연동.
-- [ ] 사용자 등급(Role)에 따른 할당량 차등 적용 로직 검증.
-
-### 2. 구독 시스템 구축
-- [ ] 결제 수단 등록/수정 모달 작업.
-- [ ] 구독 플랜 업그레이드/다운그레이드 흐름 구현.
+- **관리자 UI**: 현재는 Supabase 콘솔에서 `plan_quotas` 테이블을 직접 수정해야 합니다. 추후 관리자 대시보드에서 이를 조절하는 기능을 추가할 수 있습니다.
+- **알림 기능**: 할당량이 80% 이상 소진되었을 때 시스템 알림을 보낼 수 있는 로직을 검토 중입니다.
+- **주간 할당량 검증**: 현재 일일 할당량 위주로 동작하며, 주간 할당량은 DB에는 존재하나 실제 API 검증 로직에 추가 연동이 가능합니다.
 
 ---
 
@@ -61,10 +53,10 @@
 
 | 파일 | 역할 |
 |------|------|
-| `nuri-gpt-frontend/frontend/src/features/settings/pages/AccountPage.tsx` | **주요 신규 파일** - 계정 설정 화면 UI |
-| `nuri-gpt-frontend/frontend/src/components/layout/SideNavBar.tsx` | 내비게이션 연결 |
-| `nuri-gpt-frontend/frontend/src/App.tsx` | 라우트 등록 |
-| `nuri-gpt-frontend/frontend/src/store/authStore.ts` | 사용자 상태 관리 참고 |
+| `backend/app/services/usage_service.py` | 핵심 할당량 로직 |
+| `backend/app/db/repositories/usage_repository.py` | DB 액세스 레이어 |
+| `backend/app/api/endpoints/user.py` | 사용량 조회 API |
+| `frontend/src/features/settings/pages/AccountPage.tsx` | 사용량 시각화 UI |
 
 ---
-*Next agent should check the `AccountPage.tsx` component to understand the UI structure before implementing backend integration.*
+*시스템이 정상적으로 구축되었으며, 모든 테스트 준비가 완료되었습니다.*

@@ -5,9 +5,11 @@
 
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.core.dependencies import get_current_user, get_user_repository
+from app.core.dependencies import get_current_user, get_user_repository, get_usage_service
 from app.db.repositories.user_repository import UserRepository
+from app.services.usage_service import UsageService
 from app.schemas.user import UserResponse, UserUpdateRequest
+from app.db.models.usage import UserUsageResponse
 from app.db.models.user import UserUpdate
 
 router = APIRouter()
@@ -40,6 +42,28 @@ async def get_current_user_info(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"사용자 조회 실패: {str(e)}",
+        )
+
+
+@router.get(
+    "/me/usage",
+    response_model=UserUsageResponse,
+    summary="현재 사용자 사용량 조회",
+    description="현재 로그인한 사용자의 일일 할당량 및 사용 현황을 조회합니다.",
+)
+async def get_current_user_usage(
+    current_user: dict = Depends(get_current_user),
+    usage_service: UsageService = Depends(get_usage_service),
+):
+    """현재 인증된 사용자 사용량 조회"""
+    user_id = UUID(current_user["id"])
+    try:
+        usage_summary = await usage_service.get_user_usage_summary(user_id)
+        return usage_summary
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"사용량 조회 실패: {str(e)}",
         )
 
 

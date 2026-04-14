@@ -57,6 +57,13 @@ Review for promotion to higher-level documentation if any of the following apply
 - **사례**: `absolute inset-0` 오버레이가 부모의 자연 높이(버튼 1개)에 제한되어 콘텐츠가 넘침 → `overflow-hidden`으로 잘라내면 예시 기능 무효화 → normal flow로 전환이 올바른 수정
 - **참고**: `nuri-gpt-frontend/frontend/docs/GUARDRAILS.md`, `report/2026-04-14-overlay-overflow-misdiagnosis.md`
 
+### 복잡한 백엔드 수정 시 구문 검증은 필수이다
+`multi_replace_file_content` 등을 활용하여 다중 라인 혹은 여러 지점을 동시에 수정할 때, 특히 파이썬처럼 들여쓰기에 민감한 언어의 경우 의도치 않은 `IndentationError`나 `SyntaxError`가 발생할 가능성이 매우 높다. 대규모 수정 후에는 반드시 수동으로 코드를 재검토하거나, 공식적인 구문 검사 도구를 실행하여 무결성을 확인해야 한다.
+
+- **원칙**: 모든 백엔드 코드 수정 작업 완료 직후, `python -m py_compile <수정된_파일_경로>`를 실행하여 구문 오류 여부를 즉시 확인한다.
+- **사례**: Quota 시스템 통합 과정에서 다중 `return` 블록의 범위를 잘못 지정하여 `IndentationError` 및 `SyntaxError` 유입 → 서버 로딩 중단 발생
+- **참고**: `report/2026-04-15-endpoint-syntax-errors.md`
+
 ---
 
 ## Completion Checklist
