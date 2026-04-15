@@ -136,11 +136,12 @@ export function JournalHistoryPage() {
         observation_content: j.observation_content,
         evaluation_content: j.evaluation_content,
         development_areas: j.development_areas,
+        version: j.version,
       }));
 
       setGroupHistory(mappedHistory);
       setSelectedGroup(history);
-      setCurrentDetailIndex(mappedHistory.length - 1);
+      setCurrentDetailIndex(0);
       transitionTo('detail');
     } catch (error) {
       showToast('히스토리를 불러오는 중 오류가 발생했습니다.', 'error');

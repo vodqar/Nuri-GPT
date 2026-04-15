@@ -372,9 +372,9 @@ export function LogGenerationResultView({
             className="age-select"
             style={{ maxWidth: '10rem' }}
           >
-            {history.map((_, idx) => (
+            {history.map((item, idx) => (
               <option key={idx} value={idx}>
-                V{idx + 1} {idx === history.length - 1 ? '(최신)' : ''}
+                V{item.version ?? idx + 1} {idx === 0 ? '(최신)' : ''}
               </option>
             ))}
           </select>

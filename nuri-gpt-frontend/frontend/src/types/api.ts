@@ -39,6 +39,7 @@ export interface GenerateLogResponse {
   log_id: string;
   journal_id?: string;
   group_id?: string;
+  version?: number;
 }
 
 export interface ActivityComment {
