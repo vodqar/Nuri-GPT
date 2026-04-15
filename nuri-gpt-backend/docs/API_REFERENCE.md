@@ -13,7 +13,7 @@
 
 | Method | Path | Description | Content-Type | 주요 파라미터 |
 |--------|------|-------------|-------------|--------------|
-| POST | `/api/auth/login` | 사용자 로그인 (access_token 반환 + httpOnly refresh_token 쿠키 설정) | `application/json` | `email`, `password` |
+| POST | `/api/auth/login` | 사용자 로그인 (access_token 반환 + httpOnly refresh_token/remember_me 쿠키 설정) | `application/json` | `email`, `password`, `remember` |
 | POST | `/api/auth/refresh` | 토큰 갱신 (httpOnly 쿠키 기반) | `application/json` | - (쿠키에서 refresh_token 읽음) |
 | POST | `/api/auth/logout` | 로그아웃 (쿠키 삭제 + 세션 무효화) | `application/json` | - |
 
@@ -21,6 +21,8 @@
 
 - **access_token**: 메모리에만 저장 (localStorage 사용 금지 - XSS 방지)
 - **refresh_token**: httpOnly, Secure, SameSite 쿠키로만 관리
+- **remember 정책**: 로그인 시 `remember=true`면 persistent 쿠키(`max_age=7일`), `remember=false`면 세션 쿠키
+- **remember_me 쿠키**: refresh token rotation 시 remember 정책 유지를 위한 보조 httpOnly 쿠키
 - **API 요청**: `Authorization: Bearer <access_token>` 헤더 필요
 - **토큰 갱신**: 401 응답 시 `/api/auth/refresh`로 자동 갱신 후 재요청
 
@@ -89,7 +91,9 @@
 ---
 
 
-> 마지막 업데이트: 2026-04-15 (할당량 관리 시스템 구축 — /api/users/me/usage 신설, LLM 기반 API에 Quota Check 로직 통합)
+> 마지막 업데이트: 2026-04-15 (로그인 유지 정책 반영 — `remember` 파라미터 및 refresh 쿠키 지속성 규칙 문서화)
+>
+> 이전 업데이트: 2026-04-15 (할당량 관리 시스템 구축 — /api/users/me/usage 신설, LLM 기반 API에 Quota Check 로직 통합)
 >
 > 이전 업데이트: 2026-04-14 (반자동 템플릿 생성 지원 — POST /upload/template/analyze 신설, POST /templates 신설, file_storage_path optional화)
 > 이전 업데이트: 2026-04-10 (버전 관리 기능 추가 - group_id, journal_id 필드 추가, regenerate 시 버전 저장 로직 구현)

@@ -17,6 +17,12 @@
 ### 폼 & 유효성 검증
 - **React Hook Form**: Uncontrolled 방식으로 렌더링 성능 최적화
 - **Zod**: 폼 스키마 선언적 정의 → `@hookform/resolvers/zod`로 연결
+- **자동 저장**: 복잡한 입력 화면 등에서는 디바운스를 활용해 `localStorage` 등에 임시 저장하여 데이터 유실 방지
+- **로그인 폼 remember**: `remember`는 이메일 저장이 아닌 인증 세션 지속성(persistent/session cookie) 정책으로 사용
+
+### 로딩 UX 및 스켈레톤
+- 전체 페이지 차단보다는 컴포넌트 단위의 로컬 로딩 오버레이(`backdrop-blur` 등) 지향
+- 로딩 전후 과정에서 레이아웃 깨짐(Layout Shift) 방지를 위해 그리드 고정 및 스켈레톤 UI 적극 활용
 
 ### 모킹 (MSW)
 - 핸들러 위치: `src/lib/msw/` (도메인별 분리)
@@ -58,50 +64,3 @@
 - 특정 장치의 존재 자체보다, 그것이 사용자 경험과 운영 판단을 흐리지 않는지가 더 중요하다.
 
 *마지막 업데이트: 2026-04-15*
-
-- **계정 설정 로딩 UX 개선 (`AccountPage.tsx`, `LoadingSpinner.tsx`)**:
-  - `LoadingSpinner` 글로벌 컴포넌트 추가 및 4단계 크기(`sm`, `md`, `lg`, `xl`) 지원.
-  - 사용량 할당량(Quota) 카드에 `backdrop-blur` 기반의 로컬 로딩 오버레이 적용.
-  - 로딩 중 레이아웃 깨짐(Layout Shift) 방지를 위해 그리드 정렬(`items-start`) 및 스켈레톤 최적화.
-
-### 주요 변경사항 (2026-04-15)
-- **사용자 계정 및 할당량 관리 화면 구현 (`AccountPage.tsx`)**:
-  - `authStore` 기반 프로필 정보 연동 및 UI 구성.
-  - 일간(Circular SVG), 주간(Linear Bar) 할당량 시각화 구현.
-  - 구독 및 결제 세션 플레이스홀더 구성 (향후 확장성 고려).
-  - 테마별(Green/Zinc) 프리미엄 디자인 및 반응형 레이아웃 적용.
-  - 사이드바 "설정 > 계정" 메뉴와 `/settings/account` 라우트 연결.
-
-### 주요 변경사항 (2026-04-14)
-- **템플릿 생성 반자동화**: `TemplateCreationView` → 트랙 선택 진입점으로 재정의
-  - **트랙 1 (이미지)**: 이미지 업로드 → `/upload/template/analyze` 호출 → LLM 분석 중 로딩 → `TemplateStructureEditor`
-  - **트랙 2 (수동)**: 빈 상태로 `TemplateStructureEditor` 바로 진입
-  - `CreationStep` 타입: `'entry' | 'image-upload' | 'analyzing' | 'editing'`
-- **`TemplateStructureEditor` 카드 UI 리디자인** (`features/observation/components/`):
-  - **카테고리 카드**: 대분류를 폴더 아이콘(`FolderOpen`) + 색상 배경의 카드로 표현
-  - **소분류 미니카드**: 대분류 카드 안에 중첩된 형태로 표현 (`ChevronRight` 구분자)
-  - **항목 라인**: `List` 아이콘 + 텍스트, 최소 UI로 간결하게 표현
-  - **역할별 추가 버튼**: "+ 카테고리/소분류/항목 추가" 3단계 명확 분리
-  - 수동 트랙 빈 상태에서 카드 형태 예시 오버레이 표시
-  - 인라인 편집 (Enter 저장, ESC 취소), 호버 시 삭제 버튼
-  - localStorage 디바운스 자동저장 + 복원 (수동 트랙 전용)
-  - `POST /templates/` 호출로 저장 (이미지 있으면 함께 전송)
-- **`templateStructureUtils.ts` 업데이트** (`features/observation/utils/`):
-  - `TreeNode` 타입 추가 (`{id, label, children[]}`) — 카드 UI 전용
-  - `structureToTreeNodes` / `treeNodesToStructure` 변환 함수
-  - `createTreeNode` 헬퍼
-  - 기존 `flatToTree` / `treeToFlat` 유지 (하위 호환성)
-- **`api.ts` 신규 함수**: `analyzeTemplateImage`, `createTemplate`
-
-### 주요 변경사항 (2026-04-10)
-- **일지 작성 필드 테이블 레이아웃 적용**: `LogInputView.tsx`의 manual 모드 입력 영역을 아코디언 카드에서 doc-table 구조로 교체
-  - 대분류 → `doc-header-col`, 소분류 → `doc-sub-header-col`, 입력 영역 → `doc-content-col`
-  - 요일 필드는 아코디언 없이 행으로 나열 (`subKey · dayKey` 레이블)
-  - OCR 버튼: 데스크탑 hover 시 표시 / 모바일(`≤640px`) 항상 표시 (static position fallback)
-  - CSS 클래스: `index.css`에 `.doc-table`, `.doc-row`, `.doc-header-col`, `.doc-sub-header-col`, `.doc-content-col`, `.doc-textarea`, `.doc-ocr-btn` 추가
-  - `PathBreadcrumb`, `ChevronDown/Right`, `useState`, `getFlatFields`, 아코디언 state 제거
-
-### 주요 변경사항 (2026-04-09)
-- **이미지 크롭 좌표 변환 개선**: `react-image-crop`이 반환하는 CSS 표시 크기 기준 좌표를 원본 이미지 크기 기준으로 변환 (`cropCoordinateTransform.ts` 추가)
-- **회전 이미지 크롭 지원**: 0/90/180/270도 회전 후에도 정확한 영역 크롭 가능
-- **blob 파일명 처리**: MIME 타입에서 확장자 추론하여 업로드 가능 (`file_validator.py`)

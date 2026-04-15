@@ -11,31 +11,21 @@ export const useLoginForm = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
-  const rememberedEmail = localStorage.getItem('rememberedEmail');
-
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: rememberedEmail || '',
+      email: '',
       password: '',
-      remember: !!rememberedEmail,
+      remember: false,
     },
   });
 
   const handleSubmit = form.handleSubmit(async (values) => {
     try {
       setIsLoading(true);
-      // MSW로 모킹된 API 호출
       const response = await loginApi(values);
       
       login(response.access_token, { ...response.user, role: 'user' as const });
-      
-      // 상태 저장 여부에 따른 처리
-      if (values.remember) {
-        localStorage.setItem('rememberedEmail', values.email);
-      } else {
-        localStorage.removeItem('rememberedEmail');
-      }
 
       navigate('/dashboard');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

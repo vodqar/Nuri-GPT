@@ -15,6 +15,7 @@ class LoginRequest(BaseModel):
 
     email: EmailStr = Field(..., description="사용자 이메일")
     password: str = Field(..., min_length=8, description="사용자 비밀번호")
+    remember: bool = Field(default=False, description="로그인 유지 여부")
 
 
 class SignupRequest(BaseModel):

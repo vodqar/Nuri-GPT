@@ -12,7 +12,6 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from gotrue.errors import AuthApiError
 from supabase import Client
 
-from app.core.config import get_settings
 from app.db.connection import get_supabase_client
 from app.schemas.auth import LoginRequest, LogoutResponse, SignupRequest, TokenResponse, UserAuthInfo
 from app.utils.exceptions import AuthenticationError
@@ -21,8 +20,49 @@ router = APIRouter(tags=["Authentication"])
 
 # 쿠키 설정 상수
 REFRESH_TOKEN_COOKIE_NAME = "refresh_token"
+REMEMBER_ME_COOKIE_NAME = "remember_me"
 COOKIE_MAX_AGE = 7 * 24 * 60 * 60  # 7일
 COOKIE_PATH = "/api/auth"
+
+
+def _set_auth_cookies(response: Response, refresh_token: str, remember: bool) -> None:
+    cookie_kwargs = {
+        "httponly": True,
+        "secure": False,   # 개발/베타: HTTP localhost 환경
+        "samesite": "lax", # 개발/베타: 프론트-백 포트 분리 환경
+        "path": COOKIE_PATH,
+    }
+
+    if remember:
+        response.set_cookie(
+            key=REFRESH_TOKEN_COOKIE_NAME,
+            value=refresh_token,
+            max_age=COOKIE_MAX_AGE,
+            **cookie_kwargs,
+        )
+        response.set_cookie(
+            key=REMEMBER_ME_COOKIE_NAME,
+            value="1",
+            max_age=COOKIE_MAX_AGE,
+            **cookie_kwargs,
+        )
+        return
+
+    response.set_cookie(
+        key=REFRESH_TOKEN_COOKIE_NAME,
+        value=refresh_token,
+        **cookie_kwargs,
+    )
+    response.set_cookie(
+        key=REMEMBER_ME_COOKIE_NAME,
+        value="0",
+        **cookie_kwargs,
+    )
+
+
+def _delete_auth_cookies(response: Response) -> None:
+    response.delete_cookie(key=REFRESH_TOKEN_COOKIE_NAME, path=COOKIE_PATH)
+    response.delete_cookie(key=REMEMBER_ME_COOKIE_NAME, path=COOKIE_PATH)
 
 
 @router.post("/signup", response_model=TokenResponse)
@@ -59,15 +99,7 @@ async def signup(
 
             # TODO: [배포 전 필수] HTTPS 환경에서는 아래 두 값을 변경할 것
             # secure=True, samesite="strict"
-            response.set_cookie(
-                key=REFRESH_TOKEN_COOKIE_NAME,
-                value=session.refresh_token,
-                httponly=True,
-                secure=False,   # 개발/베타: HTTP localhost 환경
-                samesite="lax", # 개발/베타: 프론트-백 포트 분리 환경
-                max_age=COOKIE_MAX_AGE,
-                path=COOKIE_PATH,
-            )
+            _set_auth_cookies(response=response, refresh_token=session.refresh_token, remember=True)
 
             return TokenResponse(
                 access_token=session.access_token,
@@ -122,14 +154,10 @@ async def login(
         # SameSite=Strict로 CSRF 방어, Path 제한으로 /api/auth/* 에서만 사용
         # TODO: [배포 전 필수] HTTPS 환경에서는 아래 두 값을 변경할 것
         # secure=True, samesite="strict"
-        response.set_cookie(
-            key=REFRESH_TOKEN_COOKIE_NAME,
-            value=session.refresh_token,
-            httponly=True,
-            secure=False,   # 개발/베타: HTTP localhost 환경
-            samesite="lax", # 개발/베타: 프론트-백 포트 분리 환경
-            max_age=COOKIE_MAX_AGE,
-            path=COOKIE_PATH,
+        _set_auth_cookies(
+            response=response,
+            refresh_token=session.refresh_token,
+            remember=request.remember,
         )
 
         return TokenResponse(
@@ -155,6 +183,7 @@ async def login(
 async def refresh_token(
     response: Response,
     refresh_token: Optional[str] = Cookie(None, alias=REFRESH_TOKEN_COOKIE_NAME),
+    remember_me: Optional[str] = Cookie(None, alias=REMEMBER_ME_COOKIE_NAME),
     supabase: Client = Depends(get_supabase_client),
 ) -> TokenResponse:
     """토큰 갱신
@@ -181,15 +210,9 @@ async def refresh_token(
         # TODO: [배포 전 필수] HTTPS 환경에서는 아래 두 값을 변경할 것
         # secure=True, samesite="strict"
         # 새 refresh_token으로 쿠키 업데이트 (token rotation)
-        response.set_cookie(
-            key=REFRESH_TOKEN_COOKIE_NAME,
-            value=session.refresh_token,
-            httponly=True,
-            secure=False,   # 개발/베타: HTTP localhost 환경
-            samesite="lax", # 개발/베타: 프론트-백 포트 분리 환경
-            max_age=COOKIE_MAX_AGE,
-            path=COOKIE_PATH,
-        )
+        # remember_me 쿠키가 없으면 기존 사용자 호환을 위해 persistent로 처리
+        remember = remember_me != "0"
+        _set_auth_cookies(response=response, refresh_token=session.refresh_token, remember=remember)
 
         return TokenResponse(
             access_token=session.access_token,
@@ -204,7 +227,7 @@ async def refresh_token(
 
     except AuthApiError:
         # 쿠키 삭제 및 재로그인 요청
-        response.delete_cookie(key=REFRESH_TOKEN_COOKIE_NAME, path=COOKIE_PATH)
+        _delete_auth_cookies(response)
         raise AuthenticationError("세션이 만료되었습니다. 다시 로그인해주세요.")
     except Exception as e:
         raise AuthenticationError(f"토큰 갱신 중 오류가 발생했습니다: {str(e)}")
@@ -231,14 +254,11 @@ async def logout(
                 pass
 
         # 쿠키 삭제
-        response.delete_cookie(
-            key=REFRESH_TOKEN_COOKIE_NAME,
-            path=COOKIE_PATH,
-        )
+        _delete_auth_cookies(response)
 
         return LogoutResponse(message="로그아웃되었습니다")
 
     except Exception as e:
         # 쿠키는 삭제하고 에러 반환
-        response.delete_cookie(key=REFRESH_TOKEN_COOKIE_NAME, path=COOKIE_PATH)
+        _delete_auth_cookies(response)
         raise AuthenticationError(f"로그아웃 중 오류가 발생했습니다: {str(e)}")
