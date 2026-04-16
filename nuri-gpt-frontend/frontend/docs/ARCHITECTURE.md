@@ -32,7 +32,7 @@
 
 프론트엔드 전반에 걸쳐 다중 계층의 예외처리 구조를 갖는다.
 - **전역 에러 바운더리 (Error Boundary)**: React 렌더링 중 발생하는 예외를 포착하여 백화현상을 방지 (Fallback UI 제공)
-- **네트워크 레이어**: Axios 인터셉터 및 `fetch` API(`AbortController`)에서 공통 타임아웃, 4xx/5xx HTTP 에러, 네트워크 단절(오프라인) 상태를 전역 Toast 알림으로 처리
+- **네트워크 레이어**: `services/api.ts`의 axios 인스턴스 인터셉터에서 공통 타임아웃, 401 자동 토큰 갱신, 4xx/5xx HTTP 에러, 네트워크 단절(오프라인) 상태를 전역 Toast 알림으로 처리. `authStore.refreshAccessToken()`만 인터셉터 순환 방지를 위해 의도적으로 `fetch`를 사용
 - **비동기 로직**: 모든 비동기 호출(`async/await`)은 개별 `try-catch`로 감싸 사용자 친화적인 에러 피드백을 제공
 - **브라우저 API 폴백**: 클립보드(`navigator.clipboard`) 등 환경에 따라 실패할 수 있는 Native API는 대안 로직(`document.execCommand`)으로 폴백
 

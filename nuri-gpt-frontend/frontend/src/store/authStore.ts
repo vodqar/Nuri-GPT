@@ -44,6 +44,13 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   /**
    * 토큰 갱신 요청
    * refresh_token은 httpOnly 쿠키로 자동 전송됨
+   *
+   * 이 호출만 의도적으로 axios 인스턴스를 사용하지 않는다.
+   * 이유: `services/api.ts`의 axios 응답 인터셉터가 401을 받으면 이 함수를
+   * 호출하여 토큰을 갱신하고 원 요청을 재시도한다. 만약 이 함수 자체를
+   * axios로 호출하면, `/auth/refresh`가 401을 반환할 때 인터셉터가 다시
+   * 이 함수를 호출하는 순환이 발생할 수 있다. 따라서 fetch로 격리한다.
+   *
    * @returns 성공 여부
    */
   refreshAccessToken: async () => {

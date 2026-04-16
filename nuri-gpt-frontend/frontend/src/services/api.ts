@@ -1,9 +1,9 @@
-import axios, { type InternalAxiosRequestConfig } from 'axios';
+import axios, { type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../store/authStore';
 import type { RegenerateLogRequest, RegenerateLogResponse, JournalListResponse, JournalResponse } from '../types/api';
 import { showToast } from '../components/global/ToastContainer';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -124,56 +124,24 @@ export const getTemplates = async () => {
 };
 
 /**
- * FormData 전용 fetch 헬퍼 (인증 + 401 갱신 로직 포함)
+ * FormData 업로드 공통 옵션
+ *
+ * 업로드 요청에서는 axios 인스턴스의 기본 `Content-Type: application/json`을
+ * 제거해야 브라우저가 FormData boundary를 포함한 `multipart/form-data`
+ * 헤더를 자동으로 설정한다. axios v1에서는 `Content-Type`을 `undefined`로
+ * 전달하면 헤더가 제거된다.
  */
-const fetchFormData = async (path: string, formData: FormData, retry = true): Promise<unknown> => {
-  const token = useAuthStore.getState().accessToken;
-  const headers: Record<string, string> = {};
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
+const UPLOAD_CONFIG: AxiosRequestConfig = {
+  timeout: 60_000,
+  headers: {
+    // axios v1: undefined는 해당 헤더 제거를 의미. 브라우저가 boundary를 붙여 설정하도록 위임.
+    'Content-Type': undefined,
+  },
+};
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60_000);
-
-  try {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      method: 'POST',
-      headers,
-      body: formData,
-      signal: controller.signal,
-      credentials: 'include', // httpOnly 쿠키 전송
-    });
-
-    // 401 처리 - 토큰 갱신 후 재시도
-    if (response.status === 401 && retry) {
-      const refreshed = await useAuthStore.getState().refreshAccessToken();
-      if (refreshed) {
-        // 재시도 (retry=false로 무한루프 방지)
-        return fetchFormData(path, formData, false);
-      }
-      // 갱신 실패
-      useAuthStore.getState().logout();
-      window.dispatchEvent(new CustomEvent('auth:unauthorized'));
-      throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
-    }
-
-    if (!response.ok) {
-      const errorBody = await response.json().catch(() => ({}));
-      const detail = errorBody?.detail || `HTTP ${response.status}`;
-      throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail));
-    }
-
-    return await response.json();
-  } catch (error) {
-    if ((error as Error).name === 'AbortError') {
-      showToast('업로드 시간이 초과되었습니다', 'error');
-      throw new Error('Timeout');
-    }
-    throw error;
-  } finally {
-    clearTimeout(timeoutId);
-  }
+const uploadFormData = async <T = unknown>(path: string, formData: FormData): Promise<T> => {
+  const response = await api.post<T>(path, formData, UPLOAD_CONFIG);
+  return response.data;
 };
 
 /**
@@ -182,7 +150,7 @@ const fetchFormData = async (path: string, formData: FormData, retry = true): Pr
 export const uploadOcr = async (file: File) => {
   const formData = new FormData();
   formData.append('file', file);
-  return fetchFormData('/upload/memo', formData);
+  return uploadFormData('/upload/memo', formData);
 };
 
 /**
@@ -202,7 +170,7 @@ export const uploadTemplate = async (file: File, templateName: string) => {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('template_name', templateName);
-  return fetchFormData('/upload/template', formData);
+  return uploadFormData('/upload/template', formData);
 };
 
 /**
@@ -212,7 +180,7 @@ export const uploadTemplate = async (file: File, templateName: string) => {
 export const analyzeTemplateImage = async (file: File): Promise<{ structure_json: Record<string, unknown> }> => {
   const formData = new FormData();
   formData.append('file', file);
-  return fetchFormData('/upload/template/analyze', formData) as Promise<{ structure_json: Record<string, unknown> }>;
+  return uploadFormData<{ structure_json: Record<string, unknown> }>('/upload/template/analyze', formData);
 };
 
 /**
@@ -230,7 +198,7 @@ export const createTemplate = async (params: {
   if (params.file) {
     formData.append('file', params.file);
   }
-  return fetchFormData('/templates/', formData);
+  return uploadFormData('/templates/', formData);
 };
 
 /**
@@ -311,5 +279,13 @@ export const logout = async () => {
  */
 export const getCurrentUser = async () => {
   const response = await api.get('/users/me');
+  return response.data;
+};
+
+/**
+ * 현재 사용자 할당량/사용량 조회
+ */
+export const getUserUsage = async <T>(): Promise<T> => {
+  const response = await api.get<T>('/users/me/usage');
   return response.data;
 };

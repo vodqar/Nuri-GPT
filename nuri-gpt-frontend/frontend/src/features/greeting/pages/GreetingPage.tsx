@@ -7,7 +7,7 @@ import { Search, Calendar, Copy, RefreshCw, Check, MapPin, Info, MessageSquarePl
 import { cn } from '../../../utils/cn';
 
 export default function GreetingPage() {
-  const { accessToken, user } = useAuthStore();
+  const { user } = useAuthStore();
   const { isGenerating, result, error, generateGreeting } = useGreeting();
   
   const [regions, setRegions] = useState<string[]>([]);
@@ -25,16 +25,15 @@ export default function GreetingPage() {
   // Fetch regions on mount
   useEffect(() => {
     const fetchRegions = async () => {
-      if (!accessToken) return;
       try {
-        const data = await GreetingService.getRegions(accessToken);
+        const data = await GreetingService.getRegions();
         setRegions(data);
       } catch (err) {
         console.error('Failed to fetch regions:', err);
       }
     };
     fetchRegions();
-  }, [accessToken]);
+  }, []);
 
   // Sync selectedRegion with user preferred region if it changes
   useEffect(() => {
