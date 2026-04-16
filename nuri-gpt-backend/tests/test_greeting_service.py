@@ -1,5 +1,6 @@
 """GreetingService 단위 테스트"""
 
+import json
 from datetime import date
 from unittest.mock import MagicMock, patch
 
@@ -174,3 +175,92 @@ class TestGenerateGreeting:
         call_args = mock_dify.call_args
         inputs = call_args[0][0]
         assert inputs["weather_context"] == ""
+
+    @patch.object(GreetingService, "_call_dify", return_value="인삿말 결과")
+    def test_name_input_true_passed_to_dify(self, mock_dify, greeting_service, mock_weather_service):
+        mock_weather_service.get_weather_summary_range.return_value = ""
+
+        greeting_service.generate_greeting(
+            "광주광역시 북구", date(2026, 4, 20), name_input=True
+        )
+
+        inputs = mock_dify.call_args[0][0]
+        assert inputs["name_input"] == "true"
+
+    @patch.object(GreetingService, "_call_dify", return_value="인삿말 결과")
+    def test_name_input_false_passed_to_dify(self, mock_dify, greeting_service, mock_weather_service):
+        mock_weather_service.get_weather_summary_range.return_value = ""
+
+        greeting_service.generate_greeting(
+            "광주광역시 북구", date(2026, 4, 20), name_input=False
+        )
+
+        inputs = mock_dify.call_args[0][0]
+        assert inputs["name_input"] == "false"
+
+    @patch.object(GreetingService, "_call_dify", return_value="인삿말 결과")
+    def test_use_emoji_false_passed_to_dify(self, mock_dify, greeting_service, mock_weather_service):
+        mock_weather_service.get_weather_summary_range.return_value = ""
+
+        greeting_service.generate_greeting(
+            "광주광역시 북구", date(2026, 4, 20), use_emoji=False
+        )
+
+        inputs = mock_dify.call_args[0][0]
+        assert inputs["use_emoji"] == "false"
+
+    @patch.object(GreetingService, "_call_dify", return_value="인삿말 결과")
+    def test_use_emoji_true_passed_to_dify(self, mock_dify, greeting_service, mock_weather_service):
+        mock_weather_service.get_weather_summary_range.return_value = ""
+
+        greeting_service.generate_greeting(
+            "광주광역시 북구", date(2026, 4, 20), use_emoji=True
+        )
+
+        inputs = mock_dify.call_args[0][0]
+        assert inputs["use_emoji"] == "true"
+
+    @patch.object(GreetingService, "_call_dify", return_value="인삿말 결과")
+    def test_seed_sequence_in_dify_inputs(self, mock_dify, greeting_service, mock_weather_service):
+        mock_weather_service.get_weather_summary_range.return_value = ""
+
+        greeting_service.generate_greeting(
+            "광주광역시 북구", date(2026, 4, 20)
+        )
+
+        inputs = mock_dify.call_args[0][0]
+        assert "seed_sequence" in inputs
+        parsed = json.loads(inputs["seed_sequence"])
+        assert 2 <= len(parsed) <= 3
+        assert all(n in [1, 2, 3, 4] for n in parsed)
+        assert len(parsed) == len(set(parsed))  # no duplicates
+        assert parsed[-1] == 4  # always ends with 4
+
+
+# ── _generate_seed_sequence ────────────────────────────
+
+class TestGenerateSeedSequence:
+    def test_length_range(self, greeting_service):
+        for _ in range(100):
+            seq = greeting_service._generate_seed_sequence()
+            assert 2 <= len(seq) <= 3
+
+    def test_valid_elements(self, greeting_service):
+        for _ in range(100):
+            seq = greeting_service._generate_seed_sequence()
+            assert all(n in [1, 2, 3, 4] for n in seq)
+
+    def test_no_duplicates(self, greeting_service):
+        for _ in range(100):
+            seq = greeting_service._generate_seed_sequence()
+            assert len(seq) == len(set(seq))
+
+    def test_always_ends_with_4(self, greeting_service):
+        for _ in range(100):
+            seq = greeting_service._generate_seed_sequence()
+            assert seq[-1] == 4
+
+    def test_4_appears_only_at_end(self, greeting_service):
+        for _ in range(100):
+            seq = greeting_service._generate_seed_sequence()
+            assert 4 not in seq[:-1]

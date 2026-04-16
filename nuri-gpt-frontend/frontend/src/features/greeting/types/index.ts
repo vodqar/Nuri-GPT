@@ -3,6 +3,8 @@ export interface GreetingRequest {
   target_date: string;
   user_input?: string;
   enabled_contexts?: string[];
+  name_input?: boolean;
+  use_emoji?: boolean;
 }
 
 export interface GreetingResponse {

@@ -88,7 +88,7 @@
 
 | Method | Path | Description | Content-Type | 인증 필요 | 주요 파라미터 |
 |--------|------|-------------|-------------|-----------|--------------|
-| POST | `/api/greeting/generate` | 알림장 인삿말 생성 (날씨/날짜/절기/공휴일/기념일/잡절 맥락 기반) | `application/json` | ✅ | `region` (시군구명), `target_date` (YYYY-MM-DD) |
+| POST | `/api/greeting/generate` | 알림장 인삿말 생성 (날씨/날짜/절기/공휴일/기념일/잡절 맥락 기반) | `application/json` | ✅ | `region` (시군구명), `target_date` (YYYY-MM-DD), `name_input?` (bool, 기본 false), `use_emoji?` (bool, 기본 true) |
 
 #### Greeting Dify inputs 상세
 
@@ -101,6 +101,9 @@
 | `holiday_info` | SpecialDayService | 공휴일명 or "해당 없음" (음력공휴일·대체공휴일·임시공휴일 포함) |
 | `anniversary_info` | SpecialDayService | 기념일명 or "해당 없음" (스승의날, 어버이날 등) |
 | `sundry_day_info` | SpecialDayService | 잡절명 or "해당 없음" (단오, 한식 등) |
+| `name_input` | Request body | "true"/"false" — true=개별 아동 '[이름]' 플레이스홀더 삽입, false=반 전체 지칭 |
+| `use_emoji` | Request body | "true"/"false" — true=이모지 사용, false=이모지 금지 |
+| `seed_sequence` | GreetingService (자동) | JSON 배열 문자열 (예: "[3,1,4]") — [1,2,3] 중 1~2개 무작위 추출+셔플 후 항상 4(교사 내면)를 마지막에 붙임 |
 
 ### 상세 스키마
 
@@ -109,7 +112,7 @@
 ---
 
 
-> 마지막 업데이트: 2026-04-16 (특일 정보 API 연동 — SpecialDayService 신규, Dify inputs에 anniversary_info/sundry_day_info 추가)
+> 마지막 업데이트: 2026-04-16 (인삿말 옵션 추가 — name_input, use_emoji 파라미터 추가, seed_sequence 자동 생성 로직 추가)
 >
 > 이전 업데이트: 2026-04-16 (알림장 인삿말 생성기 — POST /api/greeting/generate 신설, 기상청 단기/중기예보 연동)
 >

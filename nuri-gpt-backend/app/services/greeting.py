@@ -5,6 +5,7 @@
 
 import json
 import logging
+import random
 from datetime import date
 from typing import Dict, List, Optional
 
@@ -64,6 +65,14 @@ class GreetingService:
     ):
         self.weather_service = weather_service or WeatherService()
         self.special_day_service = special_day_service
+
+    def _generate_seed_sequence(self) -> List[int]:
+        """[1,2,3] 중 1~2개를 무작위 추출하여 순서를 섞고, 마지막에 항상 4를 붙여 반환"""
+        count = random.randint(1, 2)
+        sequence = random.sample([1, 2, 3], count)
+        random.shuffle(sequence)
+        sequence.append(4)
+        return sequence
 
     def _extract_answer_text(self, response: requests.Response) -> str:
         content_type = response.headers.get("Content-Type", "")
@@ -252,6 +261,8 @@ class GreetingService:
         target_date: date,
         user_input: Optional[str] = None,
         enabled_contexts: Optional[List[str]] = None,
+        name_input: bool = False,
+        use_emoji: bool = True,
     ) -> str:
         """지역+날짜 → 알림장 인삿말 생성"""
         # 0. 맥락 활성화 여부 확인 (기본값: 모든 맥락 활성화)
@@ -288,6 +299,9 @@ class GreetingService:
             "anniversary_info": seasonal_ctx["anniversary_info"] if "anniversary" in enabled_contexts else "",
             "sundry_day_info": seasonal_ctx["sundry_day_info"] if "sundry" in enabled_contexts else "",
             "user_custom_input": user_input or "",
+            "name_input": "true" if name_input else "false",
+            "use_emoji": "true" if use_emoji else "false",
+            "seed_sequence": json.dumps(self._generate_seed_sequence()),
         }
 
         # 주차 정보(month_week)는 별도 체크박스가 없으므로 기본 포함하거나, 

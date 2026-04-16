@@ -50,6 +50,8 @@ async def generate_greeting(
         target_date=request.target_date,
         user_input=request.user_input,
         enabled_contexts=request.enabled_contexts,
+        name_input=request.name_input,
+        use_emoji=request.use_emoji,
     )
 
     # 생성 성공 시 유저의 preferred_region 업데이트

@@ -3,7 +3,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { GreetingService } from '../services/greetingService';
 import { useGreeting } from '../hooks/useGreeting';
 import { LoadingSpinner } from '../../../components/global/LoadingSpinner';
-import { Search, Calendar, Copy, RefreshCw, Check, MapPin, Info, MessageSquarePlus } from 'lucide-react';
+import { Search, Calendar, Copy, RefreshCw, Check, MapPin, Info, MessageSquarePlus, User, Smile } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 
 export default function GreetingPage() {
@@ -18,6 +18,8 @@ export default function GreetingPage() {
   const [targetDate, setTargetDate] = useState(new Date().toISOString().split('T')[0]);
   const [enabledContexts, setEnabledContexts] = useState<string[]>(['weather', 'seasonal', 'holiday', 'week']);
   const [userInput, setUserInput] = useState('');
+  const [nameInput, setNameInput] = useState(false);
+  const [useEmoji, setUseEmoji] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false);
 
   // Fetch regions on mount
@@ -64,15 +66,39 @@ export default function GreetingPage() {
       region: selectedRegion,
       target_date: targetDate,
       user_input: userInput,
-      enabled_contexts: enabledContexts
+      enabled_contexts: enabledContexts,
+      name_input: nameInput,
+      use_emoji: useEmoji,
     });
   };
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (result) {
-      navigator.clipboard.writeText(result);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
+      try {
+        await navigator.clipboard.writeText(result);
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy text:', err);
+        // Fallback: try using document.execCommand
+        const textArea = document.createElement('textarea');
+        textArea.value = result;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          setCopySuccess(true);
+          setTimeout(() => setCopySuccess(false), 2000);
+        } catch (fallbackErr) {
+          console.error('Fallback copy also failed:', fallbackErr);
+          alert('복사에 실패했습니다. 수동으로 복사해주세요.');
+        }
+        document.body.removeChild(textArea);
+      }
     }
   };
 
@@ -202,11 +228,47 @@ export default function GreetingPage() {
             </div>
           </div>
 
+          {/* Greeting Options */}
+          <div className="space-y-3">
+            <label className="text-sm font-bold flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
+              <Smile className="w-4 h-4 text-[var(--color-primary)]" />
+              4. 인삿말 옵션
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { id: 'nameInput' as const, label: '이름 삽입', desc: '개별 아동용', icon: User, state: nameInput, setter: setNameInput },
+                { id: 'useEmoji' as const, label: '이모지 사용', desc: '차분한 톤', icon: Smile, state: useEmoji, setter: setUseEmoji },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  onClick={() => opt.setter(!opt.state)}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-3 rounded-2xl border transition-all text-sm font-medium",
+                    opt.state
+                      ? "bg-[var(--color-primary-container)] border-[var(--color-primary)] text-[var(--color-on-primary-container)]"
+                      : "bg-white dark:bg-zinc-900 border-zinc-100 dark:border-zinc-800 text-zinc-500 hover:border-zinc-300"
+                  )}
+                >
+                  <div className={cn(
+                    "w-4 h-4 rounded-md flex items-center justify-center border",
+                    opt.state ? "bg-[var(--color-primary)] border-[var(--color-primary)]" : "border-zinc-300"
+                  )}>
+                    {opt.state && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span>{opt.label}</span>
+                    <span className="text-[10px] text-zinc-400 font-normal">{opt.state ? (opt.id === 'nameInput' ? '예: 우리 [이름]이가' : '이모지 포함') : (opt.id === 'nameInput' ? '반 전체 지칭' : opt.desc)}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* User Input */}
           <div className="space-y-2">
             <label className="text-sm font-bold flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
               <MessageSquarePlus className="w-4 h-4 text-[var(--color-primary)]" />
-              4. 추가 요구사항 (선택)
+              5. 추가 요구사항 (선택)
             </label>
             <textarea
               placeholder="예: 아이들이 소풍을 가는 날임을 언급해줘, 비타민 같은 하루 보내라는 말 넣어줘 등"
