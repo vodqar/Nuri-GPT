@@ -7,6 +7,7 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
+  preferred_region?: string;
 }
 
 interface AuthState {
