@@ -39,6 +39,19 @@ class Settings(BaseSettings):
     dify_regenerate_api_key: Optional[str] = Field(default=None, alias="DIFY_REGENERATE_API_KEY")
     dify_regenerate_api_url: Optional[str] = Field(default=None, alias="DIFY_REGENERATE_API_URL")
 
+    # 기상청 단기예보 API (apihub.kma.go.kr — authKey)
+    kma_api_key: Optional[str] = Field(default=None, alias="KMA_API_KEY")
+
+    # 기상청 중기예보 API (apis.data.go.kr — serviceKey)
+    kma_mid_api_key: Optional[str] = Field(default=None, alias="KMA_MID_API_KEY")
+
+    # 한국천문연구원 특일 정보 API (apis.data.go.kr — serviceKey)
+    kma_special_day_api_key: Optional[str] = Field(default=None, alias="KMA_SPECIAL_DAY_API_KEY")
+
+    # Dify 인삿말 생성용 Chatflow
+    dify_greeting_api_key: Optional[str] = Field(default=None, alias="DIFY_GREETING_API_KEY")
+    dify_greeting_api_url: Optional[str] = Field(default=None, alias="DIFY_GREETING_API_URL")
+
     # LLM 모델 설정
     llm_vision_model: str = Field(default="gemini-3-flash", alias="LLM_VISION_MODEL")
     llm_vision_temperature: float = Field(default=0.2, alias="LLM_VISION_TEMPERATURE")

@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.endpoints.auth import router as auth_router
 from app.api.endpoints.generate import router as generate_router
+from app.api.endpoints.greeting import router as greeting_router
 from app.api.endpoints.journals import router as journals_router
 from app.api.endpoints.upload import router as upload_router
 from app.api.endpoints.template import router as template_router
@@ -67,6 +68,7 @@ app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(upload_router, prefix="/api", tags=["Upload"])
 app.include_router(template_router, prefix="/api/templates", tags=["Template"])
 app.include_router(generate_router, prefix="/api/generate", tags=["Generate"])
+app.include_router(greeting_router, prefix="/api/greeting", tags=["Greeting"])
 app.include_router(journals_router, prefix="/api/journals", tags=["Journal"])
 app.include_router(user_router, prefix="/api/users", tags=["User"])
 

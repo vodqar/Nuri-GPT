@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppLayout } from './components/layout/AppLayout';
 import { ObservationPage } from './features/observation/ObservationPage';
+import GreetingPage from './features/greeting/pages/GreetingPage';
 import { JournalHistoryPage } from './features/observation/components/JournalHistoryPage';
 import { LoginPage } from './features/auth/pages/LoginPage';
 import { AccountPage } from './features/settings/pages/AccountPage';
@@ -30,6 +31,7 @@ function AppRoutes() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<div className="p-10"><h1 className="text-2xl font-bold">{t('app.dashboardTitle')}</h1></div>} />
           <Route path="observations" element={<ObservationPage />} />
+          <Route path="observations/greeting" element={<GreetingPage />} />
           <Route path="observations/history" element={<JournalHistoryPage />} />
           <Route path="logs" element={<div className="p-10"><h1 className="text-2xl font-bold">{t('app.logsTitle')}</h1></div>} />
           <Route path="insights" element={<div className="p-10"><h1 className="text-2xl font-bold">{t('app.insightsTitle')}</h1></div>} />

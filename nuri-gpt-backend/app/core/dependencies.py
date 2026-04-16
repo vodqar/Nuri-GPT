@@ -16,6 +16,8 @@ from app.services.vision import VisionService
 from app.services.ocr import OcrService
 from app.services.storage import StorageService
 from app.services.usage_service import UsageService
+from app.services.greeting import GreetingService
+from app.services.special_day import SpecialDayService
 from app.utils.exceptions import AuthenticationError
 
 # Bearer 토큰 보안 스키마
@@ -127,3 +129,14 @@ def get_llm_service() -> LlmService:
 def get_vision_service() -> VisionService:
     """Vision 서비스 의존성"""
     return VisionService()
+
+
+def get_special_day_service() -> SpecialDayService:
+    """SpecialDay 서비스 의존성"""
+    return SpecialDayService()
+
+
+def get_greeting_service() -> GreetingService:
+    """Greeting 서비스 의존성"""
+    special_day = get_special_day_service()
+    return GreetingService(special_day_service=special_day)

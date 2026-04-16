@@ -61,6 +61,7 @@ export function SideNavBar() {
       icon: 'visibility',
       items: [
         { label: '새 관찰 일지', path: '/observations' },
+        { label: '인삿말 생성', path: '/observations/greeting' },
         { label: '생성 기록', path: '/observations/history' },
       ]
     }
