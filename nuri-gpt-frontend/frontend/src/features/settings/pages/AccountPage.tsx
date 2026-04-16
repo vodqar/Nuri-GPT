@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '../../../store/authStore';
 import { LoadingSpinner } from '../../../components/global/LoadingSpinner';
 import { cn } from '../../../utils/cn';
+import { getUserUsage } from '../../../services/api';
 
 interface UsageDetail {
   used_today: number;
@@ -17,23 +18,15 @@ interface UserUsageResponse {
 }
 
 export function AccountPage() {
-  const { user, accessToken } = useAuthStore();
+  const { user } = useAuthStore();
   const [usage, setUsage] = useState<UserUsageResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUsage = async () => {
       try {
-        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-        const response = await fetch(`${API_BASE_URL}/users/me/usage`, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setUsage(data);
-        }
+        const data = await getUserUsage<UserUsageResponse>();
+        setUsage(data);
       } catch (error) {
         console.error('Failed to fetch usage:', error);
       } finally {
@@ -41,10 +34,8 @@ export function AccountPage() {
       }
     };
 
-    if (accessToken) {
-      fetchUsage();
-    }
-  }, [accessToken]);
+    fetchUsage();
+  }, []);
 
   // Map backend features to UI labels
   const featureLabels: Record<string, string> = {

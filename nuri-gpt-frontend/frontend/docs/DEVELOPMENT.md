@@ -42,15 +42,16 @@
 - [ ] 상태 관리 레벨 적절 (Local vs Zustand)
 - [ ] 템플릿 없는 경우 → 안내 모달 없이 즉시 템플릿 생성 화면으로 분기
 
+## API 클라이언트 규약
+
+- 네트워크 호출은 `services/api.ts`의 axios 인스턴스 `api`를 통해 수행한다.
+- FormData 업로드도 axios로 처리한다 (내부 `uploadFormData` 헬퍼 사용). 업로드에서는 `Content-Type`을 제거해 브라우저가 `multipart/form-data` boundary를 자동 설정하도록 위임한다.
+- `authStore.refreshAccessToken()`은 예외적으로 `fetch`를 유지한다. 이유는 해당 함수 주석 및 `ARCHITECTURE.md §에러 핸들링` 참조.
+- 호출부의 에러 메시지 추출은 `utils/apiError.ts`의 `extractApiErrorMessage()`를 사용한다.
+
 ## 알려진 기술 부채
 
-### fetchFormData / axios 인터셉터 refresh 경쟁
-
-`api.ts`의 FormData 요청(`fetchFormData`)과 JSON 요청(axios)은 각자 독립적으로 401 처리 후 토큰 갱신을 시도함. 동시에 두 종류의 요청이 401을 받으면 `isRefreshing` 플래그가 공유되지 않아 중복 refresh 요청이 발생할 수 있음.
-
-**현재 괜찮은 이유**: 서비스 흐름이 순차적(OCR 업로드 → 생성 →보내기)이므로 실제 동시 발생 가능성 낮음.
-
-**장기 권장**: `fetchFormData`를 axios 기반으로 통합하거나, refresh 상태를 모듈 공유 변수로 일원화.
+(현재 없음. 이전에 있던 `fetchFormData` / axios refresh 경쟁은 axios 통합으로 해소됨.)
 
 ---
 
