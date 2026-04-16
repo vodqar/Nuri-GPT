@@ -31,7 +31,7 @@ function AppRoutes() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<div className="p-10"><h1 className="text-2xl font-bold">{t('app.dashboardTitle')}</h1></div>} />
           <Route path="observations" element={<ObservationPage />} />
-          <Route path="observations/greeting" element={<GreetingPage />} />
+          <Route path="tools/greeting" element={<GreetingPage />} />
           <Route path="observations/history" element={<JournalHistoryPage />} />
           <Route path="logs" element={<div className="p-10"><h1 className="text-2xl font-bold">{t('app.logsTitle')}</h1></div>} />
           <Route path="insights" element={<div className="p-10"><h1 className="text-2xl font-bold">{t('app.insightsTitle')}</h1></div>} />

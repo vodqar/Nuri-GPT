@@ -11,7 +11,7 @@ export function SideNavBar() {
   const { logout, user } = useAuthStore();
   const { isSidebarCollapsed, toggleSidebar, isMobileMenuOpen, closeMobileMenu } = useLayoutStore();
   
-  const [expandedMenus, setExpandedMenus] = useState<string[]>(['observations']);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(['observations', 'tools']);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -61,8 +61,15 @@ export function SideNavBar() {
       icon: 'visibility',
       items: [
         { label: '새 관찰 일지', path: '/observations' },
-        { label: '인삿말 생성', path: '/observations/greeting' },
         { label: '생성 기록', path: '/observations/history' },
+      ]
+    },
+    {
+      id: 'tools',
+      label: '도구',
+      icon: 'construction',
+      items: [
+        { label: '인삿말 생성', path: '/tools/greeting' },
       ]
     }
   ];
