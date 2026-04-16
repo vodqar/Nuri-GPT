@@ -84,6 +84,24 @@
 | GET | `/api/users/{user_id}` | 특정 사용자 정보 조회 (본인만) | `application/json` | ✅ | `user_id` |
 | PUT | `/api/users/{user_id}` | 특정 사용자 정보 업데이트 (본인만) | `application/json` | ✅ | `user_id`, `tone_and_manner?` |
 
+### Greeting (API) — prefix: `/api/greeting`
+
+| Method | Path | Description | Content-Type | 인증 필요 | 주요 파라미터 |
+|--------|------|-------------|-------------|-----------|--------------|
+| POST | `/api/greeting/generate` | 알림장 인삿말 생성 (날씨/날짜/절기/공휴일/기념일/잡절 맥락 기반) | `application/json` | ✅ | `region` (시군구명), `target_date` (YYYY-MM-DD) |
+
+#### Greeting Dify inputs 상세
+
+| Key | Source | Description |
+|-----|--------|-------------|
+| `date_info` | GreetingService | 날짜+요일 (예: "2026년 5월 5일 (화요일)") |
+| `month_week` | GreetingService | 월 내 주차 (예: "5월 1주차") |
+| `weather_context` | WeatherService | 날씨 요약 (예: "맑음, 최고 22℃") |
+| `seasonal_info` | SpecialDayService | 24절기 구간 (예: "곡우(4월 20일) ~ 소만(5월 21일)") |
+| `holiday_info` | SpecialDayService | 공휴일명 or "해당 없음" (음력공휴일·대체공휴일·임시공휴일 포함) |
+| `anniversary_info` | SpecialDayService | 기념일명 or "해당 없음" (스승의날, 어버이날 등) |
+| `sundry_day_info` | SpecialDayService | 잡절명 or "해당 없음" (단오, 한식 등) |
+
 ### 상세 스키마
 
 각 엔드포인트의 상세 요청/응답 스키마는 `app/schemas/` 디렉토리 참조 또는 Swagger UI (`/docs`)에서 확인 가능합니다.
@@ -91,7 +109,11 @@
 ---
 
 
-> 마지막 업데이트: 2026-04-15 (로그인 유지 정책 반영 — `remember` 파라미터 및 refresh 쿠키 지속성 규칙 문서화)
+> 마지막 업데이트: 2026-04-16 (특일 정보 API 연동 — SpecialDayService 신규, Dify inputs에 anniversary_info/sundry_day_info 추가)
+>
+> 이전 업데이트: 2026-04-16 (알림장 인삿말 생성기 — POST /api/greeting/generate 신설, 기상청 단기/중기예보 연동)
+>
+> 이전 업데이트: 2026-04-15 (로그인 유지 정책 반영 — `remember` 파라미터 및 refresh 쿠키 지속성 규칙 문서화)
 >
 > 이전 업데이트: 2026-04-15 (할당량 관리 시스템 구축 — /api/users/me/usage 신설, LLM 기반 API에 Quota Check 로직 통합)
 >

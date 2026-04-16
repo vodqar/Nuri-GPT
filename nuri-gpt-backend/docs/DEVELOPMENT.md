@@ -14,6 +14,8 @@ get_storage_service()     → StorageService()
 get_ocr_service()         → OcrService()
 get_llm_service()         → LlmService()
 get_vision_service()      → VisionService()
+get_special_day_service() → SpecialDayService()
+get_greeting_service()    → GreetingService(special_day_service=SpecialDayService())
 ```
 
 ---
@@ -129,7 +131,9 @@ pytest --cov=app --cov-report=html
 | `test_generate.py` | Generate API | 통합 | mock services |
 | `test_generate_api.py` | Generate/Regenerate API | 단위 | mock services |
 | `test_e2e.py` | 전체 워크플로우 | E2E | 전체 |
-```
+| `test_weather_service.py` | WeatherService (단기/중기 분기) | 단위 | mock (기상청 API) |
+| `test_greeting_service.py` | GreetingService (날씨+날짜+절기→Dify) | 단위 | mock (Weather, SpecialDay, Dify) |
+| `test_special_day_service.py` | SpecialDayService (특일 API+캐시) | 단위 | mock (한국천문연구원 API) |
 
 ---
 
@@ -145,4 +149,32 @@ pytest --cov=app --cov-report=html
   - `test_regenerate_log_success`: `is_aggressive`, `child_age` 파라미터 전달 여부 검증 추가
   - `test_regenerate_log_list_format_response`: 리스트 형식 응답 파싱 케이스 신규 추가
 
-*Last Updated: 2026-04-14*
+*Last Updated: 2026-04-16*
+
+#### 2026-04-16 — 특일 정보 API 연동
+
+- **`app/services/special_day.py`** SpecialDayService + SpecialDayCache 신규 추가
+  - 한국천문연구원 특일 정보 OpenAPI (4개 오퍼레이션) 연동
+  - 차등 TTL 캐시: 당월 12시간 / 미래월 7일, grace period 24시간
+  - API 키 미설정 또는 장애 시 하드코딩 fallback
+  - `refresh(year)` 메서드로 백그라운드 스케줄러 전환 고려
+- **`app/services/greeting.py`** 하드코딩 → `_FALLBACK_*` 전환, SpecialDayService 주입
+  - Dify inputs에 `anniversary_info`, `sundry_day_info` 키 추가
+- **`app/core/dependencies.py`** `get_special_day_service()` DI 팩토리 추가
+- **`app/core/config.py`** `KMA_SPECIAL_DAY_API_KEY` 설정 추가
+- **`tests/test_special_day_service.py`** 신규 — 캐시 TTL, API 파싱, fallback 테스트
+
+#### 2026-04-16 — 알림장 인삿말 생성기 백엔드 구현
+
+- **`app/services/weather.py`** WeatherService 신규 추가
+  - 기상청 단기예보(getVilageFcst) + 중기예보(getMidLandFcst/getMidTa) 분기 처리
+  - Δ 0~3일 → 단기예보, Δ 4~10일 → 중기예보, Δ >10 → 빈 문자열
+  - 시군구→nx/ny/mid_regId 매핑 (`app/data/region_grid_map.json`, 270개 시군구)
+- **`app/services/greeting.py`** GreetingService 신규 추가
+  - 날씨 + 날짜/요일/주차 + 24절기 + 법정기념일 맥락 조립 → Dify Chatflow 호출
+  - 날씨 API 장애 시에도 인삿말 생성 (빈 날씨 맥락으로 fallback)
+  - Dify 응답은 `streaming`/`blocking` 모두 파싱 가능하도록 처리하고, 요청 input key 및 응답 길이 로깅으로 디버깅 가능성 보강
+- **`app/api/endpoints/greeting.py`** `POST /api/greeting/generate` 엔드포인트 신규
+- **`app/schemas/greeting.py`** GreetingRequest/GreetingResponse 스키마 신규
+- **`app/core/dependencies.py`** `get_greeting_service()` DI 팩토리 추가
+- **`app/core/config.py`** KMA_API_KEY, KMA_MID_API_KEY, DIFY_GREETING_API_KEY/URL 설정 추가

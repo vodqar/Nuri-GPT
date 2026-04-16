@@ -13,10 +13,11 @@
 
 ## 개발 규칙
 
-### 1. 의존성 관리
+### 1. 의존성 및 검증 (Macro Guardrails)
 - 버전 지정: `>=` 또는 `~=` 사용 (`==` 하드코딩 금지)
 - 충돌 발생 시 `pip install <pkg>` 단독 설치로 우회 금지 → `requirements.txt`에서 근본 해소
-- 작업 완료 전 `pip install -r requirements.txt` 에러 없이 통과 확인 필수
+- 코드 편집 후 턴 종료 전, 반드시 `python -m py_compile` 등으로 구문(Syntax) 무결성을 증명할 것.
+- 외부 API 연동 시 과거 지식에 예측하여 짜지 말고, 문서를 살피고 `curl` 등으로 동작/타임아웃을 증명할 것.
 
 ### 2. 테스트 격리
 - 모든 Service 모듈: `unittest.mock`으로 외부 인프라 없이 단위 테스트 가능해야 함

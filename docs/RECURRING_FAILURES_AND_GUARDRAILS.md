@@ -49,20 +49,19 @@ Review for promotion to higher-level documentation if any of the following apply
 - **Frontend Documentation**: User flows, temporary UI bypasses, interaction consistency, and browser validation perspectives.
 - **Handoff / Plan**: Specific context for the current session, task handovers, and observational notes pending promotion.
 
-## Known Patterns
+## Macro Guardrails (핵심 철학)
 
-### overflow-hidden은 해결이 아니라 은폐일 수 있다
-콘텐츠가 컨테이너를 벗어날 때, `overflow-hidden`을 적용하기 전에 "이 콘텐츠가 잘려도 되는가?"를 먼저 판단한다. 잘리면 안 되는 콘텐츠라면, 컨테이너가 콘텐츠 크기를 수용하도록 레이아웃(포지셔닝, 높이, flow 방식)을 수정해야 한다. `overflow-hidden`은 증상 은폐이지 근본 수정이 아닐 수 있다.
+가장 빈번하게 발생하는 실패를 관통하는 두 가지 핵심 행동 원칙입니다. 모든 에이전트는 작업 시 이 두 가지 원칙을 최우선으로 준수해야 합니다.
 
-- **사례**: `absolute inset-0` 오버레이가 부모의 자연 높이(버튼 1개)에 제한되어 콘텐츠가 넘침 → `overflow-hidden`으로 잘라내면 예시 기능 무효화 → normal flow로 전환이 올바른 수정
-- **참고**: `nuri-gpt-frontend/frontend/docs/GUARDRAILS.md`, `report/2026-04-14-overlay-overflow-misdiagnosis.md`
+### 1. 추측(Assumption) 기반 구현 및 땜질(Band-aid) 금지
+과거 지식이나 표면적인 현상만 보고 코드를 짜거나 임시방편을 적용하지 마십시오.
+- **외부 연동**: API나 외부 서비스 연동 구현 전, 반드시 최신 공식 문서를 확인하고 스크립트(`curl` 등)로 실제 연결과 지연 시간을 증명한 후 구현하십시오. (사례: 잘못된 주소 사용, 타임아웃 미확인)
+- **레이아웃/오버플로우**: 넘치는 현상을 가리기 위해 `overflow-hidden`을 맹목적으로 덥어씌우지 마십시오. 구조 계산을 통해 근본 원인을 수정해야 합니다.
 
-### 복잡한 백엔드 수정 시 구문 검증은 필수이다
-`multi_replace_file_content` 등을 활용하여 다중 라인 혹은 여러 지점을 동시에 수정할 때, 특히 파이썬처럼 들여쓰기에 민감한 언어의 경우 의도치 않은 `IndentationError`나 `SyntaxError`가 발생할 가능성이 매우 높다. 대규모 수정 후에는 반드시 수동으로 코드를 재검토하거나, 공식적인 구문 검사 도구를 실행하여 무결성을 확인해야 한다.
-
-- **원칙**: 모든 백엔드 코드 수정 작업 완료 직후, `python -m py_compile <수정된_파일_경로>`를 실행하여 구문 오류 여부를 즉시 확인한다.
-- **사례**: Quota 시스템 통합 과정에서 다중 `return` 블록의 범위를 잘못 지정하여 `IndentationError` 및 `SyntaxError` 유입 → 서버 로딩 중단 발생
-- **참고**: `report/2026-04-15-endpoint-syntax-errors.md`
+### 2. 맹목적 검증 패스(Blind-Pass) 불가 및 적극적 에스컬레이션
+코드를 수정한 뒤 임의로 검증을 생략하거나 건너뛰고 턴을 종료하지 마십시오.
+- **기계적 검증**: 편집 도구의 특성상 들여쓰기 훼손이나 구문 오류가 발생할 수 있습니다. 수정 직후 파이썬 환경이라면 터미널(`py_compile` 등)로 최소한의 무결성을 스스로 입증해야 합니다.
+- **장애 대처**: 브라우저 UI 검증 중 "로그인이 필요하다" 등 테스트할 수 없는 장벽을 만났을 때, "확인이 불가하여 종료한다"고 타협하지 마십시오. 사용자에게 권한이나 해결 방법을 강하게 요구(Escalate)하십시오.
 
 ---
 
