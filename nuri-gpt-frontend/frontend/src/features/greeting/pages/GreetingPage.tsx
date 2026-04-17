@@ -44,6 +44,8 @@ export default function GreetingPage() {
   }, [user?.preferences?.['greeting.preferred_region'], selectedRegion]);
 
   const filteredRegions = regions.filter(r => 
+    searchQuery === '' || 
+    searchQuery === selectedRegion ||
     r.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -121,7 +123,7 @@ export default function GreetingPage() {
               <MapPin className="w-4 h-4 text-[var(--color-primary)]" />
               1. 지역 선택
             </label>
-            <div className="relative">
+            <div className={cn("relative", isRegionListOpen && "z-50")}>
               <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                 <Search className="w-4 h-4 text-zinc-400" />
               </div>
@@ -132,7 +134,7 @@ export default function GreetingPage() {
                 value={isRegionListOpen ? searchQuery : selectedRegion}
                 onFocus={() => {
                   setIsRegionListOpen(true);
-                  setSearchQuery('');
+                  setSearchQuery(selectedRegion);
                 }}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
