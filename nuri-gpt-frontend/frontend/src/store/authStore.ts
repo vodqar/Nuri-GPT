@@ -7,7 +7,7 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
-  preferred_region?: string;
+  preferences: Record<string, any>;
 }
 
 interface AuthState {
@@ -18,6 +18,7 @@ interface AuthState {
   logout: () => void;
   setToken: (accessToken: string) => void;
   refreshAccessToken: () => Promise<boolean>;
+  updatePreferences: (preferences: Record<string, any>) => void;
 }
 
 /**
@@ -40,6 +41,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     set({ isAuthenticated: false, accessToken: null, user: null }),
 
   setToken: (accessToken: string) => set({ accessToken }),
+
+  updatePreferences: (preferences: Record<string, any>) =>
+    set((state) => ({
+      user: state.user ? { ...state.user, preferences } : state.user,
+    })),
 
   /**
    * 토큰 갱신 요청

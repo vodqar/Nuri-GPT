@@ -8,9 +8,8 @@ import logging
 from typing import List
 from fastapi import APIRouter, Depends, status
 
-from app.core.dependencies import get_current_user, get_greeting_service, get_user_repository
-from app.db.repositories.user_repository import UserRepository
-from app.db.models.user import UserUpdate
+from app.core.dependencies import get_current_user, get_greeting_service, get_user_preference_repository
+from app.db.repositories.user_preference_repository import UserPreferenceRepository
 from app.schemas.greeting import GreetingRequest, GreetingResponse
 from app.services.greeting import GreetingService
 
@@ -42,7 +41,7 @@ async def generate_greeting(
     request: GreetingRequest,
     current_user: dict = Depends(get_current_user),
     greeting_service: GreetingService = Depends(get_greeting_service),
-    user_repo: UserRepository = Depends(get_user_repository),
+    pref_repo: UserPreferenceRepository = Depends(get_user_preference_repository),
 ) -> GreetingResponse:
     """시군구 지역과 알림장 배포 일자를 기반으로 인삿말을 생성합니다."""
     greeting = greeting_service.generate_greeting(
@@ -54,13 +53,10 @@ async def generate_greeting(
         use_emoji=request.use_emoji,
     )
 
-    # 생성 성공 시 유저의 preferred_region 업데이트
+    # 생성 성공 시 유저의 greeting.preferred_region 설정 저장
     if greeting:
         from uuid import UUID
         user_id = UUID(current_user["id"])
-        await user_repo.update(
-            user_id, 
-            UserUpdate(preferred_region=request.region)
-        )
+        await pref_repo.upsert(user_id, "greeting.preferred_region", request.region)
 
     return GreetingResponse(greeting=greeting)

@@ -37,7 +37,6 @@ class UserBase(BaseModel):
     email: EmailStr
     name: str = Field(..., min_length=1, max_length=100)
     kindergarten_name: Optional[str] = Field(None, max_length=100)
-    preferred_region: Optional[str] = Field(None, description="선호하는 지역명 (예: '서울특별시 강남구')")
     tone_and_manner: Optional[str] = Field(None, description="원장님 지침 (Tone & Manner)")
     role: UserRole = UserRole.USER
 
@@ -55,7 +54,6 @@ class UserUpdate(BaseModel):
     """사용자 업데이트 모델"""
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     kindergarten_name: Optional[str] = Field(None, max_length=100)
-    preferred_region: Optional[str] = None
     tone_and_manner: Optional[str] = None
     role: Optional[UserRole] = None
     subscription_status: Optional[SubscriptionStatus] = None

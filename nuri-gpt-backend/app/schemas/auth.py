@@ -4,7 +4,7 @@
 """
 
 from datetime import datetime
-from typing import Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field
@@ -33,6 +33,7 @@ class UserAuthInfo(BaseModel):
     id: UUID = Field(..., description="사용자 ID")
     email: EmailStr = Field(..., description="사용자 이메일")
     name: str = Field(..., description="사용자 이름")
+    preferences: Dict[str, Any] = Field(default_factory=dict, description="사용자 설정 맵")
 
 
 class TokenResponse(BaseModel):

@@ -25,7 +25,7 @@ export const useLoginForm = () => {
       setIsLoading(true);
       const response = await loginApi(values);
       
-      login(response.access_token, { ...response.user, role: 'user' as const });
+      login(response.access_token, { ...response.user, role: 'user' as const, preferences: response.user.preferences || {} });
 
       navigate('/dashboard');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

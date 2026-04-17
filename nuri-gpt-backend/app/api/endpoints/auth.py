@@ -13,6 +13,7 @@ from gotrue.errors import AuthApiError
 from supabase import Client
 
 from app.db.connection import get_supabase_client
+from app.db.repositories.user_preference_repository import UserPreferenceRepository
 from app.schemas.auth import LoginRequest, LogoutResponse, SignupRequest, TokenResponse, UserAuthInfo
 from app.utils.exceptions import AuthenticationError
 
@@ -70,6 +71,7 @@ async def signup(
     request: SignupRequest,
     response: Response,
     supabase: Client = Depends(get_supabase_client),
+    pref_repo: UserPreferenceRepository = Depends(lambda: UserPreferenceRepository(get_supabase_client())),
 ) -> TokenResponse:
     """회원가입
 
@@ -101,6 +103,7 @@ async def signup(
             # secure=True, samesite="strict"
             _set_auth_cookies(response=response, refresh_token=session.refresh_token, remember=True)
 
+            preferences = await pref_repo.get_all(user.id)
             return TokenResponse(
                 access_token=session.access_token,
                 token_type="bearer",
@@ -109,6 +112,7 @@ async def signup(
                     id=user.id,
                     email=user.email or "",
                     name=user.user_metadata.get("name", "") if user.user_metadata else "",
+                    preferences=preferences,
                 ),
             )
         else:
@@ -128,6 +132,7 @@ async def login(
     request: LoginRequest,
     response: Response,
     supabase: Client = Depends(get_supabase_client),
+    pref_repo: UserPreferenceRepository = Depends(lambda: UserPreferenceRepository(get_supabase_client())),
 ) -> TokenResponse:
     """사용자 로그인
 
@@ -160,6 +165,7 @@ async def login(
             remember=request.remember,
         )
 
+        preferences = await pref_repo.get_all(user.id)
         return TokenResponse(
             access_token=session.access_token,
             token_type="bearer",
@@ -168,6 +174,7 @@ async def login(
                 id=user.id,
                 email=user.email or "",
                 name=user.user_metadata.get("name", "") if user.user_metadata else "",
+                preferences=preferences,
             ),
         )
 
@@ -185,6 +192,7 @@ async def refresh_token(
     refresh_token: Optional[str] = Cookie(None, alias=REFRESH_TOKEN_COOKIE_NAME),
     remember_me: Optional[str] = Cookie(None, alias=REMEMBER_ME_COOKIE_NAME),
     supabase: Client = Depends(get_supabase_client),
+    pref_repo: UserPreferenceRepository = Depends(lambda: UserPreferenceRepository(get_supabase_client())),
 ) -> TokenResponse:
     """토큰 갱신
 
@@ -214,6 +222,7 @@ async def refresh_token(
         remember = remember_me != "0"
         _set_auth_cookies(response=response, refresh_token=session.refresh_token, remember=remember)
 
+        preferences = await pref_repo.get_all(user.id)
         return TokenResponse(
             access_token=session.access_token,
             token_type="bearer",
@@ -222,6 +231,7 @@ async def refresh_token(
                 id=user.id,
                 email=user.email or "",
                 name=user.user_metadata.get("name", "") if user.user_metadata else "",
+                preferences=preferences,
             ),
         )
 

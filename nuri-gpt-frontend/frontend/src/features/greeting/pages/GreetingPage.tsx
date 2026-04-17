@@ -7,14 +7,14 @@ import { Search, Calendar, Copy, RefreshCw, Check, MapPin, Info, MessageSquarePl
 import { cn } from '../../../utils/cn';
 
 export default function GreetingPage() {
-  const { user } = useAuthStore();
+  const { user, updatePreferences } = useAuthStore();
   const { isGenerating, result, error, generateGreeting } = useGreeting();
   
   const [regions, setRegions] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isRegionListOpen, setIsRegionListOpen] = useState(false);
   
-  const [selectedRegion, setSelectedRegion] = useState(user?.preferred_region || '');
+  const [selectedRegion, setSelectedRegion] = useState((user?.preferences?.['greeting.preferred_region'] as string) || '');
   const [targetDate, setTargetDate] = useState(new Date().toISOString().split('T')[0]);
   const [enabledContexts, setEnabledContexts] = useState<string[]>(['weather', 'seasonal', 'holiday', 'week']);
   const [userInput, setUserInput] = useState('');
@@ -37,10 +37,11 @@ export default function GreetingPage() {
 
   // Sync selectedRegion with user preferred region if it changes
   useEffect(() => {
-    if (user?.preferred_region && !selectedRegion) {
-      setSelectedRegion(user.preferred_region);
+    const prefRegion = user?.preferences?.['greeting.preferred_region'] as string | undefined;
+    if (prefRegion && !selectedRegion) {
+      setSelectedRegion(prefRegion);
     }
-  }, [user?.preferred_region, selectedRegion]);
+  }, [user?.preferences?.['greeting.preferred_region'], selectedRegion]);
 
   const filteredRegions = regions.filter(r => 
     r.toLowerCase().includes(searchQuery.toLowerCase())
@@ -69,6 +70,8 @@ export default function GreetingPage() {
       name_input: nameInput,
       use_emoji: useEmoji,
     });
+    // 백엔드에서 preferred_region을 저장하므로 프론트 상태도 즉시 갱신
+    updatePreferences({ ...user?.preferences, 'greeting.preferred_region': selectedRegion });
   };
 
   const handleCopy = async () => {
@@ -162,10 +165,10 @@ export default function GreetingPage() {
                 onClick={() => setIsRegionListOpen(false)} 
               />
             )}
-            {user?.preferred_region && (
+            {user?.preferences?.['greeting.preferred_region'] && (
               <p className="text-[11px] text-zinc-400 flex items-center gap-1 pl-1">
                 <Info className="w-3 h-3" />
-                최근 선택: {user.preferred_region}
+                최근 선택: {user.preferences['greeting.preferred_region'] as string}
               </p>
             )}
           </div>

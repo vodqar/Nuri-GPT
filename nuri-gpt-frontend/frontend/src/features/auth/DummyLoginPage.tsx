@@ -6,7 +6,7 @@ export const DummyLoginPage = () => {
   const navigate = useNavigate();
 
   const handleLogin = () => {
-    login('dummy-access-token', { id: 'dummy-user', email: 'dummy@example.com' }); // 전역 상태 isAuthenticated를 true로 변경
+    login('dummy-access-token', { id: 'dummy-user', email: 'dummy@example.com', name: '더미사용자', role: 'user' as const, preferences: {} });
     navigate('/observations'); // 메인 페이지로 리다이렉트
   };
 

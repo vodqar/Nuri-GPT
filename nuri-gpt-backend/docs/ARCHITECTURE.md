@@ -6,7 +6,7 @@
 |------|------|------|
 | API Layer | `api/endpoints/` | FastAPI 라우팅, Pydantic 요청/응답 검증 |
 | Service Layer | `services/` | 핵심 비즈니스 로직 (OCR, LLM, Vision, Storage, Usage, Weather, Greeting, SpecialDay) |
-| Repository Layer | `db/repositories/` | DB CRUD 추상화 (Template, Log, Journal, Usage) |
+| Repository Layer | `db/repositories/` | DB CRUD 추상화 (Template, Log, Journal, Usage, UserPreference) |
 | Infrastructure | — | Supabase DB/Storage, Gemini Flash API 연동 |
 
 ---
@@ -36,6 +36,7 @@ graph TD
     P --> Q["Usage Repository"]
 
     R --> S["Greeting Service"]
+    R --> UP["UserPreference Repository"]
     S --> T["Weather Service"]
     S --> X["SpecialDay Service"]
     S --> U[Dify Chatflow API]
@@ -51,6 +52,7 @@ graph TD
     J --> O
     K --> O
     Q --> O
+    UP --> O
 ```
 
 ---
@@ -63,7 +65,27 @@ graph TD
 2. **템플릿 등록**: 이미지 업로드 → Vision Service로 계층 구조 JSON 추출 → Storage 원본 저장 + DB에 `structure_json` 기록
 3. **일지 생성**: 정규화 텍스트 + `tone_and_manner` → LLM Service → 구조화된 관찰일지 JSON → DB 이력 저장
 4. **결과 출력**: 완성된 일지 JSON을 프론트엔드로 전달
-5. **인삿말 생성**: 시군구+날짜 → WeatherService(단기/중기 분기) → 날씨 요약 + SpecialDayService(공휴일/절기/기념일/잡절) → 날짜/절기/기념일 맥락 → Dify Chatflow → 인삿말 텍스트
+5. **인삿말 생성**: 시군구+날짜 → WeatherService(단기/중기 분기) → 날씨 요약 + SpecialDayService(공휴일/절기/기념일/잡절) → 날짜/절기/기념일 맥락 → Dify Chatflow → 인삿말 텍스트 → UserPreferenceRepository에 `greeting.preferred_region` 저장
+
+---
+
+## 사용자 설정 (User Preferences)
+
+범용 key-value 저장소. `users` 테이블의 컬럼 대신 `user_preferences` 테이블에서 관리.
+
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| `user_id` | UUID (FK) | 사용자 ID |
+| `key` | VARCHAR(100) | 설정 키 (`{feature}.{name}` 네이밍) |
+| `value` | JSONB | 설정 값 |
+| `updated_at` | TIMESTAMPTZ | 갱신 시각 |
+
+PK: `(user_id, key)`. RLS: 본인만 읽기/쓰기.
+
+현재 사용 중인 키:
+- `greeting.preferred_region`: 인삿말 생성 시 선택한 시군구 (문자열)
+
+향후 추가 예시: `observation.default_template`, `notification.enabled` 등
 
 ---
 
@@ -87,7 +109,16 @@ graph TD
 
 ---
 
-*Last Updated: 2026-04-16*
+*Last Updated: 2026-04-17*
+
+#### 2026-04-17 — 사용자 설정 (User Preferences) 시스템
+
+- **`user_preferences` 테이블** 신규 생성 (복합 PK: user_id + key, JSONB value)
+- **`app/db/repositories/user_preference_repository.py`** get_all, upsert, upsert_many, delete 메서드
+- **`app/api/endpoints/user.py`** GET/PATCH `/me/preferences` 엔드포인트 추가
+- **`app/api/endpoints/auth.py`** login/refresh/signup 응답에 preferences 포함
+- **`app/api/endpoints/greeting.py`** UserUpdate(preferred_region) → UserPreferenceRepository.upsert("greeting.preferred_region") 로 이관
+- **`users.preferred_region` 컬럼** 제거, 기존 데이터 `user_preferences`로 이관
 
 #### 2026-04-16 — 특일 정보 API 연동
 

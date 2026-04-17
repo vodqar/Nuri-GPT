@@ -40,7 +40,7 @@ describe('PublicRoute', () => {
     useAuthStore.setState({
       isAuthenticated: true,
       accessToken: 'token',
-      user: { id: '1', email: 'test@example.com' },
+      user: { id: '1', email: 'test@example.com', name: '테스트', role: 'user' as const, preferences: {} },
     });
 
     render(

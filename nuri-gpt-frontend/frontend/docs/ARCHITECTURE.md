@@ -25,7 +25,7 @@
 | 유형 | 도구 | 용도 |
 |------|------|------|
 | 서버 상태 | React Query (예정) | API 통신, 캐싱 |
-| 전역 클라이언트 상태 | Zustand | 인증 정보, 다크모드 등 |
+| 전역 클라이언트 상태 | Zustand | 인증 정보, 사용자 설정(preferences), 다크모드 등 |
 | 로컬 상태 | useState / useReducer | 모달, 폼 입력값 등 |
 
 ## 에러 핸들링 (Defense-in-Depth)
@@ -42,4 +42,4 @@
 - **Dumb Components**: UI 컴포넌트에 비즈니스 로직 포함 금지
 - **Custom Hooks**: 비즈니스 로직은 `features/{domain}/hooks`로 분리
 
-*마지막 업데이트: 2026-04-15* (사용자 계정 설정 및 할당량 관리 화면 추가)
+*마지막 업데이트: 2026-04-17* (사용자 설정(preferences) 상태 관리 전략 추가 — authStore에 preferences 필드 도입, user_preferences 테이블 기반)

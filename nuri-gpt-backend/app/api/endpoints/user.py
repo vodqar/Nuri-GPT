@@ -5,10 +5,12 @@
 
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.core.dependencies import get_current_user, get_user_repository, get_usage_service
+from app.core.dependencies import get_current_user, get_user_repository, get_usage_service, get_user_preference_repository
 from app.db.repositories.user_repository import UserRepository
+from app.db.repositories.user_preference_repository import UserPreferenceRepository
 from app.services.usage_service import UsageService
 from app.schemas.user import UserResponse, UserUpdateRequest
+from app.schemas.user_preference import PreferencesResponse, PreferencesUpdateRequest
 from app.db.models.usage import UserUsageResponse
 from app.db.models.user import UserUpdate
 
@@ -196,4 +198,49 @@ async def update_user(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"사용자 업데이트 실패: {str(e)}",
+        )
+
+
+@router.get(
+    "/me/preferences",
+    response_model=PreferencesResponse,
+    summary="현재 사용자 설정 조회",
+    description="현재 로그인한 사용자의 모든 설정값을 조회합니다.",
+)
+async def get_current_user_preferences(
+    current_user: dict = Depends(get_current_user),
+    pref_repo: UserPreferenceRepository = Depends(get_user_preference_repository),
+):
+    """현재 인증된 사용자 설정 조회"""
+    user_id = UUID(current_user["id"])
+    try:
+        preferences = await pref_repo.get_all(user_id)
+        return PreferencesResponse(preferences=preferences)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"설정 조회 실패: {str(e)}",
+        )
+
+
+@router.patch(
+    "/me/preferences",
+    response_model=PreferencesResponse,
+    summary="현재 사용자 설정 업데이트",
+    description="현재 로그인한 사용자의 설정값을 upsert합니다. 복수 키 동시 갱신 가능.",
+)
+async def update_current_user_preferences(
+    request: PreferencesUpdateRequest,
+    current_user: dict = Depends(get_current_user),
+    pref_repo: UserPreferenceRepository = Depends(get_user_preference_repository),
+):
+    """현재 인증된 사용자 설정 upsert"""
+    user_id = UUID(current_user["id"])
+    try:
+        preferences = await pref_repo.upsert_many(user_id, request.preferences)
+        return PreferencesResponse(preferences=preferences)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"설정 업데이트 실패: {str(e)}",
         )

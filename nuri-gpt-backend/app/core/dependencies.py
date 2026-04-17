@@ -10,6 +10,7 @@ from app.db.repositories.journal_repository import JournalRepository
 from app.db.repositories.log_repository import LogRepository
 from app.db.repositories.template_repository import TemplateRepository
 from app.db.repositories.user_repository import UserRepository
+from app.db.repositories.user_preference_repository import UserPreferenceRepository
 from app.db.repositories.usage_repository import UsageRepository
 from app.services.llm import LlmService
 from app.services.vision import VisionService
@@ -134,6 +135,12 @@ def get_vision_service() -> VisionService:
 def get_special_day_service() -> SpecialDayService:
     """SpecialDay 서비스 의존성"""
     return SpecialDayService()
+
+
+async def get_user_preference_repository() -> AsyncGenerator[UserPreferenceRepository, None]:
+    """UserPreference 리포지토리 의존성"""
+    client = get_supabase_client()
+    yield UserPreferenceRepository(client)
 
 
 def get_greeting_service() -> GreetingService:

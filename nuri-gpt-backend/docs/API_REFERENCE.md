@@ -80,6 +80,8 @@
 | GET | `/api/users/me` | 현재 사용자 정보(톤앤매너 포함) 조회 | `application/json` | ✅ | - (JWT에서 user_id 추출) |
 | GET | `/api/users/me/usage` | 현재 사용자 사용량(할당량) 정보 조회 | `application/json` | ✅ | - (JWT에서 user_id 추출) |
 | PUT | `/api/users/me` | 현재 사용자 정보(원장님 지침 등) 업데이트 | `application/json` | ✅ | `tone_and_manner?`, `kindergarten_name?`, `role?` |
+| GET | `/api/users/me/preferences` | 현재 사용자 설정 조회 (key-value 맵) | `application/json` | ✅ | - |
+| PATCH | `/api/users/me/preferences` | 현재 사용자 설정 upsert (복수 키 동시 갱신) | `application/json` | ✅ | `preferences` (key-value 객체, 예: `{"greeting.preferred_region": "서울특별시 강남구"}`) |
 | DELETE | `/api/users/me` | 현재 사용자 계정 삭제 | - | ✅ | - |
 | GET | `/api/users/{user_id}` | 특정 사용자 정보 조회 (본인만) | `application/json` | ✅ | `user_id` |
 | PUT | `/api/users/{user_id}` | 특정 사용자 정보 업데이트 (본인만) | `application/json` | ✅ | `user_id`, `tone_and_manner?` |
@@ -112,7 +114,9 @@
 ---
 
 
-> 마지막 업데이트: 2026-04-16 (인삿말 옵션 추가 — name_input, use_emoji 파라미터 추가, seed_sequence 자동 생성 로직 추가)
+> 마지막 업데이트: 2026-04-17 (사용자 설정 API — GET/PATCH /users/me/preferences 신설, user_preferences 테이블 도입, users.preferred_region 이관)
+>
+> 이전 업데이트: 2026-04-16 (인삿말 옵션 추가 — name_input, use_emoji 파라미터 추가, seed_sequence 자동 생성 로직 추가)
 >
 > 이전 업데이트: 2026-04-16 (알림장 인삿말 생성기 — POST /api/greeting/generate 신설, 기상청 단기/중기예보 연동)
 >

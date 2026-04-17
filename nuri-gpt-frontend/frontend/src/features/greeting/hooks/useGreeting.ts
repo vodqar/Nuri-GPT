@@ -34,6 +34,6 @@ export function useGreeting() {
     result,
     error,
     generateGreeting,
-    preferredRegion: user?.preferred_region || null
+    preferredRegion: (user?.preferences?.['greeting.preferred_region'] as string) || null
   };
 }
