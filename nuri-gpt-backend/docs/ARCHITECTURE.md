@@ -111,6 +111,26 @@ PK: `(user_id, key)`. RLS: 본인만 읽기/쓰기.
 
 *Last Updated: 2026-04-17*
 
+#### 2026-04-17 — 성능 최적화 Phase 2-5/3 (Cache-Control, Bootstrap 엔드포인트, DB 인덱스)
+
+- **Cache-Control 응답 헤더**: `GET /templates/`, `GET /users/me/usage`, `GET /journals` — `private, max-age=10, stale-while-revalidate=60` (journals는 max-age=5)
+- **Bootstrap 엔드포인트**: `GET /api/users/me/bootstrap` — user + templates + usage를 `asyncio.gather`로 병렬 조회하여 1 RTT 통합 반환
+  - `app/api/endpoints/bootstrap.py` 신규 — `BootstrapData` 스키마(user, templates, usage)
+  - `app/main.py` 라우터 등록 (`/api/users/me` prefix)
+- **DB 복합 인덱스**: `templates(user_id, is_active, sort_order)`, `observation_journals(user_id, is_final, created_at DESC)` 추가
+- **프론트엔드 연동**: `getBootstrap()` API 함수, `useBootstrap()` 쿼리 훅, `prefetchBootstrap()` 로그인 직후 prefetch
+
+#### 2026-04-17 — 성능 최적화 (JWT 로컬 검증, async 래핑, N+1 제거)
+
+- **JWT 로컬 검증**: `app/core/jwt_verify.py` 신규 — PyJWT HS256 서명 검증, exp/iat/aud/iss 체크, feature flag `AUTH_LOCAL_VERIFY`로 스위칭, 실패 시 원격 `supabase.auth.get_user()` fallback
+- **`app/core/dependencies.py`** `get_current_user` — 로컬 검증 우선, 원격 fallback
+- **`app/core/config.py`** `supabase_jwt_secret`, `auth_local_verify`, `supabase_issuer` 설정 추가
+- **`app/db/async_wrap.py`** 신규 — `run_sync()` 유틸리티, `asyncio.to_thread`로 동기 supabase-py `.execute()` 래핑
+- **모든 리포지토리** — `.execute()` 호출부 `await run_sync(lambda: ...)` 로 래핑하여 이벤트 루프 블로킹 해소
+- **`app/db/repositories/usage_repository.py`** `get_user_usages_by_date()` 추가 — 특정 날짜 전체 사용량 일괄 조회
+- **`app/services/usage_service.py`** N+1 제거 리팩토링 — 기능별 개별 쿼리 → 1회 일괄 쿼리 + 메모리 매핑, `plan_quotas` TTL 캐시(5분) 도입
+- **`tests/test_jwt_verify.py`** 신규 — 유효/만료/변조/kid 미스/fallback 단위 테스트
+
 #### 2026-04-17 — 사용자 설정 (User Preferences) 시스템
 
 - **`user_preferences` 테이블** 신규 생성 (복합 PK: user_id + key, JSONB value)

@@ -42,6 +42,16 @@
 - [ ] 상태 관리 레벨 적절 (Local vs Zustand)
 - [ ] 템플릿 없는 경우 → 안내 모달 없이 즉시 템플릿 생성 화면으로 분기
 
+## 서버 상태 (TanStack Query)
+
+- **QueryClient**: `src/lib/queryClient.ts` — staleTime 60s, gcTime 5m, refetchOnWindowFocus
+- **Query Keys & Hooks**: `src/services/queries.ts` — `useBootstrap()`, `useTemplates()`, `useUserUsage()`, `useJournals()`
+- **Mutation Hooks**: `useDeleteTemplate()`, `useUpdateTemplate()`, `useCreateTemplate()`, `useDeleteJournalGroup()` — 성공 시 관련 쿼리 자동 무효화
+- **Prefetch**: `prefetchRouteData(queryClient, route)` — SideNavBar hover 시 호출
+- **Bootstrap**: `prefetchBootstrap(queryClient)` — 로그인 직후 1 RTT 통합 조회 (user+templates+usage), `useLoginForm`에서 호출
+- **Feature Hooks**: `useTemplateManagement` 등 feature 훅 내부에서 `useQuery`/`useMutation` 사용. 관리 모드 등 로컬 편집 상태는 `localTemplates`로 분리하여 React Query 캐시와 독립 추적
+- **새 쿼리 추가 시**: `services/queries.ts`에 `queryKey` + `useXxx` 훅 추가 → feature 훅 또는 페이지에서 호출
+
 ## API 클라이언트 규약
 
 - 네트워크 호출은 `services/api.ts`의 axios 인스턴스 `api`를 통해 수행한다.
@@ -64,4 +74,4 @@
 - 장기간 유지되거나 반복해서 문제를 만든다면 개별 메모가 아니라 상위 문서의 규칙으로 승격한다.
 - 특정 장치의 존재 자체보다, 그것이 사용자 경험과 운영 판단을 흐리지 않는지가 더 중요하다.
 
-*마지막 업데이트: 2026-04-15*
+*마지막 업데이트: 2026-04-17* (Bootstrap 엔드포인트, Cache-Control, DB 인덱스 보강)

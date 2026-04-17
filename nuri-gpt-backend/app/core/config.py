@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     supabase_url: Optional[str] = Field(default=None, alias="SUPABASE_URL")
     supabase_key: Optional[str] = Field(default=None, alias="SUPABASE_KEY")
     supabase_service_key: Optional[str] = Field(default=None, alias="SUPABASE_SERVICE_KEY")
+    supabase_jwt_secret: Optional[str] = Field(default=None, alias="SUPABASE_JWT_SECRET")
+
+    # Auth 로컬 검증 설정
+    auth_local_verify: bool = Field(default=True, alias="AUTH_LOCAL_VERIFY")
 
     # Gemini API 설정
     gemini_api_key: Optional[str] = Field(default=None, alias="GEMINI_API_KEY")
@@ -77,6 +81,13 @@ class Settings(BaseSettings):
         ],
         alias="CORS_ORIGINS"
     )
+
+    @property
+    def supabase_issuer(self) -> Optional[str]:
+        """Supabase JWT iss 클레임값 (URL + /auth/v1)"""
+        if self.supabase_url:
+            return f"{self.supabase_url}/auth/v1"
+        return None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

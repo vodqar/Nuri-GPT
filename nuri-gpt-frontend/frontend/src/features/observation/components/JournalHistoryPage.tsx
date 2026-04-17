@@ -1,21 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Trash2, Loader2, History, RefreshCw } from 'lucide-react';
 import { getJournals, getJournalGroupHistory, deleteJournalGroup } from '../../../services/api';
+import { queryKeys } from '../../../services/queries';
 import type { JournalResponse, GenerateLogResponse } from '../../../types/api';
 import { LogGenerationResultView } from './LogGenerationResultView';
 import { ViewHeader } from './ViewHeader';
 import { showToast } from '../../../components/global/ToastContainer';
 import { useViewTransition } from '../hooks/useViewTransition';
 
-const MAX_RETRIES = 3;
-const RETRY_DELAYS = [1000, 2000, 4000]; // exponential backoff
-
 export function JournalHistoryPage() {
+  const queryClient = useQueryClient();
   const { viewState, exitingView, transitionTo } = useViewTransition<'list' | 'detail'>('list');
   const [journals, setJournals] = useState<JournalResponse[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [isFailed, setIsFailed] = useState(false);
-  const retryCountRef = useRef(0);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const [selectedGroup, setSelectedGroup] = useState<JournalResponse[] | null>(null);
@@ -26,83 +23,74 @@ export function JournalHistoryPage() {
   const isFetchingRef = useRef(false);
   const limit = 20;
 
-  const loadJournals = useCallback(async (currentOffset: number, isRetry = false) => {
-    // 중복 호출 방지
-    if (isFetchingRef.current) return;
+  // 초기 로드: React Query (캐시 + 자동 재시도)
+  const { isLoading: isInitialLoading, isError, refetch } = useQuery({
+    queryKey: queryKeys.journals(limit, 0),
+    queryFn: () => getJournals(limit, 0),
+    staleTime: 30_000,
+    retry: 3,
+  });
+
+  // 초기 쿼리 결과 → journals 상태 동기화
+  useEffect(() => {
+    refetch().then((result) => {
+      if (result.data) {
+        setJournals(result.data.items);
+        setHasMore(result.data.items.length === limit);
+        setOffset(result.data.items.length);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 추가 페이지 로드 (무한 스크롤)
+  const loadMoreJournals = useCallback(async () => {
+    if (isFetchingRef.current || !hasMore) return;
     isFetchingRef.current = true;
 
     try {
-      setLoading(true);
-      setIsFailed(false);
-      if (!isRetry) {
-        retryCountRef.current = 0;
-      }
-      const response = await getJournals(limit, currentOffset);
-
-      if (currentOffset === 0) {
-        setJournals(response.items);
-      } else {
-        setJournals((prev) => [...prev, ...response.items]);
-      }
-
+      const response = await getJournals(limit, offset);
+      setJournals((prev) => [...prev, ...response.items]);
       setHasMore(response.items.length === limit);
-      setOffset(currentOffset + response.items.length);
-    } catch (error) {
-      console.error('Failed to load journals:', error);
-      
-      // 재시도 로직
-      const currentRetry = isRetry ? retryCountRef.current : 0;
-      if (currentRetry < MAX_RETRIES - 1) {
-        const nextRetry = currentRetry + 1;
-        retryCountRef.current = nextRetry;
-        showToast(`일지 목록을 불러오는 중 오류가 발생했습니다. 재시도 중... (${nextRetry}/${MAX_RETRIES})`, 'info');
-        
-        // exponential backoff
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS[currentRetry]));
-        isFetchingRef.current = false;
-        return loadJournals(currentOffset, true);
-      }
-      
+      setOffset((prev) => prev + response.items.length);
+    } catch {
       showToast('일지 목록을 불러오는 중 오류가 발생했습니다.', 'error');
-      setIsFailed(true);
-      setHasMore(false); // 무한 스크롤 중단
+      setHasMore(false);
     } finally {
-      setLoading(false);
       isFetchingRef.current = false;
     }
-  }, [hasMore, limit]);
+  }, [hasMore, offset, limit]);
 
-  const loadMoreJournals = useCallback(() => {
-    if (!loading && !isFailed && hasMore) {
-      loadJournals(offset);
-    }
-  }, [loading, isFailed, hasMore, offset, loadJournals]);
+  const loadMore = useCallback(() => {
+    loadMoreJournals();
+  }, [loadMoreJournals]);
 
   // 무한 스크롤을 위한 ref
   const lastItemRef = useCallback((node: HTMLDivElement | null) => {
-    if (loading || isFailed) return;
+    if (isInitialLoading || isError) return;
     if (observerRef.current) observerRef.current.disconnect();
 
     observerRef.current = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting && hasMore) {
-        loadMoreJournals();
+        loadMore();
       }
     });
 
     if (node) observerRef.current.observe(node);
-  }, [loading, isFailed, hasMore, loadMoreJournals]);
+  }, [hasMore, loadMore]);
 
   // 수동 재시도
   const handleRetry = () => {
-    setIsFailed(false);
-    retryCountRef.current = 0;
-    loadJournals(0, false);
+    refetch();
   };
 
-  useEffect(() => {
-    loadJournals(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: deleteJournalGroup,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['journals'] });
+    },
+  });
 
   const handleDelete = async (e: React.MouseEvent, groupId: string) => {
     e.stopPropagation();
@@ -110,12 +98,11 @@ export function JournalHistoryPage() {
 
     try {
       setDeletingGroupId(groupId);
-      await deleteJournalGroup(groupId);
+      await deleteMutation.mutateAsync(groupId);
       setJournals((prev) => prev.filter((j) => j.group_id !== groupId));
       showToast('생성 기록이 삭제되었습니다.', 'success');
-    } catch (error) {
+    } catch {
       showToast('삭제 중 오류가 발생했습니다.', 'error');
-      console.error('Failed to delete journal group:', error);
     } finally {
       setDeletingGroupId(null);
     }
@@ -276,14 +263,14 @@ export function JournalHistoryPage() {
                 })}
               </div>
 
-              {loading && (
+              {isInitialLoading && journals.length === 0 && (
                 <div className="flex justify-center py-8 animate-fade-in">
                   <Loader2 className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
                 </div>
               )}
 
               {/* 실패 상태 UI */}
-              {isFailed && (
+              {isError && journals.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 gap-4 animate-fade-in">
                   <div className="text-center">
                     <p className="text-[var(--color-on-surface)] font-semibold mb-2">
@@ -303,7 +290,7 @@ export function JournalHistoryPage() {
                 </div>
               )}
 
-              {!loading && !isFailed && journals.length === 0 && (
+              {!isInitialLoading && !isError && journals.length === 0 && (
                 <div className="text-center py-12 text-[var(--color-on-surface-variant)] animate-fade-in">
                   생성된 일지가 없습니다.
                 </div>

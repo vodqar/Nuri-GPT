@@ -289,3 +289,11 @@ export const getUserUsage = async <T>(): Promise<T> => {
   const response = await api.get<T>('/users/me/usage');
   return response.data;
 };
+
+/**
+ * 앱 부팅용 통합 조회 (user + templates + usage, 1 RTT)
+ */
+export const getBootstrap = async <T>(): Promise<T> => {
+  const response = await api.get<T>('/users/me/bootstrap');
+  return response.data;
+};

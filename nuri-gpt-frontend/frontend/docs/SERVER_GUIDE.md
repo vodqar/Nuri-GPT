@@ -65,4 +65,4 @@ npm run dev
 - **위치**: `src/routes/PrivateRoute.tsx` 
 - **로직**: 미인증 시 `/login`으로 리디렉션하며, 새로고침 시 `refreshAccessToken`을 통해 세션 복원을 시도합니다.
 
-*마지막 업데이트: 2026-04-15* (로그인 우회 정보 최신화)
+*Last Updated: 2026-04-15*

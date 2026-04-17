@@ -9,6 +9,7 @@ from uuid import UUID
 
 from supabase import Client
 
+from app.db.async_wrap import run_sync
 from app.db.models.journal import JournalCreate, JournalResponse
 
 
@@ -22,7 +23,7 @@ class JournalRepository:
     async def create(self, journal_data: JournalCreate) -> JournalResponse:
         """새 관찰일지 생성"""
         data = journal_data.model_dump(mode="json")
-        result = self.client.table(self.table).insert(data).execute()
+        result = await run_sync(lambda: self.client.table(self.table).insert(data).execute())
 
         if not result.data:
             raise ValueError("관찰일지 생성 실패")
@@ -31,7 +32,7 @@ class JournalRepository:
 
     async def get_by_id(self, journal_id: UUID) -> Optional[JournalResponse]:
         """ID로 일지 조회"""
-        result = self.client.table(self.table).select("*").eq("id", str(journal_id)).execute()
+        result = await run_sync(lambda: self.client.table(self.table).select("*").eq("id", str(journal_id)).execute())
 
         if not result.data:
             return None
@@ -42,26 +43,26 @@ class JournalRepository:
         self, user_id: UUID, limit: int = 100, offset: int = 0
     ) -> List[JournalResponse]:
         """사용자의 일지 목록 조회 (최신순)"""
-        result = (
+        result = await run_sync(lambda: (
             self.client.table(self.table)
             .select("*")
             .eq("user_id", str(user_id))
             .order("created_at", desc=True)
             .range(offset, offset + limit - 1)
             .execute()
-        )
+        ))
         return [JournalResponse(**journal) for journal in result.data]
 
     async def delete(self, journal_id: UUID) -> bool:
         """일지 삭제"""
-        result = self.client.table(self.table).delete().eq("id", str(journal_id)).execute()
+        result = await run_sync(lambda: self.client.table(self.table).delete().eq("id", str(journal_id)).execute())
         return len(result.data) > 0
 
     async def get_latest_by_group(
         self, user_id: UUID, limit: int = 100, offset: int = 0
     ) -> List[JournalResponse]:
         """그룹별 최신 버전만 조회 (목록용)"""
-        result = (
+        result = await run_sync(lambda: (
             self.client.table(self.table)
             .select("*")
             .eq("user_id", str(user_id))
@@ -69,44 +70,44 @@ class JournalRepository:
             .order("created_at", desc=True)
             .range(offset, offset + limit - 1)
             .execute()
-        )
+        ))
         return [JournalResponse(**journal) for journal in result.data]
 
     async def get_by_group_id(self, group_id: UUID) -> List[JournalResponse]:
         """특정 그룹의 전체 히스토리 조회 (버전 내역)"""
-        result = (
+        result = await run_sync(lambda: (
             self.client.table(self.table)
             .select("*")
             .eq("group_id", str(group_id))
             .order("version", desc=True)
             .execute()
-        )
+        ))
         return [JournalResponse(**journal) for journal in result.data]
 
     async def delete_by_group_id(self, group_id: UUID) -> int:
         """그룹 일괄 삭제, 삭제된 레코드 수 반환"""
-        result = (
+        result = await run_sync(lambda: (
             self.client.table(self.table)
             .delete()
             .eq("group_id", str(group_id))
             .execute()
-        )
+        ))
         return len(result.data)
 
     async def get_max_version(self, group_id: UUID) -> int:
         """특정 그룹의 최대 버전 번호 조회"""
-        result = (
+        result = await run_sync(lambda: (
             self.client.table(self.table)
             .select("version")
             .eq("group_id", str(group_id))
             .order("version", desc=True)
             .limit(1)
             .execute()
-        )
+        ))
         if not result.data:
             return 0
         return result.data[0].get("version", 0)
 
     async def mark_as_not_final(self, group_id: UUID) -> None:
         """그룹 내 모든 레코드의 is_final을 False로 설정"""
-        self.client.table(self.table).update({"is_final": False}).eq("group_id", str(group_id)).execute()
+        await run_sync(lambda: self.client.table(self.table).update({"is_final": False}).eq("group_id", str(group_id)).execute())

@@ -8,6 +8,7 @@ from uuid import UUID
 
 from supabase import Client
 
+from app.db.async_wrap import run_sync
 from app.db.models.template import (
     TemplateCreate,
     TemplateFilter,
@@ -26,7 +27,7 @@ class TemplateRepository:
     async def create(self, template_data: TemplateCreate) -> TemplateResponse:
         """새 템플릿 생성"""
         data = template_data.model_dump(mode="json", exclude_none=True)
-        result = self.client.table(self.table).insert(data).execute()
+        result = await run_sync(lambda: self.client.table(self.table).insert(data).execute())
 
         if not result.data:
             raise ValueError("템플릿 생성 실패")
@@ -35,7 +36,7 @@ class TemplateRepository:
 
     async def get_by_id(self, template_id: UUID) -> Optional[TemplateResponse]:
         """ID로 템플릿 조회"""
-        result = self.client.table(self.table).select("*").eq("id", str(template_id)).execute()
+        result = await run_sync(lambda: self.client.table(self.table).select("*").eq("id", str(template_id)).execute())
 
         if not result.data:
             return None
@@ -44,19 +45,19 @@ class TemplateRepository:
 
     async def get_by_user(self, user_id: UUID) -> List[TemplateResponse]:
         """사용자의 템플릿 목록 조회"""
-        result = self.client.table(self.table).select("*").eq("user_id", str(user_id)).execute()
+        result = await run_sync(lambda: self.client.table(self.table).select("*").eq("user_id", str(user_id)).execute())
         return [TemplateResponse(**template) for template in result.data]
 
     async def get_default_by_user(self, user_id: UUID) -> Optional[TemplateResponse]:
         """사용자의 기본 템플릿 조회"""
-        result = (
+        result = await run_sync(lambda: (
             self.client.table(self.table)
             .select("*")
             .eq("user_id", str(user_id))
             .eq("is_default", True)
             .limit(1)
             .execute()
-        )
+        ))
 
         if not result.data:
             return None
@@ -72,7 +73,7 @@ class TemplateRepository:
         if not data:
             return await self.get_by_id(template_id)
 
-        result = self.client.table(self.table).update(data).eq("id", str(template_id)).execute()
+        result = await run_sync(lambda: self.client.table(self.table).update(data).eq("id", str(template_id)).execute())
 
         if not result.data:
             return None
@@ -81,17 +82,17 @@ class TemplateRepository:
 
     async def delete(self, template_id: UUID) -> bool:
         """템플릿 삭제 (하드 삭제)"""
-        result = self.client.table(self.table).delete().eq("id", str(template_id)).execute()
+        result = await run_sync(lambda: self.client.table(self.table).delete().eq("id", str(template_id)).execute())
         return len(result.data) > 0
 
     async def soft_delete(self, template_id: UUID) -> bool:
         """템플릿 소프트 삭제 (is_active=False)"""
-        result = (
+        result = await run_sync(lambda: (
             self.client.table(self.table)
             .update({"is_active": False})
             .eq("id", str(template_id))
             .execute()
-        )
+        ))
         return len(result.data) > 0
 
     async def update_order(self, orders: List[dict]) -> int:
@@ -105,12 +106,12 @@ class TemplateRepository:
         """
         updated_count = 0
         for item in orders:
-            result = (
+            result = await run_sync(lambda i=item: (
                 self.client.table(self.table)
-                .update({"sort_order": item["sort_order"]})
-                .eq("id", str(item["id"]))
+                .update({"sort_order": i["sort_order"]})
+                .eq("id", str(i["id"]))
                 .execute()
-            )
+            ))
             if result.data:
                 updated_count += 1
         return updated_count
@@ -118,17 +119,19 @@ class TemplateRepository:
     async def set_default(self, user_id: UUID, template_id: UUID) -> bool:
         """기본 템플릿 설정"""
         # 기존 기본 템플릿 해제
-        self.client.table(self.table).update({"is_default": False}).eq(
-            "user_id", str(user_id)
-        ).execute()
+        await run_sync(lambda: (
+            self.client.table(self.table).update({"is_default": False}).eq(
+                "user_id", str(user_id)
+            ).execute()
+        ))
 
         # 새 기본 템플릿 설정
-        result = (
+        result = await run_sync(lambda: (
             self.client.table(self.table)
             .update({"is_default": True})
             .eq("id", str(template_id))
             .execute()
-        )
+        ))
         return len(result.data) > 0
 
     async def update_last_used_at(self, template_id: UUID) -> bool:
@@ -142,12 +145,13 @@ class TemplateRepository:
         """
         from datetime import datetime, timezone
 
-        result = (
+        ts = datetime.now(timezone.utc).isoformat()
+        result = await run_sync(lambda: (
             self.client.table(self.table)
-            .update({"last_used_at": datetime.now(timezone.utc).isoformat()})
+            .update({"last_used_at": ts})
             .eq("id", str(template_id))
             .execute()
-        )
+        ))
         return len(result.data) > 0
 
     async def get_by_filter(self, filter_params: TemplateFilter) -> List[TemplateResponse]:
@@ -170,5 +174,5 @@ class TemplateRepository:
         # sort_order 기준 정렬
         query = query.order("sort_order", desc=False)
 
-        result = query.execute()
+        result = await run_sync(lambda: query.execute())
         return [TemplateResponse(**template) for template in result.data]

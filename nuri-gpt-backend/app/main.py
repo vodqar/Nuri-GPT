@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.endpoints.auth import router as auth_router
+from app.api.endpoints.bootstrap import router as bootstrap_router
 from app.api.endpoints.generate import router as generate_router
 from app.api.endpoints.greeting import router as greeting_router
 from app.api.endpoints.journals import router as journals_router
@@ -71,6 +72,7 @@ app.include_router(generate_router, prefix="/api/generate", tags=["Generate"])
 app.include_router(greeting_router, prefix="/api/greeting", tags=["Greeting"])
 app.include_router(journals_router, prefix="/api/journals", tags=["Journal"])
 app.include_router(user_router, prefix="/api/users", tags=["User"])
+app.include_router(bootstrap_router, prefix="/api/users/me", tags=["Bootstrap"])
 
 
 # 예외 핸들러 등록

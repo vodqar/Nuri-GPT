@@ -79,6 +79,7 @@
 |--------|------|-------------|-------------|-----------|--------------|
 | GET | `/api/users/me` | 현재 사용자 정보(톤앤매너 포함) 조회 | `application/json` | ✅ | - (JWT에서 user_id 추출) |
 | GET | `/api/users/me/usage` | 현재 사용자 사용량(할당량) 정보 조회 | `application/json` | ✅ | - (JWT에서 user_id 추출) |
+| GET | `/api/users/me/bootstrap` | 앱 부팅용 통합 조회 (user+templates+usage, asyncio.gather 병렬) | `application/json` | ✅ | - (JWT에서 user_id 추출) |
 | PUT | `/api/users/me` | 현재 사용자 정보(원장님 지침 등) 업데이트 | `application/json` | ✅ | `tone_and_manner?`, `kindergarten_name?`, `role?` |
 | GET | `/api/users/me/preferences` | 현재 사용자 설정 조회 (key-value 맵) | `application/json` | ✅ | - |
 | PATCH | `/api/users/me/preferences` | 현재 사용자 설정 upsert (복수 키 동시 갱신) | `application/json` | ✅ | `preferences` (key-value 객체, 예: `{"greeting.preferred_region": "서울특별시 강남구"}`) |
@@ -114,7 +115,9 @@
 ---
 
 
-> 마지막 업데이트: 2026-04-17 (사용자 설정 API — GET/PATCH /users/me/preferences 신설, user_preferences 테이블 도입, users.preferred_region 이관)
+> 마지막 업데이트: 2026-04-17 (Bootstrap 엔드포인트 — GET /users/me/bootstrap 신설, Cache-Control 응답 헤더 추가, DB 복합 인덱스 보강)
+>
+> 이전 업데이트: 2026-04-17 (사용자 설정 API — GET/PATCH /users/me/preferences 신설, user_preferences 테이블 도입, users.preferred_region 이관)
 >
 > 이전 업데이트: 2026-04-16 (인삿말 옵션 추가 — name_input, use_emoji 파라미터 추가, seed_sequence 자동 생성 로직 추가)
 >

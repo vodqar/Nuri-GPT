@@ -9,6 +9,7 @@ from uuid import UUID
 
 from supabase import Client
 
+from app.db.async_wrap import run_sync
 from app.db.models.log import UserLogCreate, UserLogFilter, UserLogResponse
 
 
@@ -22,7 +23,7 @@ class LogRepository:
     async def create(self, log_data: UserLogCreate) -> UserLogResponse:
         """새 로그 생성"""
         data = log_data.model_dump(mode="json")
-        result = self.client.table(self.table).insert(data).execute()
+        result = await run_sync(lambda: self.client.table(self.table).insert(data).execute())
 
         if not result.data:
             raise ValueError("로그 생성 실패")
@@ -42,7 +43,7 @@ class LogRepository:
 
     async def get_by_id(self, log_id: UUID) -> Optional[UserLogResponse]:
         """ID로 로그 조회"""
-        result = self.client.table(self.table).select("*").eq("id", str(log_id)).execute()
+        result = await run_sync(lambda: self.client.table(self.table).select("*").eq("id", str(log_id)).execute())
 
         if not result.data:
             return None
@@ -53,14 +54,14 @@ class LogRepository:
         self, user_id: UUID, limit: int = 100, offset: int = 0
     ) -> List[UserLogResponse]:
         """사용자의 로그 목록 조회"""
-        result = (
+        result = await run_sync(lambda: (
             self.client.table(self.table)
             .select("*")
             .eq("user_id", str(user_id))
             .order("created_at", desc=True)
             .range(offset, offset + limit - 1)
             .execute()
-        )
+        ))
         return [UserLogResponse(**log) for log in result.data]
 
     async def get_by_filter(self, filter_params: UserLogFilter) -> List[UserLogResponse]:
@@ -79,14 +80,14 @@ class LogRepository:
         if filter_params.end_date:
             query = query.lte("created_at", filter_params.end_date.isoformat())
 
-        result = (
+        result = await run_sync(lambda: (
             query.order("created_at", desc=True)
             .range(filter_params.offset, filter_params.offset + filter_params.limit - 1)
             .execute()
-        )
+        ))
         return [UserLogResponse(**log) for log in result.data]
 
     async def delete_by_user(self, user_id: UUID) -> bool:
         """사용자의 모든 로그 삭제"""
-        result = self.client.table(self.table).delete().eq("user_id", str(user_id)).execute()
+        result = await run_sync(lambda: self.client.table(self.table).delete().eq("user_id", str(user_id)).execute())
         return len(result.data) > 0

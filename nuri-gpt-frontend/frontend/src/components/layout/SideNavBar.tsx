@@ -1,13 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../store/authStore';
 import { useLayoutStore } from '../../store/layoutStore';
 import { cn } from '../../utils/cn';
 import { logout as logoutApi } from '../../services/api';
+import { prefetchRouteData } from '../../services/queries';
 
 export function SideNavBar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { logout, user } = useAuthStore();
   const { isSidebarCollapsed, toggleSidebar, isMobileMenuOpen, closeMobileMenu } = useLayoutStore();
   
@@ -106,8 +109,8 @@ export function SideNavBar() {
         </button>
 
         {/* Brand Section */}
-        <div className="p-6 transition-all duration-300">
-          <div className="flex items-center gap-3 mb-8">
+        <div className={cn("transition-all duration-300", isSidebarCollapsed ? "py-6 px-3" : "p-6")}>
+          <div className={cn("flex items-center mb-8 transition-all duration-300", isSidebarCollapsed ? "gap-0 ml-[8px]" : "gap-3 ml-0")}>
             <div className="w-10 h-10 bg-[var(--color-primary)] rounded-xl flex items-center justify-center shrink-0 text-[var(--color-on-primary)]">
               <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>auto_stories</span>
             </div>
@@ -129,8 +132,8 @@ export function SideNavBar() {
               title={isSidebarCollapsed ? item.label : undefined}
               onClick={isMobileMenuOpen ? closeMobileMenu : undefined}
               className={cn(
-                "flex items-center gap-3 rounded-xl transition-all duration-200 font-manrope text-sm font-medium",
-                "px-4 py-3",
+                "flex items-center rounded-xl transition-all duration-300 font-manrope text-sm font-medium",
+                isSidebarCollapsed ? "px-4 py-3 gap-0" : "px-4 py-3 gap-3",
                 location.pathname === item.path 
                   ? "text-green-900 border-r-4 border-green-800 bg-green-50/50" 
                   : "text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:scale-[1.02]"
@@ -152,14 +155,14 @@ export function SideNavBar() {
                   onClick={() => !isSidebarCollapsed && toggleAccordion(cat.id)}
                   title={isSidebarCollapsed ? cat.label : undefined}
                   className={cn(
-                    "w-full flex items-center justify-between rounded-xl font-manrope text-sm transition-all duration-200",
-                    "px-4 py-3",
+                    "w-full flex items-center justify-between rounded-xl font-manrope text-sm transition-all duration-300",
+                    isSidebarCollapsed ? "px-2 py-3" : "px-4 py-3",
                     isExpanded
                       ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-semibold"
                       : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 font-medium"
                   )}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className={cn("flex items-center transition-all duration-300", isSidebarCollapsed ? "gap-0" : "gap-3")}>
                     <div className={cn(
                       "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-200",
                       isExpanded
@@ -194,6 +197,7 @@ export function SideNavBar() {
                         key={idx}
                         to={item.path}
                         onClick={isMobileMenuOpen ? closeMobileMenu : undefined}
+                        onMouseEnter={() => prefetchRouteData(queryClient, item.path)}
                         className="block px-4 py-2 text-sm text-zinc-600 hover:text-[var(--color-primary)] hover:bg-zinc-50"
                       >
                         {item.label}
@@ -211,8 +215,9 @@ export function SideNavBar() {
                           key={idx}
                           to={item.path}
                           onClick={isMobileMenuOpen ? closeMobileMenu : undefined}
+                          onMouseEnter={() => prefetchRouteData(queryClient, item.path)}
                           className={cn(
-                            "block px-3 py-2 text-sm transition-all duration-200 rounded-lg",
+                            "block px-3 py-2 text-sm transition-all duration-200 rounded-lg whitespace-nowrap truncate",
                             isActive
                               ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-medium"
                               : "text-zinc-500 hover:text-[var(--color-primary)] hover:bg-[var(--color-surface-container-low)]"
@@ -231,13 +236,13 @@ export function SideNavBar() {
       </div>
 
       {/* Footer Navigation */}
-      <div className="mt-auto space-y-2 border-t border-zinc-100 dark:border-zinc-900 transition-all duration-300 p-4">
+      <div className={cn("mt-auto space-y-2 border-t border-zinc-100 dark:border-zinc-900 transition-all duration-300", isSidebarCollapsed ? "p-3" : "p-4")}>
         <div className="relative" ref={settingsRef}>
           {/* Settings Submenu (Accordion above button) */}
           <div aria-expanded={isSettingsOpen && !isSidebarCollapsed} className="menu-content overflow-hidden">
-            <div className="menu-inner pl-11 py-1 space-y-1">
-              <Link to="/settings/account" onClick={isMobileMenuOpen ? closeMobileMenu : undefined} className="block py-1.5 text-xs text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)]">계정</Link>
-              <Link to="#" onClick={isMobileMenuOpen ? closeMobileMenu : undefined} className="block py-1.5 text-xs text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)]">환경설정</Link>
+            <div className={cn("menu-inner py-1 space-y-1", !isSidebarCollapsed && "pl-11")}>
+              <Link to="/settings/account" onClick={isMobileMenuOpen ? closeMobileMenu : undefined} onMouseEnter={() => prefetchRouteData(queryClient, '/settings/account')} className="block py-1.5 text-xs text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)] whitespace-nowrap truncate">계정</Link>
+              <Link to="#" onClick={isMobileMenuOpen ? closeMobileMenu : undefined} className="block py-1.5 text-xs text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)] whitespace-nowrap truncate">환경설정</Link>
             </div>
           </div>
 
@@ -245,12 +250,12 @@ export function SideNavBar() {
             onClick={() => !isSidebarCollapsed && setIsSettingsOpen(!isSettingsOpen)}
             title={isSidebarCollapsed ? "설정" : undefined}
             className={cn(
-              "w-full flex items-center rounded-xl transition-all font-manrope text-sm font-medium",
-              "px-4 py-2.5 justify-between",
+              "w-full flex items-center rounded-xl transition-all duration-300 font-manrope text-sm font-medium",
+              isSidebarCollapsed ? "px-4 py-2.5 gap-0" : "px-4 py-2.5 justify-between gap-3",
               isSettingsOpen && !isSidebarCollapsed ? "text-green-900 bg-green-50/50" : "text-zinc-600 hover:bg-zinc-100"
             )}
           >
-            <div className="flex items-center gap-3">
+            <div className={cn("flex items-center transition-all duration-300", isSidebarCollapsed ? "gap-0" : "gap-3")}>
               <span className="material-symbols-outlined shrink-0">settings</span>
               <span className={cn(
                 "transition-all duration-300 overflow-hidden whitespace-nowrap",
@@ -269,13 +274,13 @@ export function SideNavBar() {
           onClick={() => !isSidebarCollapsed && setIsProfileOpen(!isProfileOpen)}
           className={cn(
             "relative group cursor-pointer rounded-xl transition-all duration-300 ease-out",
-            "p-3",
+            isSidebarCollapsed ? "px-2 py-3" : "p-3",
             isProfileOpen && !isSidebarCollapsed
               ? "bg-white shadow-xl -translate-y-1" 
               : "bg-[var(--color-surface-container-low)] hover:bg-white hover:shadow-xl md:hover:-translate-y-1"
           )}
         >
-          <div className={cn("flex items-center", isSidebarCollapsed ? "justify-center" : "gap-3")}>
+          <div className={cn("flex items-center transition-all duration-300", isSidebarCollapsed ? "gap-0" : "gap-3")}>
             <div
               className={cn(
                 "w-10 h-10 aspect-square rounded-full overflow-hidden border-2 transition-all shrink-0",

@@ -13,7 +13,7 @@ import json
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, Response, UploadFile, status
 from pydantic import BaseModel
 
 from app.core.dependencies import get_current_user, get_storage_service, get_template_repository
@@ -136,6 +136,7 @@ async def create_template(
     description="조건에 맞는 사용자의 템플릿 목록을 조회합니다. 기본적으로 활성화된 템플릿만 반환합니다.",
 )
 async def get_templates(
+    response: Response,
     current_user: dict = Depends(get_current_user),
     template_type: str = Query(None, description="템플릿 타입 필터 (예: observation_log)"),
     is_default: bool = Query(None, description="기본 템플릿 여부 필터"),
@@ -151,7 +152,9 @@ async def get_templates(
         is_default=is_default,
         is_active=is_active
     )
-    return await template_repo.get_by_filter(filter_params)
+    result = await template_repo.get_by_filter(filter_params)
+    response.headers["Cache-Control"] = "private, max-age=10, stale-while-revalidate=60"
+    return result
 
 
 @router.get(

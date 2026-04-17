@@ -73,10 +73,14 @@ get_greeting_service()    → GreetingService(special_day_service=SpecialDayServ
 - **결합도 최소화**: 서비스는 외부 의존성을 생성자 주입으로만 수신
 - **테스트 격리**: 단위 테스트는 `mock`만으로 실행 가능해야 함
 - **스펙**: Python 3.11+, FastAPI 0.104+
-- **문서 동기화**: 코드 변경 시 README + handoff 문서 함께 업데이트
-- **인증 미구현**: `security.py`는 현재 빈 파일, Generate/Export API는 `MOCK_USER_ID` 사용 중
+- **DB 동기 블로킹 방지**: Supabase `execute()` 메서드는 동기 작업이므로, 리포지토리 안에서 호출 시 반드시 `app.db.async_wrap.run_sync`로 래핑하여 이벤트 루프 블로킹을 방지할 것. 
+- **DB 성능 최적화**: N+1 조회를 방지하기 위해 일괄(Batch) 조회를 지향하고, 자주 접근하는 API(예: Bootstrap)는 `asyncio.gather`를 사용해 병렬 처리할 것.
+- **외부 API 연동 fallback**: 기상청/천문연구원 등 외부 연동 장애 시 시스템 에러가 발생하지 않도록 `_FALLBACK_*` 기본값 정책을 갖출 것.
+- **외부 에이전트(LLM) 파싱 유연성**: Dify 등 외부 에이전트 연동 시, 프롬프트 내부 분기(예: `is_regeneration`)에 따라 응답 형태가 달라질 수 있으므로 구조화된 파싱 로직을 방어적으로 작성할 것.
+- **인증 처리 최적화**: 매 요청 파싱마다 발생하는 트래픽/지연을 줄이기 위해 `AUTH_LOCAL_VERIFY` 피처 플래그 기반 로컬 HS256 JWT 검증 계층을 활용할 것.
 - **계층 경계 안정화**: 프론트엔드나 API 소비자가 일정한 구조를 기대한다면, 그 구조를 어디서 안정화할지 명확히 하고 숨은 가정으로 남기지 않음
 - **제약의 승격**: 작업 후반에야 드러난 구조적 제약은 handoff 메모에서 끝내지 말고 관련 문서의 판단 기준으로 승격
+- **문서 동기화**: 코드 변경 시 문서 및 ToC를 함께 업데이트. (주의: 문서 하단에 Change-log를 덧붙이지 말 것)
 
 ---
 
@@ -137,44 +141,4 @@ pytest --cov=app --cov-report=html
 
 ---
 
-### 변경 이력
-
-#### 2026-04-14 — 재생성 응답 파싱 로직 수정
-
-- **`app/services/llm.py`** `generate_regenerated_activities()` 응답 파싱 개선
-  - Dify 시스템 프롬프트에 Jinja `is_regeneration` 분기 추가 이후, 응답 형식이 `{"updated_activities": [...]}` 리스트 형식으로 올 수 있음
-  - 기존: 평면 `{target_id: text}` dict 형식만 처리 → silent fallback 발생 가능
-  - 수정: `updated_activities` 리스트 형식 우선 처리, 평면 dict는 레거시 호환으로 유지
-- **`tests/test_generate_api.py`** 재생성 테스트 강화
-  - `test_regenerate_log_success`: `is_aggressive`, `child_age` 파라미터 전달 여부 검증 추가
-  - `test_regenerate_log_list_format_response`: 리스트 형식 응답 파싱 케이스 신규 추가
-
-*Last Updated: 2026-04-16*
-
-#### 2026-04-16 — 특일 정보 API 연동
-
-- **`app/services/special_day.py`** SpecialDayService + SpecialDayCache 신규 추가
-  - 한국천문연구원 특일 정보 OpenAPI (4개 오퍼레이션) 연동
-  - 차등 TTL 캐시: 당월 12시간 / 미래월 7일, grace period 24시간
-  - API 키 미설정 또는 장애 시 하드코딩 fallback
-  - `refresh(year)` 메서드로 백그라운드 스케줄러 전환 고려
-- **`app/services/greeting.py`** 하드코딩 → `_FALLBACK_*` 전환, SpecialDayService 주입
-  - Dify inputs에 `anniversary_info`, `sundry_day_info` 키 추가
-- **`app/core/dependencies.py`** `get_special_day_service()` DI 팩토리 추가
-- **`app/core/config.py`** `KMA_SPECIAL_DAY_API_KEY` 설정 추가
-- **`tests/test_special_day_service.py`** 신규 — 캐시 TTL, API 파싱, fallback 테스트
-
-#### 2026-04-16 — 알림장 인삿말 생성기 백엔드 구현
-
-- **`app/services/weather.py`** WeatherService 신규 추가
-  - 기상청 단기예보(getVilageFcst) + 중기예보(getMidLandFcst/getMidTa) 분기 처리
-  - Δ 0~3일 → 단기예보, Δ 4~10일 → 중기예보, Δ >10 → 빈 문자열
-  - 시군구→nx/ny/mid_regId 매핑 (`app/data/region_grid_map.json`, 270개 시군구)
-- **`app/services/greeting.py`** GreetingService 신규 추가
-  - 날씨 + 날짜/요일/주차 + 24절기 + 법정기념일 맥락 조립 → Dify Chatflow 호출
-  - 날씨 API 장애 시에도 인삿말 생성 (빈 날씨 맥락으로 fallback)
-  - Dify 응답은 `streaming`/`blocking` 모두 파싱 가능하도록 처리하고, 요청 input key 및 응답 길이 로깅으로 디버깅 가능성 보강
-- **`app/api/endpoints/greeting.py`** `POST /api/greeting/generate` 엔드포인트 신규
-- **`app/schemas/greeting.py`** GreetingRequest/GreetingResponse 스키마 신규
-- **`app/core/dependencies.py`** `get_greeting_service()` DI 팩토리 추가
-- **`app/core/config.py`** KMA_API_KEY, KMA_MID_API_KEY, DIFY_GREETING_API_KEY/URL 설정 추가
+*Last Updated: 2026-04-17*

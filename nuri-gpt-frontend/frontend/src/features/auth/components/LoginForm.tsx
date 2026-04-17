@@ -48,7 +48,7 @@ export const LoginForm = () => {
             <label className="block font-headline text-sm font-semibold text-[var(--color-on-surface)]" htmlFor="password">
               비밀번호
             </label>
-            <a className="text-xs font-medium text-[var(--color-primary)] hover:text-[var(--color-primary-dim)] transition-colors" href="#">
+            <a className="text-xs font-medium text-[var(--color-primary)] hover:text-[var(--color-primary-dim)] transition-colors" href="#" tabIndex={-1}>
               비밀번호를 잊으셨나요?
             </a>
           </div>

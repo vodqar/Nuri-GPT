@@ -6,7 +6,7 @@
 import uuid
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from app.core.dependencies import get_current_user, get_journal_repository
 from app.db.models.journal import JournalListResponse, JournalResponse
@@ -17,6 +17,7 @@ router = APIRouter()
 
 @router.get("", response_model=JournalListResponse)
 async def list_journals(
+    response: Response,
     current_user: dict = Depends(get_current_user),
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
@@ -29,6 +30,7 @@ async def list_journals(
         user_id=user_id, limit=limit, offset=offset
     )
 
+    response.headers["Cache-Control"] = "private, max-age=5, stale-while-revalidate=30"
     return JournalListResponse(
         items=journals,
         total=len(journals),

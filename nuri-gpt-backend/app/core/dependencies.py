@@ -19,6 +19,7 @@ from app.services.storage import StorageService
 from app.services.usage_service import UsageService
 from app.services.greeting import GreetingService
 from app.services.special_day import SpecialDayService
+from app.core.jwt_verify import JWTVerificationError, extract_user_from_payload, verify_jwt_locally
 from app.utils.exceptions import AuthenticationError
 
 # Bearer 토큰 보안 스키마
@@ -42,17 +43,29 @@ async def get_current_user(
 ) -> dict:
     """현재 인증된 사용자 정보 반환
 
-    - Authorization: Bearer <token> 헤더에서 JWT 추출
-    - Supabase로 토큰 검증
-    - 검증된 사용자 정보 반환
+    - AUTH_LOCAL_VERIFY=true(기본): JWT 로컬 서명 검증 후 클레임에서 사용자 추출
+    - 검증 실패 또는 설정 미지원: 원격 Supabase Auth API로 fallback
     """
     if not credentials or not credentials.credentials:
         raise AuthenticationError("인증 토큰이 제공되지 않았습니다")
 
     token = credentials.credentials
+    settings = get_settings()
 
+    # 로컬 JWT 검증 시도
+    if settings.auth_local_verify and settings.supabase_jwt_secret:
+        try:
+            payload = verify_jwt_locally(token)
+            return extract_user_from_payload(payload)
+        except JWTVerificationError as e:
+            # 만료/서명 오류는 즉시 거부 (원격도 동일 결과이므로 fallback 불필요)
+            if "만료" in str(e) or "서명" in str(e):
+                raise AuthenticationError("유효하지 않은 인증 토큰입니다")
+            # 기타 오류(iss 불일치 등)는 원격으로 재시도
+            print(f"[AUTH] 로컬 검증 실패, 원격 fallback: {e}")
+
+    # 원격 Supabase Auth API fallback
     try:
-        # Supabase로 토큰 검증
         user_response = supabase.auth.get_user(token)
 
         if not user_response or not user_response.user:

@@ -4,7 +4,7 @@
 """
 
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from app.core.dependencies import get_current_user, get_user_repository, get_usage_service, get_user_preference_repository
 from app.db.repositories.user_repository import UserRepository
 from app.db.repositories.user_preference_repository import UserPreferenceRepository
@@ -54,6 +54,7 @@ async def get_current_user_info(
     description="현재 로그인한 사용자의 일일 할당량 및 사용 현황을 조회합니다.",
 )
 async def get_current_user_usage(
+    response: Response,
     current_user: dict = Depends(get_current_user),
     usage_service: UsageService = Depends(get_usage_service),
 ):
@@ -61,6 +62,7 @@ async def get_current_user_usage(
     user_id = UUID(current_user["id"])
     try:
         usage_summary = await usage_service.get_user_usage_summary(user_id)
+        response.headers["Cache-Control"] = "private, max-age=10, stale-while-revalidate=60"
         return usage_summary
     except Exception as e:
         raise HTTPException(

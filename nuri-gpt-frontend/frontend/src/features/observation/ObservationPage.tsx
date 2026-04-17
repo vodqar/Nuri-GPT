@@ -44,7 +44,7 @@ export function ObservationPage() {
     handleUpdateTemplate,
     toggleManageMode,
     exitManageModeWithoutSaving,
-  } = useTemplateManagement({ userId: user?.id, setError });
+  } = useTemplateManagement({ setError });
 
   // Log generation
   const [mode, setMode] = useState<'manual' | 'auto'>('manual');

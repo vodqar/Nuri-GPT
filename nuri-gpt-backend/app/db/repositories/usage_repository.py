@@ -5,6 +5,8 @@ from datetime import date
 from typing import List, Optional
 from uuid import UUID
 from supabase import Client
+
+from app.db.async_wrap import run_sync
 from app.db.models.usage import UserUsageInDB, PlanQuotaInDB
 
 
@@ -16,12 +18,14 @@ class UsageRepository:
 
     async def get_plan_quota(self, plan_name: str, feature_type: str) -> Optional[PlanQuotaInDB]:
         """특정 플랜의 기능별 할당량 조회"""
-        result = self.client.table(self.quota_table) \
-            .select("*") \
-            .eq("plan_name", plan_name) \
-            .eq("feature_type", feature_type) \
-            .eq("is_active", True) \
+        result = await run_sync(lambda: (
+            self.client.table(self.quota_table)
+            .select("*")
+            .eq("plan_name", plan_name)
+            .eq("feature_type", feature_type)
+            .eq("is_active", True)
             .execute()
+        ))
 
         if not result.data:
             return None
@@ -29,12 +33,14 @@ class UsageRepository:
 
     async def get_user_usage(self, user_id: UUID, usage_date: date, feature_type: str) -> Optional[UserUsageInDB]:
         """사용자의 특정 날짜/기능 사용량 조회"""
-        result = self.client.table(self.usage_table) \
-            .select("*") \
-            .eq("user_id", str(user_id)) \
-            .eq("usage_date", usage_date.isoformat()) \
-            .eq("feature_type", feature_type) \
+        result = await run_sync(lambda: (
+            self.client.table(self.usage_table)
+            .select("*")
+            .eq("user_id", str(user_id))
+            .eq("usage_date", usage_date.isoformat())
+            .eq("feature_type", feature_type)
             .execute()
+        ))
 
         if not result.data:
             return None
@@ -50,10 +56,12 @@ class UsageRepository:
         if current:
             # Update
             new_val = (current.success_count + 1) if status == "success" else (current.fail_count + 1)
-            result = self.client.table(self.usage_table) \
-                .update({count_field: new_val, "updated_at": "now()"}) \
-                .eq("id", str(current.id)) \
+            result = await run_sync(lambda: (
+                self.client.table(self.usage_table)
+                .update({count_field: new_val, "updated_at": "now()"})
+                .eq("id", str(current.id))
                 .execute()
+            ))
         else:
             # Insert
             data = {
@@ -63,14 +71,25 @@ class UsageRepository:
                 "success_count": 1 if status == "success" else 0,
                 "fail_count": 1 if status == "fail" else 0
             }
-            result = self.client.table(self.usage_table).insert(data).execute()
+            result = await run_sync(lambda: self.client.table(self.usage_table).insert(data).execute())
 
         if not result.data:
             raise ValueError("사용량 업데이트 실패")
             
         return UserUsageInDB(**result.data[0])
 
+    async def get_user_usages_by_date(self, user_id: UUID, usage_date: date) -> List[UserUsageInDB]:
+        """사용자의 특정 날짜 전체 기능 사용량 일괄 조회 (N+1 제거용)"""
+        result = await run_sync(lambda: (
+            self.client.table(self.usage_table)
+            .select("*")
+            .eq("user_id", str(user_id))
+            .eq("usage_date", usage_date.isoformat())
+            .execute()
+        ))
+        return [UserUsageInDB(**u) for u in result.data]
+
     async def get_all_quotas(self) -> List[PlanQuotaInDB]:
         """모든 활성화된 할당량 기준 조회"""
-        result = self.client.table(self.quota_table).select("*").eq("is_active", True).execute()
+        result = await run_sync(lambda: self.client.table(self.quota_table).select("*").eq("is_active", True).execute())
         return [PlanQuotaInDB(**q) for q in result.data]

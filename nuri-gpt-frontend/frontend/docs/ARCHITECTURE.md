@@ -24,7 +24,7 @@
 
 | 유형 | 도구 | 용도 |
 |------|------|------|
-| 서버 상태 | React Query (예정) | API 통신, 캐싱 |
+| 서버 상태 | TanStack Query | API 통신, 캐싱, prefetch, 자동 무효화 |
 | 전역 클라이언트 상태 | Zustand | 인증 정보, 사용자 설정(preferences), 다크모드 등 |
 | 로컬 상태 | useState / useReducer | 모달, 폼 입력값 등 |
 
@@ -42,4 +42,15 @@
 - **Dumb Components**: UI 컴포넌트에 비즈니스 로직 포함 금지
 - **Custom Hooks**: 비즈니스 로직은 `features/{domain}/hooks`로 분리
 
-*마지막 업데이트: 2026-04-17* (사용자 설정(preferences) 상태 관리 전략 추가 — authStore에 preferences 필드 도입, user_preferences 테이블 기반)
+## 서버 상태 캐시 (TanStack Query)
+
+| 요소 | 설명 |
+|------|------|
+| `queryClient` | `src/lib/queryClient.ts` — staleTime 60s, gcTime 5m, refetchOnWindowFocus |
+| Query Keys | `src/services/queries.ts` — `bootstrap`, `templates`, `usage`, `journals(limit, offset)` |
+| Mutation Hooks | `useDeleteTemplate`, `useUpdateTemplate`, `useCreateTemplate`, `useDeleteJournalGroup` — 성공 시 관련 쿼리 자동 무효화 |
+| Prefetch | `prefetchRouteData()` — SideNavBar 링크 hover 시 라우트 데이터 사전 로드 |
+| Bootstrap | `useBootstrap()` — 로그인 직후 `prefetchBootstrap()`로 1 RTT 통합 조회 (user+templates+usage) |
+| Cache-Control | 백엔드 응답 `private, max-age=10, stale-while-revalidate=60` — 브라우저 HTTP 캐시와 React Query 캐시 이중 작동 |
+
+*마지막 업데이트: 2026-04-17* (Bootstrap 엔드포인트, Cache-Control, DB 인덱스 보강)

@@ -44,7 +44,7 @@
 |------|------|
 | 테스트 | `venv/bin/pytest -q` — 기존·신규 100% 통과 (Skipped 제외) |
 | 패키지 | 추가 패키지가 `requirements.txt`에 올바른 문법으로 반영됨 |
-| 문서 | 변경 사항이 `docs/` 내 관련 문서에 반영되고 최하단에 업데이트 날짜 기록 |
+| 문서 | 변경 사항은 문서 본문에 녹여내고, 최하단에는 **별도의 변경 이력(Change-log)을 추가하지 말고** 업데이트 날짜(`*Last Updated: YYYY-MM-DD*`)만 단일 줄로 갱신 |
 
 > 문서가 업데이트되지 않았으면 작업 완료가 아닙니다.
 > 문서 경로: `/home/mbk7990/workspace/Nuri-GPT/nuri-gpt-backend/docs`

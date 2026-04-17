@@ -2,13 +2,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../../store/authStore';
 import { loginSchema, type LoginFormValues } from '../schemas/loginSchema';
 import { loginApi } from '../api/auth';
+import { prefetchBootstrap } from '../../../services/queries';
 
 export const useLoginForm = () => {
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<LoginFormValues>({
@@ -26,6 +29,9 @@ export const useLoginForm = () => {
       const response = await loginApi(values);
       
       login(response.access_token, { ...response.user, role: 'user' as const, preferences: response.user.preferences || {} });
+
+      // 로그인 직후 bootstrap prefetch → 첫 페이지 체감 로딩 최소화
+      prefetchBootstrap(queryClient);
 
       navigate('/dashboard');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

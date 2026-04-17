@@ -1,41 +1,11 @@
-import { useEffect, useState } from 'react';
 import { useAuthStore } from '../../../store/authStore';
 import { LoadingSpinner } from '../../../components/global/LoadingSpinner';
 import { cn } from '../../../utils/cn';
-import { getUserUsage } from '../../../services/api';
-
-interface UsageDetail {
-  used_today: number;
-  limit_today: number;
-  next_reset_kst: string;
-}
-
-interface UserUsageResponse {
-  plan: string;
-  features: {
-    [key: string]: UsageDetail;
-  };
-}
+import { useUserUsage } from '../../../services/queries';
 
 export function AccountPage() {
   const { user } = useAuthStore();
-  const [usage, setUsage] = useState<UserUsageResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchUsage = async () => {
-      try {
-        const data = await getUserUsage<UserUsageResponse>();
-        setUsage(data);
-      } catch (error) {
-        console.error('Failed to fetch usage:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUsage();
-  }, []);
+  const { data: usage, isLoading: loading } = useUserUsage();
 
   // Map backend features to UI labels
   const featureLabels: Record<string, string> = {
