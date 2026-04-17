@@ -3,6 +3,7 @@
 알림장 인삿말 생성 엔드포인트
 """
 
+import asyncio
 import logging
 
 from typing import List
@@ -44,7 +45,10 @@ async def generate_greeting(
     pref_repo: UserPreferenceRepository = Depends(get_user_preference_repository),
 ) -> GreetingResponse:
     """시군구 지역과 알림장 배포 일자를 기반으로 인삿말을 생성합니다."""
-    greeting = greeting_service.generate_greeting(
+    # greeting_service.generate_greeting은 동기 함수(requests.post 사용)이므로
+    # asyncio.to_thread로 감싸서 이벤트 루프 블로킹을 방지
+    greeting = await asyncio.to_thread(
+        greeting_service.generate_greeting,
         region=request.region,
         target_date=request.target_date,
         user_input=request.user_input,
@@ -55,8 +59,11 @@ async def generate_greeting(
 
     # 생성 성공 시 유저의 greeting.preferred_region 설정 저장
     if greeting:
-        from uuid import UUID
-        user_id = UUID(current_user["id"])
-        await pref_repo.upsert(user_id, "greeting.preferred_region", request.region)
+        try:
+            from uuid import UUID
+            user_id = UUID(current_user["id"])
+            await pref_repo.upsert(user_id, "greeting.preferred_region", request.region)
+        except Exception as e:
+            logger.warning(f"Failed to save preferred region, greeting still returned: {e}")
 
     return GreetingResponse(greeting=greeting)

@@ -8,7 +8,9 @@ export class GreetingService {
   }
 
   static async generateGreeting(data: GreetingRequest): Promise<string> {
-    const response = await api.post<GreetingResponse>('/greeting/generate', data);
+    const response = await api.post<GreetingResponse>('/greeting/generate', data, {
+      timeout: 120_000, // 날씨 API + Dify LLM 호출로 최대 120초 소요
+    });
     return response.data.greeting;
   }
 }

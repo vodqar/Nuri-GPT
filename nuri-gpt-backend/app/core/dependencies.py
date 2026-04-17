@@ -5,7 +5,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from supabase import Client
 
 from app.core.config import Settings, get_settings
-from app.db.connection import get_supabase_client
+from app.db.connection import get_supabase_admin_client, get_supabase_client
 from app.db.repositories.journal_repository import JournalRepository
 from app.db.repositories.log_repository import LogRepository
 from app.db.repositories.template_repository import TemplateRepository
@@ -32,8 +32,14 @@ def get_config() -> Settings:
 
 
 async def get_supabase() -> AsyncGenerator[Client, None]:
-    """Supabase 클라이언트 의존성"""
+    """Supabase 클라이언트 의존성 (인증 전용 — anon key)"""
     client = get_supabase_client()
+    yield client
+
+
+async def get_supabase_admin() -> AsyncGenerator[Client, None]:
+    """Supabase 관리자 클라이언트 의존성 (데이터 쓰기 — service_role key, RLS bypass)"""
+    client = get_supabase_admin_client()
     yield client
 
 
@@ -88,31 +94,31 @@ async def get_current_user(
 
 async def get_user_repository() -> AsyncGenerator[UserRepository, None]:
     """User 리포지토리 의존성"""
-    client = get_supabase_client()
+    client = get_supabase_admin_client()
     yield UserRepository(client)
 
 
 async def get_log_repository() -> AsyncGenerator[LogRepository, None]:
     """Log 리포지토리 의존성"""
-    client = get_supabase_client()
+    client = get_supabase_admin_client()
     yield LogRepository(client)
 
 
 async def get_template_repository() -> AsyncGenerator[TemplateRepository, None]:
     """Template 리포지토리 의존성"""
-    client = get_supabase_client()
+    client = get_supabase_admin_client()
     yield TemplateRepository(client)
 
 
 async def get_journal_repository() -> AsyncGenerator[JournalRepository, None]:
     """Journal 리포지토리 의존성"""
-    client = get_supabase_client()
+    client = get_supabase_admin_client()
     yield JournalRepository(client)
 
 
 async def get_usage_repository() -> AsyncGenerator[UsageRepository, None]:
     """Usage 리포지토리 의존성"""
-    client = get_supabase_client()
+    client = get_supabase_admin_client()
     yield UsageRepository(client)
 
 
@@ -152,7 +158,7 @@ def get_special_day_service() -> SpecialDayService:
 
 async def get_user_preference_repository() -> AsyncGenerator[UserPreferenceRepository, None]:
     """UserPreference 리포지토리 의존성"""
-    client = get_supabase_client()
+    client = get_supabase_admin_client()
     yield UserPreferenceRepository(client)
 
 

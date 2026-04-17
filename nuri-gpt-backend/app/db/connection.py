@@ -69,8 +69,15 @@ def get_supabase_client() -> Client:
     return manager.client
 
 
+_admin_client: Optional[Client] = None
+
+
 def get_supabase_admin_client() -> Client:
     """service_role 키를 사용하는 관리자 Supabase 클라이언트 반환 (RLS bypass)"""
+    global _admin_client
+    if _admin_client is not None:
+        return _admin_client
+
     settings = get_settings()
     supabase_url = settings.supabase_url
     service_key = settings.supabase_service_key
@@ -80,4 +87,5 @@ def get_supabase_admin_client() -> Client:
             "SUPABASE_URL 또는 SUPABASE_SERVICE_KEY가 설정되지 않았습니다."
         )
 
-    return create_client(supabase_url, service_key)
+    _admin_client = create_client(supabase_url, service_key)
+    return _admin_client
