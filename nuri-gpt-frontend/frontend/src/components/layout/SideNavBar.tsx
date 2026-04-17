@@ -98,7 +98,7 @@ export function SideNavBar() {
         {/* Toggle Button for Desktop */}
         <button
           onClick={toggleSidebar}
-          className="hidden md:flex absolute -right-3.5 top-8 w-7 h-7 bg-white border border-zinc-200 rounded-full items-center justify-center text-zinc-500 hover:text-zinc-900 shadow-sm transition-transform hover:scale-110 z-50"
+          className="hidden md:flex absolute -right-3.5 top-4 w-7 h-7 bg-white border border-zinc-200 rounded-full items-center justify-center text-zinc-500 hover:text-zinc-900 shadow-sm transition-transform hover:scale-110 z-50"
         >
           <span className="material-symbols-outlined text-[18px]">
             {isSidebarCollapsed ? "chevron_right" : "chevron_left"}
