@@ -117,7 +117,7 @@ class WeatherService:
 
         params = {
             "authKey": self.api_key,
-            "numOfRows": "1000",
+            "numOfRows": "300",
             "pageNo": "1",
             "dataType": "JSON",
             "base_date": base_date,
@@ -130,7 +130,7 @@ class WeatherService:
             resp = requests.get(
                 f"{self.base_url}/getVilageFcst",
                 params=params,
-                timeout=10,
+                timeout=15,
             )
             resp.raise_for_status()
             data = resp.json()
