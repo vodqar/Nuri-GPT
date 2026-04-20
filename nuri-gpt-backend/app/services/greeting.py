@@ -242,7 +242,7 @@ class GreetingService:
                 json=payload,
                 headers=headers,
                 stream=True,
-                timeout=120,
+                timeout=30,
             )
             resp.raise_for_status()
             answer = self._extract_answer_text(resp)
