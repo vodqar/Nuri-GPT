@@ -8,7 +8,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
-from app.core.dependencies import get_current_user, get_journal_repository
+from app.core.dependencies import get_current_user, get_journal_repository_with_rls
 from app.db.models.journal import JournalListResponse, JournalResponse
 from app.db.repositories.journal_repository import JournalRepository
 
@@ -21,7 +21,7 @@ async def list_journals(
     current_user: dict = Depends(get_current_user),
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
-    journal_repository: JournalRepository = Depends(get_journal_repository),
+    journal_repository: JournalRepository = Depends(get_journal_repository_with_rls),
 ) -> JournalListResponse:
     """현재 사용자의 관찰일지 목록 조회 (그룹별 최신 버전만, 최신순)"""
     from uuid import UUID
@@ -43,7 +43,7 @@ async def list_journals(
 async def get_journal(
     journal_id: uuid.UUID,
     current_user: dict = Depends(get_current_user),
-    journal_repository: JournalRepository = Depends(get_journal_repository),
+    journal_repository: JournalRepository = Depends(get_journal_repository_with_rls),
 ) -> JournalResponse:
     """특정 관찰일지 상세 조회"""
     journal = await journal_repository.get_by_id(journal_id)
@@ -67,7 +67,7 @@ async def get_journal(
 async def get_journal_group_history(
     group_id: uuid.UUID,
     current_user: dict = Depends(get_current_user),
-    journal_repository: JournalRepository = Depends(get_journal_repository),
+    journal_repository: JournalRepository = Depends(get_journal_repository_with_rls),
 ) -> List[JournalResponse]:
     """특정 그룹의 전체 재생성 이력(버전 내역) 조회"""
     journals = await journal_repository.get_by_group_id(group_id)
@@ -85,7 +85,7 @@ async def get_journal_group_history(
 async def delete_journal_group(
     group_id: uuid.UUID,
     current_user: dict = Depends(get_current_user),
-    journal_repository: JournalRepository = Depends(get_journal_repository),
+    journal_repository: JournalRepository = Depends(get_journal_repository_with_rls),
 ) -> None:
     """재생성 기록(그룹) 전체 일괄 삭제"""
     # 소유권 확인: 그룹 내 일지가 현재 사용자 것인지 검증

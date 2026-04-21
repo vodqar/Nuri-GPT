@@ -8,7 +8,7 @@ from app.main import app
 from app.db.models.template import TemplateResponse
 from app.db.models.log import UserLogResponse
 from app.db.models.journal import JournalResponse
-from app.core.dependencies import get_llm_service, get_log_repository, get_template_repository, get_journal_repository, get_current_user, get_usage_service
+from app.core.dependencies import get_llm_service, get_log_repository_with_rls, get_template_repository_with_rls, get_journal_repository_with_rls, get_current_user, get_usage_service_with_rls
 
 client = TestClient(app)
 
@@ -106,10 +106,10 @@ def mock_usage_service():
 
 def test_generate_log_default(mock_llm_service, mock_log_repo, mock_template_repo, mock_journal_repo, mock_current_user, mock_usage_service):
     app.dependency_overrides[get_llm_service] = lambda: mock_llm_service
-    app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
-    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
-    app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
-    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
+    app.dependency_overrides[get_log_repository_with_rls] = lambda: mock_log_repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: mock_template_repo
+    app.dependency_overrides[get_journal_repository_with_rls] = lambda: mock_journal_repo
+    app.dependency_overrides[get_usage_service_with_rls] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.post(
@@ -130,10 +130,10 @@ def test_generate_log_default(mock_llm_service, mock_log_repo, mock_template_rep
 
 def test_generate_log_empty_ocr_text_fails(mock_llm_service, mock_log_repo, mock_template_repo, mock_journal_repo, mock_current_user, mock_usage_service):
     app.dependency_overrides[get_llm_service] = lambda: mock_llm_service
-    app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
-    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
-    app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
-    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
+    app.dependency_overrides[get_log_repository_with_rls] = lambda: mock_log_repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: mock_template_repo
+    app.dependency_overrides[get_journal_repository_with_rls] = lambda: mock_journal_repo
+    app.dependency_overrides[get_usage_service_with_rls] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.post(
@@ -151,10 +151,10 @@ def test_generate_log_llm_failure(mock_log_repo, mock_template_repo, mock_journa
     mock_llm_service.generate_observation_log.side_effect = RuntimeError("API Limit Exceeded")
 
     app.dependency_overrides[get_llm_service] = lambda: mock_llm_service
-    app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
-    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
-    app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
-    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
+    app.dependency_overrides[get_log_repository_with_rls] = lambda: mock_log_repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: mock_template_repo
+    app.dependency_overrides[get_journal_repository_with_rls] = lambda: mock_journal_repo
+    app.dependency_overrides[get_usage_service_with_rls] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.post(
@@ -178,10 +178,10 @@ def test_generate_log_llm_empty_response(mock_log_repo, mock_template_repo, mock
     }
 
     app.dependency_overrides[get_llm_service] = lambda: mock_llm_service
-    app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
-    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
-    app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
-    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
+    app.dependency_overrides[get_log_repository_with_rls] = lambda: mock_log_repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: mock_template_repo
+    app.dependency_overrides[get_journal_repository_with_rls] = lambda: mock_journal_repo
+    app.dependency_overrides[get_usage_service_with_rls] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.post(
@@ -196,10 +196,10 @@ def test_generate_log_llm_empty_response(mock_log_repo, mock_template_repo, mock
 
 def test_generate_log_with_template(mock_llm_service, mock_log_repo, mock_template_repo, mock_journal_repo, mock_current_user, mock_usage_service):
     app.dependency_overrides[get_llm_service] = lambda: mock_llm_service
-    app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
-    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
-    app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
-    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
+    app.dependency_overrides[get_log_repository_with_rls] = lambda: mock_log_repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: mock_template_repo
+    app.dependency_overrides[get_journal_repository_with_rls] = lambda: mock_journal_repo
+    app.dependency_overrides[get_usage_service_with_rls] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     template_id = str(uuid4())
@@ -222,10 +222,10 @@ def test_generate_log_with_template(mock_llm_service, mock_log_repo, mock_templa
 
 def test_generate_log_with_semantic_json(mock_llm_service, mock_log_repo, mock_template_repo, mock_journal_repo, mock_current_user, mock_usage_service):
     app.dependency_overrides[get_llm_service] = lambda: mock_llm_service
-    app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
-    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
-    app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
-    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
+    app.dependency_overrides[get_log_repository_with_rls] = lambda: mock_log_repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: mock_template_repo
+    app.dependency_overrides[get_journal_repository_with_rls] = lambda: mock_journal_repo
+    app.dependency_overrides[get_usage_service_with_rls] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.post(
@@ -273,9 +273,9 @@ def test_regenerate_log_success(mock_llm_service, mock_log_repo, mock_journal_re
     ]
     
     app.dependency_overrides[get_llm_service] = lambda: mock_llm_service
-    app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
-    app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
-    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
+    app.dependency_overrides[get_log_repository_with_rls] = lambda: mock_log_repo
+    app.dependency_overrides[get_journal_repository_with_rls] = lambda: mock_journal_repo
+    app.dependency_overrides[get_usage_service_with_rls] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.post(
@@ -336,10 +336,10 @@ def test_regenerate_log_list_format_response(mock_log_repo, mock_journal_repo, m
     ]
 
     app.dependency_overrides[get_llm_service] = lambda: mock_llm_service
-    app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
-    app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
+    app.dependency_overrides[get_log_repository_with_rls] = lambda: mock_log_repo
+    app.dependency_overrides[get_journal_repository_with_rls] = lambda: mock_journal_repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
-    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
+    app.dependency_overrides[get_usage_service_with_rls] = lambda: mock_usage_service
 
     response = client.post(
         "/api/generate/regenerate",
@@ -368,9 +368,9 @@ def test_regenerate_log_list_format_response(mock_log_repo, mock_journal_repo, m
 def test_regenerate_log_empty_activities(mock_llm_service, mock_log_repo, mock_journal_repo, mock_current_user, mock_usage_service):
     """재생성 API 테스트 - 빈 current_activities (422 예상)"""
     app.dependency_overrides[get_llm_service] = lambda: mock_llm_service
-    app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
-    app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
-    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
+    app.dependency_overrides[get_log_repository_with_rls] = lambda: mock_log_repo
+    app.dependency_overrides[get_journal_repository_with_rls] = lambda: mock_journal_repo
+    app.dependency_overrides[get_usage_service_with_rls] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.post(
@@ -400,10 +400,10 @@ def test_regenerate_log_missing_target_id_fallback(mock_llm_service, mock_log_re
     ]
     
     app.dependency_overrides[get_llm_service] = lambda: mock_llm_service
-    app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
-    app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
+    app.dependency_overrides[get_log_repository_with_rls] = lambda: mock_log_repo
+    app.dependency_overrides[get_journal_repository_with_rls] = lambda: mock_journal_repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
-    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
+    app.dependency_overrides[get_usage_service_with_rls] = lambda: mock_usage_service
 
     response = client.post(
         "/api/generate/regenerate",

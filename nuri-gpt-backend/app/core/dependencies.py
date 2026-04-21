@@ -1,3 +1,4 @@
+import logging
 from typing import AsyncGenerator
 
 from fastapi import Depends, HTTPException, status
@@ -5,7 +6,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from supabase import Client
 
 from app.core.config import Settings, get_settings
-from app.db.connection import get_supabase_admin_client, get_supabase_client
+from app.db.connection import create_rls_client, get_supabase_admin_client, get_supabase_client
 from app.db.repositories.journal_repository import JournalRepository
 from app.db.repositories.log_repository import LogRepository
 from app.db.repositories.template_repository import TemplateRepository
@@ -21,6 +22,8 @@ from app.services.greeting import GreetingService
 from app.services.special_day import SpecialDayCache, SpecialDayService
 from app.core.jwt_verify import JWTVerificationError, extract_user_from_payload, verify_jwt_locally
 from app.utils.exceptions import AuthenticationError
+
+logger = logging.getLogger(__name__)
 
 # Bearer 토큰 보안 스키마
 security = HTTPBearer(auto_error=False)
@@ -62,13 +65,15 @@ async def get_current_user(
     if settings.auth_local_verify and settings.supabase_jwt_secret:
         try:
             payload = verify_jwt_locally(token)
-            return extract_user_from_payload(payload)
+            user_info = extract_user_from_payload(payload)
+            user_info["token"] = token
+            return user_info
         except JWTVerificationError as e:
             # 만료/서명 오류는 즉시 거부 (원격도 동일 결과이므로 fallback 불필요)
             if "만료" in str(e) or "서명" in str(e):
                 raise AuthenticationError("유효하지 않은 인증 토큰입니다")
             # 기타 오류(iss 불일치 등)는 원격으로 재시도
-            print(f"[AUTH] 로컬 검증 실패, 원격 fallback: {e}")
+            logger.warning("로컬 JWT 검증 실패, 원격 fallback: %s", e)
 
     # 원격 Supabase Auth API fallback
     try:
@@ -83,41 +88,46 @@ async def get_current_user(
             "id": user.id,
             "email": user.email or "",
             "metadata": user.user_metadata or {},
+            "token": token,
         }
 
     except AuthenticationError:
         raise
     except Exception as e:
-        print(f"[AUTH] 토큰 검증 오류: {e}")
+        logger.error("토큰 검증 오류: %s", e)
         raise AuthenticationError("유효하지 않은 인증 토큰입니다")
 
 
+# ---------------------------------------------------------------------------
+# Admin (service_role) Repository factories — RLS bypass, 관리자 전용
+# ---------------------------------------------------------------------------
+
 async def get_user_repository() -> AsyncGenerator[UserRepository, None]:
-    """User 리포지토리 의존성"""
+    """User 리포지토리 의존성 (admin, RLS bypass)"""
     client = get_supabase_admin_client()
     yield UserRepository(client)
 
 
 async def get_log_repository() -> AsyncGenerator[LogRepository, None]:
-    """Log 리포지토리 의존성"""
+    """Log 리포지토리 의존성 (admin, RLS bypass)"""
     client = get_supabase_admin_client()
     yield LogRepository(client)
 
 
 async def get_template_repository() -> AsyncGenerator[TemplateRepository, None]:
-    """Template 리포지토리 의존성"""
+    """Template 리포지토리 의존성 (admin, RLS bypass)"""
     client = get_supabase_admin_client()
     yield TemplateRepository(client)
 
 
 async def get_journal_repository() -> AsyncGenerator[JournalRepository, None]:
-    """Journal 리포지토리 의존성"""
+    """Journal 리포지토리 의존성 (admin, RLS bypass)"""
     client = get_supabase_admin_client()
     yield JournalRepository(client)
 
 
 async def get_usage_repository() -> AsyncGenerator[UsageRepository, None]:
-    """Usage 리포지토리 의존성"""
+    """Usage 리포지토리 의존성 (admin, RLS bypass)"""
     client = get_supabase_admin_client()
     yield UsageRepository(client)
 
@@ -126,7 +136,67 @@ async def get_usage_service(
     usage_repo: UsageRepository = Depends(get_usage_repository),
     user_repo: UserRepository = Depends(get_user_repository),
 ) -> AsyncGenerator[UsageService, None]:
-    """Usage 서비스 의존성"""
+    """Usage 서비스 의존성 (admin, RLS bypass)"""
+    yield UsageService(usage_repo, user_repo)
+
+
+# ---------------------------------------------------------------------------
+# RLS-enabled (anon_key + user JWT) Repository factories — 일반 사용자 요청용
+# ---------------------------------------------------------------------------
+
+async def get_user_repository_with_rls(
+    current_user: dict = Depends(get_current_user),
+) -> AsyncGenerator[UserRepository, None]:
+    """User 리포지토리 (anon key, RLS 적용)"""
+    client = create_rls_client(current_user["token"])
+    yield UserRepository(client)
+
+
+async def get_log_repository_with_rls(
+    current_user: dict = Depends(get_current_user),
+) -> AsyncGenerator[LogRepository, None]:
+    """Log 리포지토리 (anon key, RLS 적용)"""
+    client = create_rls_client(current_user["token"])
+    yield LogRepository(client)
+
+
+async def get_template_repository_with_rls(
+    current_user: dict = Depends(get_current_user),
+) -> AsyncGenerator[TemplateRepository, None]:
+    """Template 리포지토리 (anon key, RLS 적용)"""
+    client = create_rls_client(current_user["token"])
+    yield TemplateRepository(client)
+
+
+async def get_journal_repository_with_rls(
+    current_user: dict = Depends(get_current_user),
+) -> AsyncGenerator[JournalRepository, None]:
+    """Journal 리포지토리 (anon key, RLS 적용)"""
+    client = create_rls_client(current_user["token"])
+    yield JournalRepository(client)
+
+
+async def get_usage_repository_with_rls(
+    current_user: dict = Depends(get_current_user),
+) -> AsyncGenerator[UsageRepository, None]:
+    """Usage 리포지토리 (anon key, RLS 적용)"""
+    client = create_rls_client(current_user["token"])
+    yield UsageRepository(client)
+
+
+async def get_user_preference_repository_with_rls(
+    current_user: dict = Depends(get_current_user),
+) -> AsyncGenerator[UserPreferenceRepository, None]:
+    """UserPreference 리포지토리 (anon key, RLS 적용)"""
+    client = create_rls_client(current_user["token"])
+    yield UserPreferenceRepository(client)
+
+
+async def get_usage_service_with_rls(
+    usage_repo: UsageRepository = Depends(get_usage_repository_with_rls),
+    user_repo: UserRepository = Depends(get_user_repository_with_rls),
+) -> AsyncGenerator[UsageService, None]:
+    """Usage 서비스 (anon key, RLS 적용)"""
     yield UsageService(usage_repo, user_repo)
 
 

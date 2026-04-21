@@ -5,7 +5,7 @@
 
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from app.core.dependencies import get_current_user, get_user_repository, get_usage_service, get_user_preference_repository
+from app.core.dependencies import get_current_user, get_user_repository_with_rls, get_usage_service_with_rls, get_user_preference_repository_with_rls
 from app.db.repositories.user_repository import UserRepository
 from app.db.repositories.user_preference_repository import UserPreferenceRepository
 from app.services.usage_service import UsageService
@@ -25,7 +25,7 @@ router = APIRouter()
 )
 async def get_current_user_info(
     current_user: dict = Depends(get_current_user),
-    user_repo: UserRepository = Depends(get_user_repository),
+    user_repo: UserRepository = Depends(get_user_repository_with_rls),
 ):
     """현재 인증된 사용자 정보 조회"""
     from uuid import UUID
@@ -56,7 +56,7 @@ async def get_current_user_info(
 async def get_current_user_usage(
     response: Response,
     current_user: dict = Depends(get_current_user),
-    usage_service: UsageService = Depends(get_usage_service),
+    usage_service: UsageService = Depends(get_usage_service_with_rls),
 ):
     """현재 인증된 사용자 사용량 조회"""
     user_id = UUID(current_user["id"])
@@ -79,7 +79,7 @@ async def get_current_user_usage(
 )
 async def delete_current_user(
     current_user: dict = Depends(get_current_user),
-    user_repo: UserRepository = Depends(get_user_repository),
+    user_repo: UserRepository = Depends(get_user_repository_with_rls),
 ) -> None:
     """현재 인증된 사용자 계정 삭제"""
     from uuid import UUID
@@ -108,7 +108,7 @@ async def delete_current_user(
 async def update_current_user(
     request: UserUpdateRequest,
     current_user: dict = Depends(get_current_user),
-    user_repo: UserRepository = Depends(get_user_repository),
+    user_repo: UserRepository = Depends(get_user_repository_with_rls),
 ):
     """현재 인증된 사용자 정보 업데이트"""
     from uuid import UUID
@@ -140,7 +140,7 @@ async def update_current_user(
 )
 async def get_current_user_preferences(
     current_user: dict = Depends(get_current_user),
-    pref_repo: UserPreferenceRepository = Depends(get_user_preference_repository),
+    pref_repo: UserPreferenceRepository = Depends(get_user_preference_repository_with_rls),
 ):
     """현재 인증된 사용자 설정 조회"""
     user_id = UUID(current_user["id"])
@@ -163,7 +163,7 @@ async def get_current_user_preferences(
 async def update_current_user_preferences(
     request: PreferencesUpdateRequest,
     current_user: dict = Depends(get_current_user),
-    pref_repo: UserPreferenceRepository = Depends(get_user_preference_repository),
+    pref_repo: UserPreferenceRepository = Depends(get_user_preference_repository_with_rls),
 ):
     """현재 인증된 사용자 설정 upsert"""
     user_id = UUID(current_user["id"])

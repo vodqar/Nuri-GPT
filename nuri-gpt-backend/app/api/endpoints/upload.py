@@ -14,9 +14,9 @@ from app.core.dependencies import (
     get_current_user,
     get_ocr_service,
     get_storage_service,
-    get_template_repository,
+    get_template_repository_with_rls,
     get_vision_service,
-    get_usage_service,
+    get_usage_service_with_rls,
 )
 from app.db.models.template import TemplateCreate
 from app.db.repositories.template_repository import TemplateRepository
@@ -50,7 +50,7 @@ async def upload_memo(
     current_user: dict = Depends(get_current_user),
     storage_service: StorageService = Depends(get_storage_service),
     ocr_service: OcrService = Depends(get_ocr_service),
-    usage_service: UsageService = Depends(get_usage_service),
+    usage_service: UsageService = Depends(get_usage_service_with_rls),
 ):
     """수기 메모 이미지 업로드 + OCR 텍스트 추출"""
     from uuid import UUID
@@ -143,7 +143,7 @@ async def analyze_template(
     file: UploadFile,
     current_user: dict = Depends(get_current_user),
     vision_service: VisionService = Depends(get_vision_service),
-    usage_service: UsageService = Depends(get_usage_service),
+    usage_service: UsageService = Depends(get_usage_service_with_rls),
 ):
     """템플릿 이미지 업로드 + Vision LLM 파싱 → structure_json 반환 (저장 X)"""
     from app.utils.file_validator import FileType, validate_file
@@ -194,9 +194,9 @@ async def upload_template(
     ),
     current_user: dict = Depends(get_current_user),
     storage_service: StorageService = Depends(get_storage_service),
-    template_repo: TemplateRepository = Depends(get_template_repository),
+    template_repo: TemplateRepository = Depends(get_template_repository_with_rls),
     vision_service: VisionService = Depends(get_vision_service),
-    usage_service: UsageService = Depends(get_usage_service),
+    usage_service: UsageService = Depends(get_usage_service_with_rls),
 ):
     """빈 템플릿 이미지 업로드 + Vision LLM 파싱 + DB 등록"""
     from uuid import UUID

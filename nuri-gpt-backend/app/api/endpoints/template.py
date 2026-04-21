@@ -16,7 +16,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Response, UploadFile, status
 from pydantic import BaseModel
 
-from app.core.dependencies import get_current_user, get_storage_service, get_template_repository
+from app.core.dependencies import get_current_user, get_storage_service, get_template_repository_with_rls
 from app.db.models.template import TemplateCreate, TemplateResponse, TemplateFilter, TemplateUpdate
 from app.db.repositories.template_repository import TemplateRepository
 from app.services.storage import StorageService
@@ -69,7 +69,7 @@ async def create_template(
     structure_json: str = Form(..., description="계층 구조 JSON 문자열"),
     file: Optional[UploadFile] = None,
     current_user: dict = Depends(get_current_user),
-    template_repo: TemplateRepository = Depends(get_template_repository),
+    template_repo: TemplateRepository = Depends(get_template_repository_with_rls),
     storage_service: StorageService = Depends(get_storage_service),
 ):
     """structure_json + 선택적 이미지로 템플릿 DB 등록"""
@@ -88,10 +88,10 @@ async def create_template(
 
     try:
         _validate_structure_json(parsed_structure)
-    except ValueError as e:
+    except ValueError:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(e),
+            detail="템플릿 구조 JSON 파싱에 실패했습니다.",
         )
 
     file_storage_path: Optional[str] = None
@@ -141,7 +141,7 @@ async def get_templates(
     template_type: str = Query(None, description="템플릿 타입 필터 (예: observation_log)"),
     is_default: bool = Query(None, description="기본 템플릿 여부 필터"),
     is_active: bool = Query(True, description="활성화된 템플릿만 조회 (기본값 True)"),
-    template_repo: TemplateRepository = Depends(get_template_repository),
+    template_repo: TemplateRepository = Depends(get_template_repository_with_rls),
 ):
     """조건에 맞는 템플릿 목록 조회"""
     from uuid import UUID
@@ -166,7 +166,7 @@ async def get_templates(
 async def get_template(
     template_id: UUID,
     current_user: dict = Depends(get_current_user),
-    template_repo: TemplateRepository = Depends(get_template_repository),
+    template_repo: TemplateRepository = Depends(get_template_repository_with_rls),
 ):
     """특정 템플릿 조회"""
     template = await template_repo.get_by_id(template_id)
@@ -192,7 +192,7 @@ async def get_template(
 async def delete_template(
     template_id: UUID,
     current_user: dict = Depends(get_current_user),
-    template_repo: TemplateRepository = Depends(get_template_repository),
+    template_repo: TemplateRepository = Depends(get_template_repository_with_rls),
 ):
     """템플릿 소프트 삭제"""
     # 존재 확인
@@ -226,7 +226,7 @@ async def update_template(
     template_id: UUID,
     update_data: TemplateUpdate,
     current_user: dict = Depends(get_current_user),
-    template_repo: TemplateRepository = Depends(get_template_repository),
+    template_repo: TemplateRepository = Depends(get_template_repository_with_rls),
 ):
     """템플릿 정보 수정"""
     # 존재 확인
@@ -260,7 +260,7 @@ async def update_template(
 async def update_template_order(
     request: TemplateOrderRequest,
     current_user: dict = Depends(get_current_user),
-    template_repo: TemplateRepository = Depends(get_template_repository),
+    template_repo: TemplateRepository = Depends(get_template_repository_with_rls),
 ):
     """템플릿 순서 일괄 변경"""
     # 각 템플릿 존재 + 소유권 확인

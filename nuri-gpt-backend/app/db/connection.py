@@ -69,6 +69,26 @@ def get_supabase_client() -> Client:
     return manager.client
 
 
+def create_rls_client(token: str) -> Client:
+    """사용자 JWT를 설정한 anon_key 클라이언트 생성 (RLS 적용)
+
+    anon_key로 초기화한 뒤 PostgREST 세션에 사용자 Bearer 토큰을 설정하여
+    DB 수준 RLS 정책이 auth.uid()를 인식하도록 한다.
+    """
+    settings = get_settings()
+    supabase_url = settings.supabase_url
+    anon_key = settings.supabase_key
+
+    if not supabase_url or not anon_key:
+        raise ValueError(
+            "SUPABASE_URL 또는 SUPABASE_KEY가 설정되지 않았습니다."
+        )
+
+    client = create_client(supabase_url, anon_key)
+    client.postgrest.auth(token)
+    return client
+
+
 _admin_client: Optional[Client] = None
 
 

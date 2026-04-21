@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.db.models.template import TemplateResponse
 from app.schemas.storage import StorageUploadResponse
-from app.core.dependencies import get_template_repository, get_storage_service, get_vision_service, get_current_user, get_usage_service
+from app.core.dependencies import get_template_repository_with_rls, get_storage_service, get_vision_service, get_current_user, get_usage_service_with_rls
 
 client = TestClient(app)
 
@@ -70,10 +70,10 @@ def test_upload_template_with_vision(mock_template_repo, mock_storage_service, m
     mock_usage_service.check_quota_available = AsyncMock(return_value=True)
     mock_usage_service.increment_usage = AsyncMock()
 
-    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: mock_template_repo
     app.dependency_overrides[get_storage_service] = lambda: mock_storage_service
     app.dependency_overrides[get_vision_service] = lambda: mock_vision_service
-    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
+    app.dependency_overrides[get_usage_service_with_rls] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
     
     response = client.post(
@@ -107,7 +107,7 @@ def test_analyze_template_returns_structure_json_only(mock_vision_service, mock_
     mock_usage_service.increment_usage = AsyncMock()
 
     app.dependency_overrides[get_vision_service] = lambda: mock_vision_service
-    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
+    app.dependency_overrides[get_usage_service_with_rls] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.post(
@@ -130,7 +130,7 @@ def test_analyze_template_returns_structure_json_only(mock_vision_service, mock_
 
 def test_create_template_without_image(mock_template_repo, mock_storage_service, mock_current_user):
     """POST /templates — 이미지 없이 structure_json만으로 저장 (수동 트랙)"""
-    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: mock_template_repo
     app.dependency_overrides[get_storage_service] = lambda: mock_storage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
@@ -157,7 +157,7 @@ def test_create_template_without_image(mock_template_repo, mock_storage_service,
 
 def test_create_template_with_image(mock_template_repo, mock_storage_service, mock_current_user):
     """POST /templates — 이미지 포함 저장 (이미지 기반 트랙)"""
-    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: mock_template_repo
     app.dependency_overrides[get_storage_service] = lambda: mock_storage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
@@ -183,7 +183,7 @@ def test_create_template_with_image(mock_template_repo, mock_storage_service, mo
 
 def test_create_template_empty_structure_json_rejected(mock_template_repo, mock_storage_service, mock_current_user):
     """POST /templates — 빈 structure_json은 422 반환"""
-    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: mock_template_repo
     app.dependency_overrides[get_storage_service] = lambda: mock_storage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 

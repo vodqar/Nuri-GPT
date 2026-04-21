@@ -1,4 +1,4 @@
-# Handoff Document — Security Remediation (Phase 1–4)
+# Handoff Document — Security Remediation (Phase 1–5)
 
 *Last Updated: 2026-04-21*
 
@@ -6,7 +6,7 @@
 
 ## 🎯 Goal
 
-보안 평가 보고서(`report/2026-04-21-redteam-security-assessment.md`)에 따른 14개 취약점(V-01~V-14) 수정. Phase 1(인증/인가), Phase 3(인프라 강화), Phase 4(정책/최적화) 코드 변경 완료, 테스트 수정 진행 중.
+보안 평가 보고서(`report/2026-04-21-redteam-security-assessment.md`)에 따른 14개 취약점(V-01~V-14) 전수 수정 완료.
 
 ---
 
@@ -25,11 +25,17 @@
 - **V-09**: `SecurityHeadersMiddleware` 추가 (X-Content-Type-Options, X-Frame-Options, CSP, HSTS 등)
 - **V-10**: 쿠키 `secure`/`samesite` 환경 분기 (`debug` 설정 기준)
 
-### Phase 4 — 정책/최적화 (코드 변경 완료, 테스트 수정 진행 중)
+### Phase 4 — 정책/최적화 (완료)
 - **V-11**: `auth.py` 스키마에 비밀번호 복잡성 검증 추가 (대문자+소문자+숫자)
-- **V-12**: RLS 정책 `auth.uid()` → `(select auth.uid())` 최적화 (Supabase MCP 마이그레이션 완료)
+- **V-12**: RLS 정책 `auth.uid()` → `(select auth.uid())` 최적화 + 중복 permissive 정책 병합
 - **V-13**: `user.py`에서 미사용 `GET /{user_id}`, `PUT /{user_id}` 엔드포인트 제거
 - **V-14**: FK 인덱스 추가 (Supabase MCP 마이그레이션 완료)
+
+### Phase 5 — V-04 anon_key 전환 + 코드 품질 (완료)
+- **V-04**: 모든 엔드포인트 Repository를 `anon_key` + 사용자 JWT 기반 RLS 적용 팩토리(`*_with_rls`)로 전환
+- `create_rls_client(token)`: 요청별 anon_key 클라이언트 생성, `postgrest.auth(token)` 설정
+- `get_current_user` 확장: JWT 토큰도 함께 반환 (`"token"` 키 추가)
+- 코드 품질: `print()` → `logger`, `str(e)` → 고정 메시지
 
 ### slowapi `request` 파라미터 이슈 수정 (완료)
 - `slowapi` 데코레이터가 함수 시그니처에서 `request: Request` 파라미터를 요구
@@ -62,8 +68,7 @@
 
 ## 📋 Next Steps (우선순위 순)
 
-1. **V-04: Repository RLS 전환** — 현재 `service_role` 키 사용 중, `anon_key` + RLS 정책으로 전환 필요 (장기 과제, 별도 세션에서 다룰 것)
-
+1. **Supabase 마이그레이션 적용** — `supabase/migrations/20260421_rls_optimize_and_deduplicate.sql` 을 Supabase 대시보드나 CLI로 적용
 2. **Supabase 대시보드 설정** — Leaked Password Protection 활성화, 토큰 만료 시간 조정
 
 ---
@@ -90,10 +95,13 @@
 | `tests/test_template_api.py` | 소유권 검증 대응 (user_id 일치, current_user override) |
 | `tests/test_storage.py` | 매직넘버 바이트 사용 |
 | `tests/test_upload_api.py` | usage_service mock, PNG 매직넘버 |
-| `tests/test_generate_api.py` | usage_service mock, 메시지 변경 반영 |
+| `tests/test_generate_api.py` | usage_service mock, 메시지 변경 반영, `*_with_rls` 의존성 override |
 | `tests/test_template_upload.py` | usage_service mock, 매직넘버 바이트, 비전 어설션 |
-| `tests/test_integration.py` | usage_service, vision_service mock |
-| `tests/test_user_api.py` | 404 응답 예상 (HTTPException re-raise 수정 반영) |
+| `tests/test_integration.py` | usage_service, vision_service mock, `*_with_rls` 의존성 override |
+| `tests/test_user_api.py` | 404 응답 예상 (HTTPException re-raise 수정 반영), `*_with_rls` 의존성 override |
+| `app/core/dependencies.py` | V-04: `*_with_rls` Repository 팩토리 추가, `get_current_user` 토큰 반환, `print()` → `logger` |
+| `app/db/connection.py` | V-04: `create_rls_client(token)` 함수 추가 |
+| `supabase/migrations/20260421_rls_optimize_and_deduplicate.sql` | V-12: RLS 최적화 + 중복 정책 병합 마이그레이션 |
 
 ---
 
