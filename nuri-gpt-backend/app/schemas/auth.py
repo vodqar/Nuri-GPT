@@ -18,17 +18,6 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=8, description="사용자 비밀번호")
     remember: bool = Field(default=False, description="로그인 유지 여부")
 
-    @field_validator("password")
-    @classmethod
-    def validate_password_strength(cls, v):
-        if not re.search(r"[A-Z]", v):
-            raise ValueError("비밀번호에 대문자를 포함해야 합니다.")
-        if not re.search(r"[a-z]", v):
-            raise ValueError("비밀번호에 소문자를 포함해야 합니다.")
-        if not re.search(r"\d", v):
-            raise ValueError("비밀번호에 숫자를 포함해야 합니다.")
-        return v
-
 
 class SignupRequest(BaseModel):
     """회원가입 요청 스키마"""
