@@ -46,7 +46,8 @@ ALTER POLICY "Users can read their own usage"
 
 ALTER POLICY "Users can update their own usage"
   ON user_usages
-  USING ((select auth.uid()) = user_id);
+  USING ((select auth.uid()) = user_id)
+  WITH CHECK ((select auth.uid()) = user_id);
 
 -- users
 ALTER POLICY "Users can manage their own profile"
