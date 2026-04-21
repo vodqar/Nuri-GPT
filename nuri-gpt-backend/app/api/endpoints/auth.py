@@ -8,7 +8,7 @@
 
 from typing import Optional
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from gotrue.errors import AuthApiError
 from supabase import Client
 
@@ -16,6 +16,7 @@ from app.db.connection import get_supabase_client
 from app.db.repositories.user_preference_repository import UserPreferenceRepository
 from app.schemas.auth import LoginRequest, LogoutResponse, SignupRequest, TokenResponse, UserAuthInfo
 from app.utils.exceptions import AuthenticationError
+from app.core.rate_limiter import limiter
 
 router = APIRouter(tags=["Authentication"])
 
@@ -27,10 +28,13 @@ COOKIE_PATH = "/api/auth"
 
 
 def _set_auth_cookies(response: Response, refresh_token: str, remember: bool) -> None:
+    from app.core.config import get_settings
+    _settings = get_settings()
+
     cookie_kwargs = {
         "httponly": True,
-        "secure": False,   # 개발/베타: HTTP localhost 환경
-        "samesite": "lax", # 개발/베타: 프론트-백 포트 분리 환경
+        "secure": not _settings.debug,  # 프로덕션: True, 개발: False
+        "samesite": "strict" if not _settings.debug else "lax",
         "path": COOKIE_PATH,
     }
 
@@ -67,8 +71,10 @@ def _delete_auth_cookies(response: Response) -> None:
 
 
 @router.post("/signup", response_model=TokenResponse)
+@limiter.limit("5/minute")
 async def signup(
-    request: SignupRequest,
+    request: Request,
+    signup_data: SignupRequest,
     response: Response,
     supabase: Client = Depends(get_supabase_client),
     pref_repo: UserPreferenceRepository = Depends(lambda: UserPreferenceRepository(get_supabase_client())),
@@ -81,12 +87,12 @@ async def signup(
     try:
         # Supabase Auth에 사용자 생성
         auth_response = supabase.auth.sign_up({
-            "email": request.email,
-            "password": request.password,
+            "email": signup_data.email,
+            "password": signup_data.password,
             "options": {
                 "data": {
-                    "name": request.name,
-                    "kindergarten_name": request.kindergarten_name or "",
+                    "name": signup_data.name,
+                    "kindergarten_name": signup_data.kindergarten_name or "",
                 }
             }
         })
@@ -122,14 +128,16 @@ async def signup(
     except AuthApiError as e:
         if "User already registered" in str(e):
             raise AuthenticationError("이미 등록된 이메일입니다")
-        raise AuthenticationError(f"회원가입 중 오류가 발생했습니다: {str(e)}")
+        raise AuthenticationError("회원가입 중 오류가 발생했습니다.")
     except Exception as e:
-        raise AuthenticationError(f"회원가입 중 오류가 발생했습니다: {str(e)}")
+        raise AuthenticationError("회원가입 중 오류가 발생했습니다.")
 
 
 @router.post("/login", response_model=TokenResponse)
+@limiter.limit("10/minute")
 async def login(
-    request: LoginRequest,
+    request: Request,
+    login_data: LoginRequest,
     response: Response,
     supabase: Client = Depends(get_supabase_client),
     pref_repo: UserPreferenceRepository = Depends(lambda: UserPreferenceRepository(get_supabase_client())),
@@ -142,8 +150,8 @@ async def login(
     try:
         # Supabase Auth로 로그인
         auth_response = supabase.auth.sign_in_with_password({
-            "email": request.email,
-            "password": request.password,
+            "email": login_data.email,
+            "password": login_data.password,
         })
 
         if not auth_response.session:
@@ -162,7 +170,7 @@ async def login(
         _set_auth_cookies(
             response=response,
             refresh_token=session.refresh_token,
-            remember=request.remember,
+            remember=login_data.remember,
         )
 
         preferences = await pref_repo.get_all(user.id)
@@ -181,9 +189,9 @@ async def login(
     except AuthApiError as e:
         if "Invalid login" in str(e) or "Invalid email" in str(e):
             raise AuthenticationError("이메일 또는 비밀번호가 올바르지 않습니다")
-        raise AuthenticationError(f"로그인 중 오류가 발생했습니다: {str(e)}")
+        raise AuthenticationError("로그인 중 오류가 발생했습니다.")
     except Exception as e:
-        raise AuthenticationError(f"로그인 중 오류가 발생했습니다: {str(e)}")
+        raise AuthenticationError("로그인 중 오류가 발생했습니다.")
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -240,7 +248,7 @@ async def refresh_token(
         _delete_auth_cookies(response)
         raise AuthenticationError("세션이 만료되었습니다. 다시 로그인해주세요.")
     except Exception as e:
-        raise AuthenticationError(f"토큰 갱신 중 오류가 발생했습니다: {str(e)}")
+        raise AuthenticationError("토큰 갱신 중 오류가 발생했습니다.")
 
 
 @router.post("/logout", response_model=LogoutResponse)
@@ -271,4 +279,4 @@ async def logout(
     except Exception as e:
         # 쿠키는 삭제하고 에러 반환
         _delete_auth_cookies(response)
-        raise AuthenticationError(f"로그아웃 중 오류가 발생했습니다: {str(e)}")
+        raise AuthenticationError("로그아웃 중 오류가 발생했습니다.")

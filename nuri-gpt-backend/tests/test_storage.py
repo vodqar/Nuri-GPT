@@ -249,8 +249,8 @@ async def test_validate_file_valid_template():
     """유효한 이미지 템플릿 파일 검증 테스트"""
     from app.utils.file_validator import validate_file, FileType
 
-    # 가짜 UploadFile 생성
-    content = b"fake image content"
+    # 실제 PNG 매직넘버 포함
+    content = b"\x89PNG\r\n\x1a\n" + b"fake image content"
     file = UploadFile(
         filename="template.png",
         file=BytesIO(content),
@@ -283,9 +283,11 @@ async def test_validate_file_valid_image():
     """유효한 이미지 파일 검증 테스트"""
     from app.utils.file_validator import validate_file, FileType
 
+    # 실제 JPEG 매직넘버 포함
+    content = b"\xff\xd8\xff\xe0" + b"fake image content"
     file = UploadFile(
         filename="memo.jpg",
-        file=BytesIO(b"fake image content"),
+        file=BytesIO(content),
         headers={"content-type": "image/jpeg"},
     )
 
@@ -300,9 +302,11 @@ async def test_validate_file_blob_with_mime_inference():
     from app.utils.file_validator import validate_file, FileType
 
     # 프론트엔드 FormData에서 파일명 없이 Blob 전송 시
+    # 실제 JPEG 매직넘버 포함
+    content = b"\xff\xd8\xff\xe0" + b"fake image content"
     file = UploadFile(
         filename="blob",  # 확장자 없음
-        file=BytesIO(b"fake image content"),
+        file=BytesIO(content),
         headers={"content-type": "image/jpeg"},
     )
 

@@ -8,7 +8,7 @@ import { cn } from '../../../utils/cn';
 
 export default function GreetingPage() {
   const { user, updatePreferences } = useAuthStore();
-  const { isGenerating, result, error, generateGreeting } = useGreeting();
+  const { isGenerating, result, error, stage, generateGreeting } = useGreeting();
   
   const [regions, setRegions] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -337,10 +337,22 @@ export default function GreetingPage() {
           </div>
 
           <div className="flex-1 bg-zinc-50 dark:bg-zinc-950 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 p-6 relative">
-            {isGenerating ? (
+            {isGenerating && !result ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4">
                 <LoadingSpinner size="xl" />
-                <p className="text-zinc-500 font-medium animate-pulse">날씨와 맥락을 분석하여 작성 중입니다...</p>
+                <p className="text-zinc-500 font-medium animate-pulse">
+                  {stage === 'weather' && '날씨 정보를 조회하는 중...'}
+                  {stage === 'context' && '절기·기념일 맥락을 분석하는 중...'}
+                  {stage === 'generating' && '인삿말을 작성하는 중...'}
+                  {stage === 'idle' && '준비 중...'}
+                </p>
+              </div>
+            ) : isGenerating && result ? (
+              <div className="prose dark:prose-invert max-w-none">
+                <p className="text-zinc-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap">
+                  {result}
+                  <span className="animate-pulse">▎</span>
+                </p>
               </div>
             ) : result ? (
               <div className="prose dark:prose-invert max-w-none">

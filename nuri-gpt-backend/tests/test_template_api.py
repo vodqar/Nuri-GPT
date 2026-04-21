@@ -11,12 +11,17 @@ from app.core.dependencies import get_template_repository, get_current_user
 
 client = TestClient(app)
 
+MOCK_USER_ID_STR = "00000000-0000-0000-0000-000000000001"
+MOCK_USER_ID = uuid4()  # will be overwritten below
+
 @pytest.fixture
 def mock_template_repo():
+    from uuid import UUID
+    uid = UUID(MOCK_USER_ID_STR)
     repo = MagicMock()
     mock_template_1 = TemplateResponse(
         id=uuid4(),
-        user_id=uuid4(),
+        user_id=uid,
         name="템플릿 1",
         template_type="observation_log",
         structure_json={"보육일지": {"놀이": {"활동": {"내용": ""}}}},
@@ -29,7 +34,7 @@ def mock_template_repo():
     )
     mock_template_2 = TemplateResponse(
         id=uuid4(),
-        user_id=uuid4(),
+        user_id=uid,
         name="템플릿 2",
         template_type="daily_log",
         structure_json={"일지": {"내용": ""}},
@@ -100,10 +105,11 @@ def test_get_template_by_id(mock_template_repo, mock_current_user):
     
     app.dependency_overrides.clear()
 
-def test_get_template_not_found():
+def test_get_template_not_found(mock_current_user):
     repo = MagicMock()
     repo.get_by_id = AsyncMock(return_value=None)
     app.dependency_overrides[get_template_repository] = lambda: repo
+    app.dependency_overrides[get_current_user] = lambda: mock_current_user
     
     response = client.get(f"/api/templates/{uuid4()}")
     
@@ -131,11 +137,12 @@ def test_delete_template(mock_template_repo, mock_current_user):
     app.dependency_overrides.clear()
 
 
-def test_delete_template_not_found():
+def test_delete_template_not_found(mock_current_user):
     """존재하지 않는 템플릿 삭제 테스트"""
     repo = MagicMock()
     repo.get_by_id = AsyncMock(return_value=None)
     app.dependency_overrides[get_template_repository] = lambda: repo
+    app.dependency_overrides[get_current_user] = lambda: mock_current_user
     
     response = client.delete(f"/api/templates/{uuid4()}")
     
@@ -164,11 +171,12 @@ def test_patch_template(mock_template_repo, mock_current_user):
     app.dependency_overrides.clear()
 
 
-def test_patch_template_not_found():
+def test_patch_template_not_found(mock_current_user):
     """존재하지 않는 템플릿 수정 테스트"""
     repo = MagicMock()
     repo.get_by_id = AsyncMock(return_value=None)
     app.dependency_overrides[get_template_repository] = lambda: repo
+    app.dependency_overrides[get_current_user] = lambda: mock_current_user
     
     response = client.patch(
         f"/api/templates/{uuid4()}",
@@ -207,11 +215,12 @@ def test_put_template_order(mock_template_repo, mock_current_user):
     app.dependency_overrides.clear()
 
 
-def test_put_template_order_not_found():
+def test_put_template_order_not_found(mock_current_user):
     """존재하지 않는 템플릿 순서 변경 테스트"""
     repo = MagicMock()
     repo.get_by_id = AsyncMock(return_value=None)
     app.dependency_overrides[get_template_repository] = lambda: repo
+    app.dependency_overrides[get_current_user] = lambda: mock_current_user
     
     response = client.put(
         "/api/templates/order",

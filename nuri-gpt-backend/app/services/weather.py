@@ -3,6 +3,8 @@
 import json
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
@@ -29,12 +31,58 @@ PTY_MAP = {
 }
 
 
+# ── 발표 주기 기반 날씨 캐시 ──────────────────────────────
+
+@dataclass
+class _CacheEntry:
+    data: Dict
+    created_at: datetime
+
+
+class WeatherCache:
+    """발표 주기 기반 TTL 캐시
+
+    기상청 API는 정해진 발표 시각(base_date+base_time / tmFc)마다
+    동일한 응답을 반환하므로, 캐시 키에 발표 시각을 포함하면
+    발표 시각이 바뀔 때 자연스럽게 캐시가 무효화된다.
+    """
+
+    _MAX_ENTRIES = 200
+
+    def __init__(self) -> None:
+        self._store: Dict[str, _CacheEntry] = {}
+
+    def _make_key(self, api_type: str, **params) -> str:
+        sorted_params = sorted(params.items())
+        return f"{api_type}:{sorted_params}"
+
+    def get(self, api_type: str, **params) -> Optional[Dict]:
+        key = self._make_key(api_type, **params)
+        entry = self._store.get(key)
+        if entry is None:
+            return None
+        logger.debug("Weather cache HIT | key=%s", key)
+        return entry.data
+
+    def set(self, api_type: str, data: Dict, **params) -> None:
+        key = self._make_key(api_type, **params)
+        # 용량 초과 시 가장 오래된 항목 제거
+        if len(self._store) >= self._MAX_ENTRIES:
+            oldest_key = min(self._store, key=lambda k: self._store[k].created_at)
+            del self._store[oldest_key]
+        self._store[key] = _CacheEntry(data=data, created_at=datetime.now())
+        logger.debug("Weather cache SET | key=%s", key)
+
+
 class WeatherService:
     """기상청 API를 이용한 날씨 정보 조회 서비스"""
+
+    _cache = WeatherCache()  # 프로세스 싱글톤
 
     def __init__(
         self,
         api_key: Optional[str] = None,
+        cache: Optional[WeatherCache] = None,
     ):
         settings = get_settings()
         self.api_key = api_key or settings.kma_api_key
@@ -45,6 +93,8 @@ class WeatherService:
             "https://apihub.kma.go.kr/api/typ02/openApi/MidFcstInfoService"
         )
         self._grid_map: Optional[Dict] = None
+        if cache is not None:
+            self._cache = cache
 
     # ── 시군구 → 좌표/regId 조회 ──────────────────────────
 
@@ -110,10 +160,17 @@ class WeatherService:
     def _fetch_vilage_fcst(
         self, nx: int, ny: int, base_date: str, base_time: str
     ) -> Dict:
-        """단기예보(getVilageFcst) API 호출"""
+        """단기예보(getVilageFcst) API 호출 (캐시 적용)"""
         if not self.api_key:
             logger.warning("KMA_API_KEY is not set. Short-term forecast unavailable.")
             return {}
+
+        # 캐시 조회
+        cached = self._cache.get(
+            "vilage_fcst", nx=nx, ny=ny, base_date=base_date, base_time=base_time
+        )
+        if cached is not None:
+            return cached
 
         params = {
             "authKey": self.api_key,
@@ -147,7 +204,11 @@ class WeatherService:
                 .get("items", {})
                 .get("item", [])
             )
-            return {"items": items}
+            result = {"items": items}
+            self._cache.set(
+                "vilage_fcst", result, nx=nx, ny=ny, base_date=base_date, base_time=base_time
+            )
+            return result
 
         except Exception as e:
             logger.error(f"Failed to fetch short-term forecast: {e}")
@@ -156,10 +217,15 @@ class WeatherService:
     # ── 중기육상예보 API 호출 ─────────────────────────────
 
     def _fetch_mid_land_fcst(self, reg_id: str, tm_fc: str) -> Dict:
-        """중기육상예보(getMidLandFcst) API 호출"""
+        """중기육상예보(getMidLandFcst) API 호출 (캐시 적용)"""
         if not self.api_key:
             logger.warning("KMA_API_KEY is not set. Mid-term land forecast unavailable.")
             return {}
+
+        # 캐시 조회
+        cached = self._cache.get("mid_land", reg_id=reg_id, tm_fc=tm_fc)
+        if cached is not None:
+            return cached
 
         params = {
             "authKey": self.api_key,
@@ -174,7 +240,7 @@ class WeatherService:
             resp = requests.get(
                 f"{self.mid_base_url}/getMidLandFcst",
                 params=params,
-                timeout=10,
+                timeout=15,
             )
             resp.raise_for_status()
             data = resp.json()
@@ -192,7 +258,9 @@ class WeatherService:
             )
             if isinstance(items, dict):
                 items = [items]
-            return {"items": items}
+            result = {"items": items}
+            self._cache.set("mid_land", result, reg_id=reg_id, tm_fc=tm_fc)
+            return result
 
         except Exception as e:
             logger.error(f"Failed to fetch mid-term land forecast: {e}")
@@ -201,10 +269,15 @@ class WeatherService:
     # ── 중기기온 API 호출 ─────────────────────────────────
 
     def _fetch_mid_ta(self, reg_id: str, tm_fc: str) -> Dict:
-        """중기기온(getMidTa) API 호출"""
+        """중기기온(getMidTa) API 호출 (캐시 적용)"""
         if not self.api_key:
             logger.warning("KMA_API_KEY is not set. Mid-term temp forecast unavailable.")
             return {}
+
+        # 캐시 조회
+        cached = self._cache.get("mid_ta", reg_id=reg_id, tm_fc=tm_fc)
+        if cached is not None:
+            return cached
 
         params = {
             "authKey": self.api_key,
@@ -219,7 +292,7 @@ class WeatherService:
             resp = requests.get(
                 f"{self.mid_base_url}/getMidTa",
                 params=params,
-                timeout=10,
+                timeout=15,
             )
             resp.raise_for_status()
             data = resp.json()
@@ -237,7 +310,9 @@ class WeatherService:
             )
             if isinstance(items, dict):
                 items = [items]
-            return {"items": items}
+            result = {"items": items}
+            self._cache.set("mid_ta", result, reg_id=reg_id, tm_fc=tm_fc)
+            return result
 
         except Exception as e:
             logger.error(f"Failed to fetch mid-term temp forecast: {e}")
@@ -460,16 +535,21 @@ class WeatherService:
             except Exception as e:
                 logger.error(f"Short-term forecast error: {e}")
 
-        # 중기예보 (한 번 호출 → 여러 delta 파싱)
+        # 중기예보 (병렬 호출 → 여러 delta 파싱)
         if mid_deltas:
             try:
                 tm_fc = self._calculate_tmfc()
-                land_data = self._fetch_mid_land_fcst(
-                    region_info["mid_land_reg_id"], tm_fc
-                )
-                ta_data = self._fetch_mid_ta(
-                    region_info["mid_temp_reg_id"], tm_fc
-                )
+                with ThreadPoolExecutor(max_workers=2) as pool:
+                    land_future = pool.submit(
+                        self._fetch_mid_land_fcst,
+                        region_info["mid_land_reg_id"], tm_fc,
+                    )
+                    ta_future = pool.submit(
+                        self._fetch_mid_ta,
+                        region_info["mid_temp_reg_id"], tm_fc,
+                    )
+                    land_data = land_future.result()
+                    ta_data = ta_future.result()
                 day_summaries.update(
                     self._parse_mid_term(land_data, ta_data, mid_deltas, today)
                 )

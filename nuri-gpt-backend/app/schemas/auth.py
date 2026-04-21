@@ -3,11 +3,12 @@
 인증/인가 관련 API 요청/응답 스키마
 """
 
+import re
 from datetime import datetime
 from typing import Any, Dict, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class LoginRequest(BaseModel):
@@ -17,6 +18,17 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=8, description="사용자 비밀번호")
     remember: bool = Field(default=False, description="로그인 유지 여부")
 
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, v):
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("비밀번호에 대문자를 포함해야 합니다.")
+        if not re.search(r"[a-z]", v):
+            raise ValueError("비밀번호에 소문자를 포함해야 합니다.")
+        if not re.search(r"\d", v):
+            raise ValueError("비밀번호에 숫자를 포함해야 합니다.")
+        return v
+
 
 class SignupRequest(BaseModel):
     """회원가입 요청 스키마"""
@@ -25,6 +37,17 @@ class SignupRequest(BaseModel):
     password: str = Field(..., min_length=8, description="사용자 비밀번호")
     name: str = Field(..., min_length=1, max_length=100, description="사용자 이름")
     kindergarten_name: Optional[str] = Field(None, description="유치원/어린이집 이름")
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, v):
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("비밀번호에 대문자를 포함해야 합니다.")
+        if not re.search(r"[a-z]", v):
+            raise ValueError("비밀번호에 소문자를 포함해야 합니다.")
+        if not re.search(r"\d", v):
+            raise ValueError("비밀번호에 숫자를 포함해야 합니다.")
+        return v
 
 
 class UserAuthInfo(BaseModel):

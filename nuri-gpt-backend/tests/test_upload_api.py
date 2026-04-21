@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
-from app.core.dependencies import get_ocr_service, get_storage_service, get_current_user
+from app.core.dependencies import get_ocr_service, get_storage_service, get_current_user, get_usage_service
 from app.main import app
 from app.schemas.storage import StorageUploadResponse
 
@@ -28,6 +28,10 @@ def test_upload_memo_success():
     mock_ocr_service.extract_text_from_image.return_value = "원본 OCR 텍스트"
     mock_ocr_service.normalize_text.return_value = "정규화 OCR 텍스트"
 
+    mock_usage_service = MagicMock()
+    mock_usage_service.check_quota_available = AsyncMock(return_value=True)
+    mock_usage_service.increment_usage = AsyncMock()
+
     mock_current_user = {
         "id": "00000000-0000-0000-0000-000000000001",
         "email": "test@example.com",
@@ -36,11 +40,14 @@ def test_upload_memo_success():
 
     app.dependency_overrides[get_storage_service] = lambda: mock_storage_service
     app.dependency_overrides[get_ocr_service] = lambda: mock_ocr_service
+    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
+    # 실제 PNG 매직넘버 포함
+    png_bytes = b"\x89PNG\r\n\x1a\n" + b"fake image content"
     response = client.post(
         "/api/upload/memo",
-        files={"file": ("memo.png", b"fake-image-bytes", "image/png")},
+        files={"file": ("memo.png", png_bytes, "image/png")},
     )
 
     assert response.status_code == 200
@@ -60,7 +67,14 @@ def test_upload_memo_text_success():
     mock_ocr_service = MagicMock()
     mock_ocr_service.normalize_text.return_value = "정규화 결과"
 
+    mock_current_user = {
+        "id": "00000000-0000-0000-0000-000000000001",
+        "email": "test@example.com",
+        "metadata": {"name": "Test User"}
+    }
+
     app.dependency_overrides[get_ocr_service] = lambda: mock_ocr_service
+    app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.post(
         "/api/upload/memo/text",

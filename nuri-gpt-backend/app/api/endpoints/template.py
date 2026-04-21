@@ -108,7 +108,7 @@ async def create_template(
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"파일 Storage 저장 실패: {str(e)}",
+                detail="파일 저장에 실패했습니다.",
             )
 
     template_data = TemplateCreate(
@@ -125,7 +125,7 @@ async def create_template(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"템플릿 DB 등록 실패: {str(e)}",
+            detail="템플릿 등록에 실패했습니다.",
         )
 
 
@@ -165,6 +165,7 @@ async def get_templates(
 )
 async def get_template(
     template_id: UUID,
+    current_user: dict = Depends(get_current_user),
     template_repo: TemplateRepository = Depends(get_template_repository),
 ):
     """특정 템플릿 조회"""
@@ -173,6 +174,11 @@ async def get_template(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"템플릿(ID: {template_id})을 찾을 수 없습니다."
+        )
+    if str(template.user_id) != current_user["id"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="다른 사용자의 템플릿은 조회할 수 없습니다.",
         )
     return template
 
@@ -185,6 +191,7 @@ async def get_template(
 )
 async def delete_template(
     template_id: UUID,
+    current_user: dict = Depends(get_current_user),
     template_repo: TemplateRepository = Depends(get_template_repository),
 ):
     """템플릿 소프트 삭제"""
@@ -194,6 +201,11 @@ async def delete_template(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"템플릿(ID: {template_id})을 찾을 수 없습니다."
+        )
+    if str(template.user_id) != current_user["id"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="다른 사용자의 템플릿은 삭제할 수 없습니다.",
         )
 
     success = await template_repo.soft_delete(template_id)
@@ -213,6 +225,7 @@ async def delete_template(
 async def update_template(
     template_id: UUID,
     update_data: TemplateUpdate,
+    current_user: dict = Depends(get_current_user),
     template_repo: TemplateRepository = Depends(get_template_repository),
 ):
     """템플릿 정보 수정"""
@@ -222,6 +235,11 @@ async def update_template(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"템플릿(ID: {template_id})을 찾을 수 없습니다."
+        )
+    if str(template.user_id) != current_user["id"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="다른 사용자의 템플릿은 수정할 수 없습니다.",
         )
 
     updated = await template_repo.update(template_id, update_data)
@@ -241,16 +259,22 @@ async def update_template(
 )
 async def update_template_order(
     request: TemplateOrderRequest,
+    current_user: dict = Depends(get_current_user),
     template_repo: TemplateRepository = Depends(get_template_repository),
 ):
     """템플릿 순서 일괄 변경"""
-    # 각 템플릿 존재 확인
+    # 각 템플릿 존재 + 소유권 확인
     for item in request.orders:
         template = await template_repo.get_by_id(item.id)
         if not template:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"템플릿(ID: {item.id})을 찾을 수 없습니다."
+            )
+        if str(template.user_id) != current_user["id"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="다른 사용자의 템플릿은 수정할 수 없습니다.",
             )
 
     orders_data = [{"id": str(item.id), "sort_order": item.sort_order} for item in request.orders]

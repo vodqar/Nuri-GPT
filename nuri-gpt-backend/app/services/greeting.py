@@ -3,11 +3,13 @@
 날씨/날짜/절기/기념일 맥락을 조립하여 Dify Chatflow로 인삿말을 생성한다.
 """
 
+import asyncio
 import json
 import logging
 import random
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
-from typing import Dict, List, Optional
+from typing import Dict, Generator, List, Optional
 
 import requests
 
@@ -311,3 +313,182 @@ class GreetingService:
         logger.info("Greeting inputs to Dify: %s", inputs)
         greeting = self._call_dify(inputs)
         return greeting
+
+    async def generate_greeting_async(
+        self,
+        region: str,
+        target_date: date,
+        user_input: Optional[str] = None,
+        enabled_contexts: Optional[List[str]] = None,
+        name_input: bool = False,
+        use_emoji: bool = True,
+    ) -> str:
+        """지역+날짜 → 알림장 인삿말 생성 (비동기 병렬 버전)
+
+        날씨 조회와 절기/기념일 조회를 병렬로 실행하여
+        전체 응답 시간을 단축한다.
+        """
+        if enabled_contexts is None:
+            enabled_contexts = ["weather", "seasonal", "holiday", "anniversary", "sundry"]
+
+        # 날짜 맥락은 순수 계산이므로 즉시 실행
+        date_ctx = self._build_date_context(target_date)
+
+        # 날씨와 절기/기념일을 병렬 실행
+        weather_coro = asyncio.to_thread(
+            self._get_weather_context, region, target_date, enabled_contexts
+        )
+        seasonal_coro = asyncio.to_thread(
+            self._build_seasonal_context, target_date
+        )
+
+        weather_summary, seasonal_ctx = await asyncio.gather(
+            weather_coro, seasonal_coro, return_exceptions=True
+        )
+
+        # 예외 처리: 병렬 실행 중 하나가 실패해도 나머지는 사용
+        if isinstance(weather_summary, Exception):
+            logger.warning(f"Weather context failed, continuing without: {weather_summary}")
+            weather_summary = ""
+        if isinstance(seasonal_ctx, Exception):
+            logger.warning(f"Seasonal context failed, continuing without: {seasonal_ctx}")
+            seasonal_ctx = {
+                "seasonal_info": "",
+                "holiday_info": "",
+                "anniversary_info": "",
+                "sundry_day_info": "",
+            }
+
+        # Dify Chatflow 호출
+        inputs = self._build_dify_inputs(
+            date_ctx, weather_summary, seasonal_ctx,
+            enabled_contexts, user_input, name_input, use_emoji,
+        )
+
+        logger.info("Greeting inputs to Dify: %s", inputs)
+        greeting = await asyncio.to_thread(self._call_dify, inputs)
+        return greeting
+
+    def _build_dify_inputs(
+        self,
+        date_ctx: Dict,
+        weather_summary: str,
+        seasonal_ctx: Dict,
+        enabled_contexts: List[str],
+        user_input: Optional[str],
+        name_input: bool,
+        use_emoji: bool,
+    ) -> Dict[str, str]:
+        """Dify Chatflow 호출용 inputs 딕셔너리 조립"""
+        return {
+            "date_info": date_ctx["date_info"],
+            "month_week": date_ctx["month_week"],
+            "weather_context": weather_summary if isinstance(weather_summary, str) else "",
+            "seasonal_info": seasonal_ctx.get("seasonal_info", "") if "seasonal" in enabled_contexts else "",
+            "holiday_info": seasonal_ctx.get("holiday_info", "") if "holiday" in enabled_contexts else "",
+            "anniversary_info": seasonal_ctx.get("anniversary_info", "") if "anniversary" in enabled_contexts else "",
+            "sundry_day_info": seasonal_ctx.get("sundry_day_info", "") if "sundry" in enabled_contexts else "",
+            "user_custom_input": user_input or "",
+            "name_input": "true" if name_input else "false",
+            "use_emoji": "true" if use_emoji else "false",
+            "seed_sequence": json.dumps(self._generate_seed_sequence()),
+        }
+
+    def _get_weather_context(
+        self, region: str, target_date: date, enabled_contexts: List[str]
+    ) -> str:
+        """날씨 맥락만 조회 (generate_greeting에서 분리)"""
+        if "weather" not in enabled_contexts:
+            logger.info("Weather context skipped (not in enabled_contexts=%s)", enabled_contexts)
+            return ""
+        try:
+            summary = self.weather_service.get_weather_summary_range(
+                region, target_date, days_before=2, days_after=2
+            )
+            logger.info(
+                "Weather summary result | region=%s target_date=%s summary='%s'",
+                region, target_date, summary,
+            )
+            return summary
+        except Exception as e:
+            logger.warning(f"Weather context failed, continuing without: {e}")
+            return ""
+
+    def _call_dify_streaming(self, inputs: Dict[str, str]) -> Generator[str, None, None]:
+        """Dify Chatflow API 호출 → SSE 토큰을 yield하는 제너레이터
+
+        각 yield는 Dify SSE 스트림의 answer 청크를 반환한다.
+        """
+        settings = get_settings()
+        dify_key = settings.dify_greeting_api_key or settings.dify_api_key
+        dify_url = settings.dify_greeting_api_url or settings.dify_api_url
+
+        if not dify_key:
+            logger.error("Dify greeting API key is not configured.")
+            return
+
+        payload = {
+            "inputs": inputs,
+            "query": "알림장 인삿말을 생성해주세요.",
+            "response_mode": "streaming",
+            "conversation_id": "",
+            "user": "nuri-gpt-user",
+            "auto_generate_name": False,
+        }
+
+        headers = {
+            "Authorization": f"Bearer {dify_key}",
+            "Content-Type": "application/json",
+        }
+
+        endpoint = f"{dify_url.rstrip('/')}/chat-messages"
+
+        try:
+            logger.info(
+                "Greeting Dify streaming request | endpoint=%s input_keys=%s",
+                endpoint,
+                sorted(inputs.keys()),
+            )
+            resp = requests.post(
+                endpoint,
+                json=payload,
+                headers=headers,
+                stream=True,
+                timeout=120,
+            )
+            resp.raise_for_status()
+
+            for line in resp.iter_lines():
+                if not line:
+                    continue
+                decoded = line.decode("utf-8") if isinstance(line, bytes) else str(line)
+                if not decoded.startswith("data: "):
+                    continue
+
+                data_str = decoded[6:]
+                try:
+                    event_data = json.loads(data_str)
+                except json.JSONDecodeError:
+                    continue
+
+                if event_data.get("event") == "error":
+                    logger.error(
+                        "Greeting Dify streaming error: code=%s message=%s",
+                        event_data.get("code", "N/A"),
+                        event_data.get("message", "Unknown error"),
+                    )
+                    continue
+
+                chunk = ""
+                if "answer" in event_data:
+                    chunk = event_data["answer"]
+                elif "text" in event_data:
+                    chunk = event_data["text"]
+                elif "data" in event_data and isinstance(event_data.get("data"), dict) and "text" in event_data["data"]:
+                    chunk = event_data["data"]["text"]
+
+                if chunk:
+                    yield chunk
+
+        except Exception as e:
+            logger.error(f"Failed to call Dify greeting API (streaming): {e}")

@@ -8,7 +8,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile, status
 
 from app.core.dependencies import (
     get_current_user,
@@ -32,6 +32,7 @@ from app.services.vision import VisionService
 from app.services.storage import StorageService
 from app.services.usage_service import UsageService
 from app.utils.exceptions import ExternalAPIError, ValidationError
+from app.core.rate_limiter import limiter
 
 router = APIRouter()
 
@@ -42,7 +43,9 @@ router = APIRouter()
     summary="수기 메모 이미지 업로드",
     description="수기 메모 이미지를 Storage에 저장하고 OCR로 텍스트를 추출합니다.",
 )
+@limiter.limit("20/minute")
 async def upload_memo(
+    request: Request,
     file: UploadFile,
     current_user: dict = Depends(get_current_user),
     storage_service: StorageService = Depends(get_storage_service),
@@ -103,7 +106,7 @@ async def upload_memo(
             raise e
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"업로드 또는 OCR 처리 실패: {str(e)}",
+            detail="업로드 또는 OCR 처리에 실패했습니다.",
         )
 
 
@@ -115,6 +118,7 @@ async def upload_memo(
 )
 async def upload_memo_text(
     request: TextMemoRequest,
+    current_user: dict = Depends(get_current_user),
     ocr_service: OcrService = Depends(get_ocr_service),
 ):
     """텍스트 직접 입력 → 정규화 처리"""
@@ -133,7 +137,9 @@ async def upload_memo_text(
     summary="템플릿 이미지 분석 (저장 없음)",
     description="템플릿 이미지를 Vision API로 분석하여 계층 구조 JSON만 반환합니다. 저장은 하지 않습니다.",
 )
+@limiter.limit("10/minute")
 async def analyze_template(
+    request: Request,
     file: UploadFile,
     current_user: dict = Depends(get_current_user),
     vision_service: VisionService = Depends(get_vision_service),
@@ -171,7 +177,7 @@ async def analyze_template(
         await usage_service.increment_usage(user_id, "vision_analyze", status="fail")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"템플릿 구조 추출 실패: {str(e)}",
+            detail="템플릿 구조 추출에 실패했습니다.",
         )
 
 
@@ -256,5 +262,5 @@ async def upload_template(
             raise e
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"템플릿 처리 및 등록 실패: {str(e)}",
+            detail="템플릿 처리 및 등록에 실패했습니다.",
         )

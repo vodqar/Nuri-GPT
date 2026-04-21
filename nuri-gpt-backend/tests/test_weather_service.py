@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.services.weather import WeatherService
+from app.services.weather import WeatherCache, WeatherService
 from app.utils.exceptions import ValidationError
 
 
@@ -336,3 +336,41 @@ class TestGetWeatherSummary:
                 "광주광역시 북구", date.today(), days_before=0, days_after=0
             )
             assert result == "맑음"
+
+
+# ── WeatherCache ──────────────────────────────────────
+
+class TestWeatherCache:
+    def test_miss_returns_none(self):
+        cache = WeatherCache()
+        assert cache.get("vilage_fcst", nx=59, ny=75, base_date="20260418", base_time="0500") is None
+
+    def test_set_then_get(self):
+        cache = WeatherCache()
+        data = {"items": [{"category": "TMP"}]}
+        cache.set("vilage_fcst", data, nx=59, ny=75, base_date="20260418", base_time="0500")
+        result = cache.get("vilage_fcst", nx=59, ny=75, base_date="20260418", base_time="0500")
+        assert result == data
+
+    def test_different_params_is_miss(self):
+        cache = WeatherCache()
+        data = {"items": [{"category": "TMP"}]}
+        cache.set("vilage_fcst", data, nx=59, ny=75, base_date="20260418", base_time="0500")
+        # 다른 base_time → 캐시 미스
+        assert cache.get("vilage_fcst", nx=59, ny=75, base_date="20260418", base_time="0800") is None
+
+    def test_eviction_on_max_entries(self):
+        cache = WeatherCache()
+        cache._MAX_ENTRIES = 3
+        for i in range(4):
+            cache.set("api", {"i": i}, key=i)
+        # 가장 오래된 key=0이 제거되어야 함
+        assert cache.get("api", key=0) is None
+        assert cache.get("api", key=3) is not None
+
+    def test_same_key_overwrites(self):
+        cache = WeatherCache()
+        cache.set("api", {"v": 1}, k="x")
+        cache.set("api", {"v": 2}, k="x")
+        result = cache.get("api", k="x")
+        assert result == {"v": 2}

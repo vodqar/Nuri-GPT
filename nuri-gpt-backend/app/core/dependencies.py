@@ -18,7 +18,7 @@ from app.services.ocr import OcrService
 from app.services.storage import StorageService
 from app.services.usage_service import UsageService
 from app.services.greeting import GreetingService
-from app.services.special_day import SpecialDayService
+from app.services.special_day import SpecialDayCache, SpecialDayService
 from app.core.jwt_verify import JWTVerificationError, extract_user_from_payload, verify_jwt_locally
 from app.utils.exceptions import AuthenticationError
 
@@ -151,9 +151,13 @@ def get_vision_service() -> VisionService:
     return VisionService()
 
 
+# SpecialDayService 캐시 공유를 위한 싱글톤 인스턴스
+_special_day_cache = SpecialDayCache()
+
+
 def get_special_day_service() -> SpecialDayService:
-    """SpecialDay 서비스 의존성"""
-    return SpecialDayService()
+    """SpecialDay 서비스 의존성 (캐시 싱글톤 공유)"""
+    return SpecialDayService(cache=_special_day_cache)
 
 
 async def get_user_preference_repository() -> AsyncGenerator[UserPreferenceRepository, None]:

@@ -116,6 +116,20 @@ async def validate_file(
         if content_type not in allowed_mimes:
             return False, "허용되지 않는 파일 형식입니다."
 
+    # 파일 시그니처(매직넘버) 검증
+    try:
+        import filetype
+        header = await file.read(4096)
+        await file.seek(0)  # 읽은 내용 복원
+        kind = filetype.guess(header)
+        if kind is None:
+            return False, "파일 형식을 확인할 수 없습니다."
+        allowed_mime_set = ALLOWED_MIME_TYPES.get(file_type, set())
+        if kind.mime not in allowed_mime_set:
+            return False, f"파일 내용이 허용되지 않는 형식입니다. ({kind.mime})"
+    except ImportError:
+        pass  # filetype 미설치 시 기존 동작 유지
+
     # 파일 크기 검증 (간접적으로)
     # 실제 크기는 파일을 읽어야 알 수 있으므로,
     # StorageService에서 업로드 전에 검증

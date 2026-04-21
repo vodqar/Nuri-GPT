@@ -65,7 +65,8 @@ graph TD
 2. **템플릿 등록**: 이미지 업로드 → Vision Service로 계층 구조 JSON 추출 → Storage 원본 저장 + DB에 `structure_json` 기록
 3. **일지 생성**: 정규화 텍스트 + `tone_and_manner` → LLM Service → 구조화된 관찰일지 JSON → DB 이력 저장
 4. **결과 출력**: 완성된 일지 JSON을 프론트엔드로 전달
-5. **인삿말 생성**: 시군구+날짜 → WeatherService(단기/중기 분기) → 날씨 요약 + SpecialDayService(공휴일/절기/기념일/잡절) → 날짜/절기/기념일 맥락 → Dify Chatflow → 인삿말 텍스트 → UserPreferenceRepository에 `greeting.preferred_region` 저장
+5. **인삿말 생성**: 시군구+날짜 → WeatherService(단기/중기 분기, 중기육상+중기기은 병렬) + SpecialDayService(공휴일/절기/기념일/잡절) → asyncio.gather로 병렬 수집 → 날씨 요약 + 날짜/절기/기념일 맥락 → Dify Chatflow → 인삿말 텍스트 → UserPreferenceRepository에 `greeting.preferred_region` 저장
+6. **인삿말 SSE 스트리밍**: `/generate/stream` 엔드포인트에서 progress 이벤트 + Dify SSE 토큰을 실시간 릴레이 → 프론트엔드 타이핑 효과
 
 ---
 
@@ -109,7 +110,17 @@ PK: `(user_id, key)`. RLS: 본인만 읽기/쓰기.
 
 ---
 
-*Last Updated: 2026-04-17*
+*Last Updated: 2026-04-18*
+
+#### 2026-04-18 — 인삿말 생성 파이프라인 병목 개선 (Phase A+B)
+
+- **API 병렬화**: `GreetingService.generate_greeting_async()` — 날씨 조회와 절기/기념일 조회를 `asyncio.gather`로 병렬 실행
+- **중기예보 병렬화**: `WeatherService.get_weather_summary_range()` — `_fetch_mid_land_fcst`와 `_fetch_mid_ta`를 `ThreadPoolExecutor`로 병렬 호출
+- **날씨 캐시**: `WeatherCache` 클래스 — 발표 주기 기반 TTL 캐시 (캐시 키에 base_date+base_time / tmFc 포함 → 발표 시각 변경 시 자동 무효화), 프로세스 싱글톤
+- **SpecialDayService 싱글톤**: `_special_day_cache` 인스턴스를 모듈 레벨에서 공유 → 요청 간 SpecialDayCache 재사용
+- **SSE 스트리밍 엔드포인트**: `POST /greeting/generate/stream` — progress(날씨/맥락 수집 단계) + token(Dify 응답 청크) + done(완성 텍스트) 이벤트 스트림
+- **Dify 스트리밍**: `_call_dify_streaming()` 제너레이터 — Dify SSE 응답을 토큰 단위로 yield
+- **프론트엔드 SSE 연동**: `GreetingService.generateGreetingStream()` (fetch + ReadableStream), `useGreeting` 훅에 `stage` 상태 추가, `GreetingPage` 진행 상태 표시 + 타이핑 커서 효과
 
 #### 2026-04-17 — 성능 최적화 Phase 2-5/3 (Cache-Control, Bootstrap 엔드포인트, DB 인덱스)
 

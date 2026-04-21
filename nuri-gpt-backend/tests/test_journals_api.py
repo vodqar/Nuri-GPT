@@ -14,11 +14,11 @@ client = TestClient(app)
 
 MOCK_USER_ID = "00000000-0000-0000-0000-000000000001"
 
-def _journal_response() -> JournalResponse:
+def _journal_response(user_id=None) -> JournalResponse:
     now = datetime.now(timezone.utc)
     return JournalResponse(
         id=uuid4(),
-        user_id=uuid4(),  # UUID 객체 사용
+        user_id=user_id or uuid4(),
         group_id=uuid4(),
         version=1,
         is_final=True,
@@ -70,12 +70,14 @@ def test_list_journals_success(mock_current_user):
     app.dependency_overrides.clear()
 
 
-def test_get_journal_success():
+def test_get_journal_success(mock_current_user):
     repo = MagicMock()
-    journal = _journal_response()
+    from uuid import UUID
+    journal = _journal_response(user_id=UUID(MOCK_USER_ID))
     repo.get_by_id = AsyncMock(return_value=journal)
 
     app.dependency_overrides[get_journal_repository] = lambda: repo
+    app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.get(f"/api/journals/{journal.id}")
 
@@ -89,11 +91,12 @@ def test_get_journal_success():
     app.dependency_overrides.clear()
 
 
-def test_get_journal_not_found():
+def test_get_journal_not_found(mock_current_user):
     repo = MagicMock()
     repo.get_by_id = AsyncMock(return_value=None)
 
     app.dependency_overrides[get_journal_repository] = lambda: repo
+    app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.get(f"/api/journals/{uuid4()}")
 
@@ -103,14 +106,16 @@ def test_get_journal_not_found():
     app.dependency_overrides.clear()
 
 
-def test_get_journal_group_history_success():
+def test_get_journal_group_history_success(mock_current_user):
     repo = MagicMock()
-    journal1 = _journal_response()
-    journal2 = _journal_response()
+    from uuid import UUID
+    journal1 = _journal_response(user_id=UUID(MOCK_USER_ID))
+    journal2 = _journal_response(user_id=UUID(MOCK_USER_ID))
     journal2.version = 2
     repo.get_by_group_id = AsyncMock(return_value=[journal2, journal1])
 
     app.dependency_overrides[get_journal_repository] = lambda: repo
+    app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     group_id = uuid4()
     response = client.get(f"/api/journals/group/{group_id}")
@@ -125,11 +130,15 @@ def test_get_journal_group_history_success():
     app.dependency_overrides.clear()
 
 
-def test_delete_journal_group_success():
+def test_delete_journal_group_success(mock_current_user):
     repo = MagicMock()
+    from uuid import UUID
+    journal = _journal_response(user_id=UUID(MOCK_USER_ID))
+    repo.get_by_group_id = AsyncMock(return_value=[journal])
     repo.delete_by_group_id = AsyncMock(return_value=3)
 
     app.dependency_overrides[get_journal_repository] = lambda: repo
+    app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     group_id = uuid4()
     response = client.delete(f"/api/journals/group/{group_id}")
@@ -141,11 +150,13 @@ def test_delete_journal_group_success():
     app.dependency_overrides.clear()
 
 
-def test_delete_journal_group_not_found():
+def test_delete_journal_group_not_found(mock_current_user):
     repo = MagicMock()
+    repo.get_by_group_id = AsyncMock(return_value=[])
     repo.delete_by_group_id = AsyncMock(return_value=0)
 
     app.dependency_overrides[get_journal_repository] = lambda: repo
+    app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     group_id = uuid4()
     response = client.delete(f"/api/journals/group/{group_id}")
@@ -153,6 +164,6 @@ def test_delete_journal_group_not_found():
     assert response.status_code == 404
     assert "찾을 수 없거나 삭제할 항목이 없습니다" in response.json()["detail"]
 
-    repo.delete_by_group_id.assert_called_once_with(group_id)
+    repo.delete_by_group_id.assert_not_called()
 
     app.dependency_overrides.clear()

@@ -91,7 +91,8 @@
 
 | Method | Path | Description | Content-Type | 인증 필요 | 주요 파라미터 |
 |--------|------|-------------|-------------|-----------|--------------|
-| POST | `/api/greeting/generate` | 알림장 인삿말 생성 (날씨/날짜/절기/공휴일/기념일/잡절 맥락 기반) | `application/json` | ✅ | `region` (시군구명), `target_date` (YYYY-MM-DD), `name_input?` (bool, 기본 false), `use_emoji?` (bool, 기본 true) |
+| POST | `/api/greeting/generate` | 알림장 인삿말 생성 (날씨/날짜/절기/공휴일/기념일/잡절 맥락 기반, 병렬 수집) | `application/json` | ✅ | `region` (시군구명), `target_date` (YYYY-MM-DD), `name_input?` (bool, 기본 false), `use_emoji?` (bool, 기본 true) |
+| POST | `/api/greeting/generate/stream` | 알림장 인삿말 SSE 스트리밍 생성 (진행 상태 + 토큰 단위 실시간 전송) | `text/event-stream` | ✅ | `region` (시군구명), `target_date` (YYYY-MM-DD), `name_input?` (bool, 기본 false), `use_emoji?` (bool, 기본 true) |
 
 #### Greeting Dify inputs 상세
 
@@ -108,6 +109,15 @@
 | `use_emoji` | Request body | "true"/"false" — true=이모지 사용, false=이모지 금지 |
 | `seed_sequence` | GreetingService (자동) | JSON 배열 문자열 (예: "[3,1,4]") — [1,2,3] 중 1~2개 무작위 추출+셔플 후 항상 4(교사 내면)를 마지막에 붙임 |
 
+#### SSE 스트리밍 이벤트 포맷 (`/generate/stream`)
+
+| event | 필드 | 설명 |
+|-------|------|------|
+| `progress` | `stage` | 진행 단계: `weather` (날씨 수집 중), `context` (절기/기념일 수집 중) |
+| `token` | `text` | Dify 응답 토큰 청크 (타이핑 효과용) |
+| `done` | `greeting` | 완성된 전체 인삿말 텍스트 |
+| `error` | `message` | 오류 메시지 |
+
 ### 상세 스키마
 
 각 엔드포인트의 상세 요청/응답 스키마는 `app/schemas/` 디렉토리 참조 또는 Swagger UI (`/docs`)에서 확인 가능합니다.
@@ -115,7 +125,9 @@
 ---
 
 
-> 마지막 업데이트: 2026-04-17 (Bootstrap 엔드포인트 — GET /users/me/bootstrap 신설, Cache-Control 응답 헤더 추가, DB 복합 인덱스 보강)
+> 마지막 업데이트: 2026-04-18 (인삿말 생성 파이프라인 병목 개선 — SSE 스트리밍 엔드포인트 신설, API 병렬화, 날씨 캐시 도입, SpecialDayService 싱글톤화)
+>
+> 이전 업데이트: 2026-04-17 (Bootstrap 엔드포인트 — GET /users/me/bootstrap 신설, Cache-Control 응답 헤더 추가, DB 복합 인덱스 보강)
 >
 > 이전 업데이트: 2026-04-17 (사용자 설정 API — GET/PATCH /users/me/preferences 신설, user_preferences 테이블 도입, users.preferred_region 이관)
 >

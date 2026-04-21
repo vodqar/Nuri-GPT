@@ -18,6 +18,8 @@ from app.core.dependencies import (
     get_log_repository,
     get_storage_service,
     get_template_repository,
+    get_usage_service,
+    get_vision_service,
 )
 from app.db.models.journal import JournalInDB
 from app.db.models.log import UserLogInDB
@@ -116,11 +118,20 @@ def test_template_upload_then_generate_pipeline():
         )
     )
 
+    mock_usage_service = MagicMock()
+    mock_usage_service.check_quota_available = AsyncMock(return_value=True)
+    mock_usage_service.increment_usage = AsyncMock()
+
+    mock_vision_service = MagicMock()
+    mock_vision_service.extract_template_structure = MagicMock(return_value={"놀이": {"활동": {"내용": ""}}})
+
     app.dependency_overrides[get_storage_service] = lambda: mock_storage
     app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
     app.dependency_overrides[get_llm_service] = lambda: mock_llm
     app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
     app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
+    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
+    app.dependency_overrides[get_vision_service] = lambda: mock_vision_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     try:

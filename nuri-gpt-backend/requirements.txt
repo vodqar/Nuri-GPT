@@ -24,6 +24,12 @@ PyJWT>=2.8.0
 # CORS 미들웨어
 python-multipart>=0.0.6
 
+# 파일 시그니처 검증
+filetype>=1.2.0
+
+# Rate Limiting
+slowapi>=0.1.9
+
 # AI 및 문서 처리
 google-generativeai>=0.8.0
 Pillow>=10.0.0  # 이미지 처리용

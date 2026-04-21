@@ -13,6 +13,10 @@ os.environ["DEBUG"] = "True"
 
 from app.main import app
 
+# 테스트 환경에서 Rate Limiter 비활성화
+from app.core.rate_limiter import limiter
+limiter.enabled = False
+
 
 @pytest.fixture
 def client():

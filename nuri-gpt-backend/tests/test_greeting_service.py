@@ -264,3 +264,100 @@ class TestGenerateSeedSequence:
         for _ in range(100):
             seq = greeting_service._generate_seed_sequence()
             assert 4 not in seq[:-1]
+
+
+# ── _call_dify_streaming ──────────────────────────────
+
+class TestCallDifyStreaming:
+    def test_yields_answer_chunks(self, greeting_service):
+        """Dify SSE 응답에서 answer 청크를 yield하는지 확인"""
+        sse_lines = [
+            'data: {"event": "message", "answer": "안녕"}',
+            'data: {"event": "message", "answer": "하세요"}',
+            'data: {"event": "message_end", "answer": ""}',
+        ]
+        mock_resp = MagicMock()
+        mock_resp.iter_lines.return_value = sse_lines
+        mock_resp.raise_for_status = MagicMock()
+
+        with patch("app.services.greeting.requests.post", return_value=mock_resp), \
+             patch("app.services.greeting.get_settings") as mock_settings:
+            mock_settings.return_value.dify_greeting_api_key = "test-key"
+            mock_settings.return_value.dify_greeting_api_url = "https://dify.test/v1"
+            mock_settings.return_value.dify_api_key = None
+            mock_settings.return_value.dify_api_url = None
+
+            chunks = list(greeting_service._call_dify_streaming({"date_info": "test"}))
+            assert chunks == ["안녕", "하세요"]
+
+    def test_no_key_yields_nothing(self, greeting_service):
+        """API 키가 없으면 아무것도 yield하지 않음"""
+        with patch("app.services.greeting.get_settings") as mock_settings:
+            mock_settings.return_value.dify_greeting_api_key = None
+            mock_settings.return_value.dify_api_key = None
+            chunks = list(greeting_service._call_dify_streaming({"date_info": "test"}))
+            assert chunks == []
+
+    def test_error_event_is_skipped(self, greeting_service):
+        """Dify error 이벤트는 yield하지 않고 로깅만 함"""
+        sse_lines = [
+            'data: {"event": "error", "code": "500", "message": "Server error"}',
+            'data: {"event": "message", "answer": "복구됨"}',
+        ]
+        mock_resp = MagicMock()
+        mock_resp.iter_lines.return_value = sse_lines
+        mock_resp.raise_for_status = MagicMock()
+
+        with patch("app.services.greeting.requests.post", return_value=mock_resp), \
+             patch("app.services.greeting.get_settings") as mock_settings:
+            mock_settings.return_value.dify_greeting_api_key = "test-key"
+            mock_settings.return_value.dify_greeting_api_url = "https://dify.test/v1"
+            mock_settings.return_value.dify_api_key = None
+            mock_settings.return_value.dify_api_url = None
+
+            chunks = list(greeting_service._call_dify_streaming({"date_info": "test"}))
+            assert chunks == ["복구됨"]
+
+
+# ── _build_dify_inputs ────────────────────────────────
+
+class TestBuildDifyInputs:
+    def test_includes_all_contexts(self, greeting_service):
+        date_ctx = {"date_info": "2026년 4월 18일 (금요일)", "month_week": "4월 3주차"}
+        weather_summary = "맑음, 최고 22℃"
+        seasonal_ctx = {
+            "seasonal_info": "청명~곡우",
+            "holiday_info": "해당 없음",
+            "anniversary_info": "해당 없음",
+            "sundry_day_info": "해당 없음",
+        }
+        inputs = greeting_service._build_dify_inputs(
+            date_ctx, weather_summary, seasonal_ctx,
+            ["weather", "seasonal", "holiday", "anniversary", "sundry"],
+            None, False, True,
+        )
+        assert inputs["weather_context"] == "맑음, 최고 22℃"
+        assert inputs["seasonal_info"] == "청명~곡우"
+        assert inputs["name_input"] == "false"
+        assert inputs["use_emoji"] == "true"
+
+    def test_disabled_contexts_are_empty(self, greeting_service):
+        date_ctx = {"date_info": "2026년 4월 18일 (금요일)", "month_week": "4월 3주차"}
+        weather_summary = "맑음"
+        seasonal_ctx = {
+            "seasonal_info": "청명~곡우",
+            "holiday_info": "어린이날",
+            "anniversary_info": "해당 없음",
+            "sundry_day_info": "해당 없음",
+        }
+        inputs = greeting_service._build_dify_inputs(
+            date_ctx, weather_summary, seasonal_ctx,
+            ["weather"],  # weather만 활성화
+            "특별 요청", True, False,
+        )
+        assert inputs["weather_context"] == "맑음"
+        assert inputs["seasonal_info"] == ""
+        assert inputs["holiday_info"] == ""
+        assert inputs["user_custom_input"] == "특별 요청"
+        assert inputs["name_input"] == "true"
+        assert inputs["use_emoji"] == "false"

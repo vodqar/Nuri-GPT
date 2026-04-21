@@ -8,7 +8,7 @@ from app.main import app
 from app.db.models.template import TemplateResponse
 from app.db.models.log import UserLogResponse
 from app.db.models.journal import JournalResponse
-from app.core.dependencies import get_llm_service, get_log_repository, get_template_repository, get_journal_repository, get_current_user
+from app.core.dependencies import get_llm_service, get_log_repository, get_template_repository, get_journal_repository, get_current_user, get_usage_service
 
 client = TestClient(app)
 
@@ -97,12 +97,19 @@ def mock_journal_repo():
     ))
     return repo
 
-def test_generate_log_default(mock_llm_service, mock_log_repo, mock_template_repo, mock_journal_repo, mock_current_user):
+@pytest.fixture
+def mock_usage_service():
+    service = MagicMock()
+    service.check_quota_available = AsyncMock(return_value=True)
+    service.increment_usage = AsyncMock()
+    return service
+
+def test_generate_log_default(mock_llm_service, mock_log_repo, mock_template_repo, mock_journal_repo, mock_current_user, mock_usage_service):
     app.dependency_overrides[get_llm_service] = lambda: mock_llm_service
     app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
     app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
     app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
-    app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
+    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.post(
@@ -121,12 +128,12 @@ def test_generate_log_default(mock_llm_service, mock_log_repo, mock_template_rep
     app.dependency_overrides.clear()
 
 
-def test_generate_log_empty_ocr_text_fails(mock_llm_service, mock_log_repo, mock_template_repo, mock_journal_repo, mock_current_user):
+def test_generate_log_empty_ocr_text_fails(mock_llm_service, mock_log_repo, mock_template_repo, mock_journal_repo, mock_current_user, mock_usage_service):
     app.dependency_overrides[get_llm_service] = lambda: mock_llm_service
     app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
     app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
     app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
-    app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
+    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.post(
@@ -139,7 +146,7 @@ def test_generate_log_empty_ocr_text_fails(mock_llm_service, mock_log_repo, mock
     app.dependency_overrides.clear()
 
 
-def test_generate_log_llm_failure(mock_log_repo, mock_template_repo, mock_journal_repo, mock_current_user):
+def test_generate_log_llm_failure(mock_log_repo, mock_template_repo, mock_journal_repo, mock_current_user, mock_usage_service):
     mock_llm_service = MagicMock()
     mock_llm_service.generate_observation_log.side_effect = RuntimeError("API Limit Exceeded")
 
@@ -147,7 +154,7 @@ def test_generate_log_llm_failure(mock_log_repo, mock_template_repo, mock_journa
     app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
     app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
     app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
-    app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
+    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.post(
@@ -156,12 +163,12 @@ def test_generate_log_llm_failure(mock_log_repo, mock_template_repo, mock_journa
     )
 
     assert response.status_code == 500
-    assert "LLM 생성 서비스 예외" in response.json()["detail"]
+    assert "일지 생성 서비스 오류" in response.json()["detail"]
 
     app.dependency_overrides.clear()
 
 
-def test_generate_log_llm_empty_response(mock_log_repo, mock_template_repo, mock_journal_repo, mock_current_user):
+def test_generate_log_llm_empty_response(mock_log_repo, mock_template_repo, mock_journal_repo, mock_current_user, mock_usage_service):
     mock_llm_service = MagicMock()
     mock_llm_service.generate_observation_log.return_value = {
         "title": "",
@@ -174,7 +181,7 @@ def test_generate_log_llm_empty_response(mock_log_repo, mock_template_repo, mock
     app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
     app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
     app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
-    app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
+    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.post(
@@ -187,12 +194,12 @@ def test_generate_log_llm_empty_response(mock_log_repo, mock_template_repo, mock
 
     app.dependency_overrides.clear()
 
-def test_generate_log_with_template(mock_llm_service, mock_log_repo, mock_template_repo, mock_journal_repo, mock_current_user):
+def test_generate_log_with_template(mock_llm_service, mock_log_repo, mock_template_repo, mock_journal_repo, mock_current_user, mock_usage_service):
     app.dependency_overrides[get_llm_service] = lambda: mock_llm_service
     app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
     app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
     app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
-    app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
+    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     template_id = str(uuid4())
@@ -213,12 +220,12 @@ def test_generate_log_with_template(mock_llm_service, mock_log_repo, mock_templa
     app.dependency_overrides.clear()
 
 
-def test_generate_log_with_semantic_json(mock_llm_service, mock_log_repo, mock_template_repo, mock_journal_repo, mock_current_user):
+def test_generate_log_with_semantic_json(mock_llm_service, mock_log_repo, mock_template_repo, mock_journal_repo, mock_current_user, mock_usage_service):
     app.dependency_overrides[get_llm_service] = lambda: mock_llm_service
     app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
     app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
     app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
-    app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
+    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.post(
@@ -258,7 +265,7 @@ def test_generate_log_with_semantic_json(mock_llm_service, mock_log_repo, mock_t
     app.dependency_overrides.clear()
 
 
-def test_regenerate_log_success(mock_llm_service, mock_log_repo, mock_journal_repo, mock_current_user):
+def test_regenerate_log_success(mock_llm_service, mock_log_repo, mock_journal_repo, mock_current_user, mock_usage_service):
     """코멘트 기반 재생성 API 테스트 - 성공 케이스"""
     mock_llm_service.generate_regenerated_activities.return_value = [
         {"target_id": "t_20", "updated_text": "간식 코멘트 반영 내용"},
@@ -268,6 +275,7 @@ def test_regenerate_log_success(mock_llm_service, mock_log_repo, mock_journal_re
     app.dependency_overrides[get_llm_service] = lambda: mock_llm_service
     app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
     app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
+    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.post(
@@ -319,7 +327,7 @@ def test_regenerate_log_success(mock_llm_service, mock_log_repo, mock_journal_re
     app.dependency_overrides.clear()
 
 
-def test_regenerate_log_list_format_response(mock_log_repo, mock_journal_repo, mock_current_user):
+def test_regenerate_log_list_format_response(mock_log_repo, mock_journal_repo, mock_current_user, mock_usage_service):
     """재생성 API 테스트 - updated_activities 리스트 형식 응답 파싱"""
     mock_llm_service = MagicMock()
     mock_llm_service.generate_regenerated_activities.return_value = [
@@ -331,6 +339,7 @@ def test_regenerate_log_list_format_response(mock_log_repo, mock_journal_repo, m
     app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
     app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
+    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
 
     response = client.post(
         "/api/generate/regenerate",
@@ -356,11 +365,12 @@ def test_regenerate_log_list_format_response(mock_log_repo, mock_journal_repo, m
     app.dependency_overrides.clear()
 
 
-def test_regenerate_log_empty_activities(mock_llm_service, mock_log_repo, mock_journal_repo, mock_current_user):
+def test_regenerate_log_empty_activities(mock_llm_service, mock_log_repo, mock_journal_repo, mock_current_user, mock_usage_service):
     """재생성 API 테스트 - 빈 current_activities (422 예상)"""
     app.dependency_overrides[get_llm_service] = lambda: mock_llm_service
     app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
     app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
+    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.post(
@@ -382,7 +392,7 @@ def test_regenerate_log_empty_activities(mock_llm_service, mock_log_repo, mock_j
     app.dependency_overrides.clear()
 
 
-def test_regenerate_log_missing_target_id_fallback(mock_llm_service, mock_log_repo, mock_journal_repo, mock_current_user):
+def test_regenerate_log_missing_target_id_fallback(mock_llm_service, mock_log_repo, mock_journal_repo, mock_current_user, mock_usage_service):
     """재생성 API 테스트 - LLM 응답에 누락된 target_id가 있는 경우 fallback"""
     # LLM이 t_31을 누락하고 반환
     mock_llm_service.generate_regenerated_activities.return_value = [
@@ -393,6 +403,7 @@ def test_regenerate_log_missing_target_id_fallback(mock_llm_service, mock_log_re
     app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
     app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
+    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
 
     response = client.post(
         "/api/generate/regenerate",

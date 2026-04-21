@@ -170,7 +170,7 @@ class StorageService:
             )
 
         except Exception as e:
-            raise Exception(f"파일 업로드 실패: {str(e)}")
+            raise Exception("파일 업로드에 실패했습니다.")
 
     async def upload_template(
         self,
@@ -239,7 +239,7 @@ class StorageService:
             )
 
         except Exception as e:
-            raise Exception(f"파일 업로드 실패: {str(e)}")
+            raise Exception("파일 업로드에 실패했습니다.")
 
     async def get_signed_url(
         self,
@@ -273,7 +273,7 @@ class StorageService:
                 bucket=bucket,
             )
         except Exception as e:
-            raise Exception(f"다운로드 URL 생성 실패: {str(e)}")
+            raise Exception("다운로드 URL 생성에 실패했습니다.")
 
     async def download_file(
         self,
@@ -294,7 +294,7 @@ class StorageService:
             result = self.client.storage.from_(bucket).download(file_path)
             return result
         except Exception as e:
-            raise Exception(f"파일 다운로드 실패: {str(e)}")
+            raise Exception("파일 다운로드에 실패했습니다.")
 
     async def delete_file(
         self,
@@ -320,7 +320,7 @@ class StorageService:
                 bucket=bucket,
             )
         except Exception as e:
-            raise Exception(f"파일 삭제 실패: {str(e)}")
+            raise Exception("파일 삭제에 실패했습니다.")
 
     async def get_file_info(
         self,
@@ -411,7 +411,7 @@ class StorageService:
                 prefix=prefix,
             )
         except Exception as e:
-            raise Exception(f"파일 목록 조회 실패: {str(e)}")
+            raise Exception("파일 목록 조회에 실패했습니다.")
 
     async def get_user_files(
         self,

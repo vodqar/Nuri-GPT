@@ -108,7 +108,7 @@ def test_update_user_not_found(mock_current_user):
         json={"tone_and_manner": "지침 업데이트"},
     )
 
-    assert response.status_code == 500
-    assert "사용자 업데이트 실패" in response.json()["detail"]
+    assert response.status_code == 404
+    assert "사용자를 찾을 수 없습니다" in response.json()["detail"]
 
     app.dependency_overrides.clear()
