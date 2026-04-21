@@ -13,12 +13,12 @@ from fastapi.testclient import TestClient
 
 from app.core.dependencies import (
     get_current_user,
-    get_journal_repository,
+    get_journal_repository_with_rls,
     get_llm_service,
-    get_log_repository,
+    get_log_repository_with_rls,
     get_storage_service,
-    get_template_repository,
-    get_usage_service,
+    get_template_repository_with_rls,
+    get_usage_service_with_rls,
     get_vision_service,
 )
 from app.db.models.journal import JournalInDB
@@ -126,11 +126,11 @@ def test_template_upload_then_generate_pipeline():
     mock_vision_service.extract_template_structure = MagicMock(return_value={"놀이": {"활동": {"내용": ""}}})
 
     app.dependency_overrides[get_storage_service] = lambda: mock_storage
-    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: mock_template_repo
     app.dependency_overrides[get_llm_service] = lambda: mock_llm
-    app.dependency_overrides[get_log_repository] = lambda: mock_log_repo
-    app.dependency_overrides[get_journal_repository] = lambda: mock_journal_repo
-    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
+    app.dependency_overrides[get_log_repository_with_rls] = lambda: mock_log_repo
+    app.dependency_overrides[get_journal_repository_with_rls] = lambda: mock_journal_repo
+    app.dependency_overrides[get_usage_service_with_rls] = lambda: mock_usage_service
     app.dependency_overrides[get_vision_service] = lambda: mock_vision_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 

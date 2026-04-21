@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.schemas.user import UserResponse
-from app.core.dependencies import get_user_repository, get_current_user
+from app.core.dependencies import get_user_repository_with_rls, get_current_user
 
 client = TestClient(app)
 
@@ -40,7 +40,7 @@ def mock_current_user():
     }
 
 def test_get_user(mock_user_repo, mock_current_user):
-    app.dependency_overrides[get_user_repository] = lambda: mock_user_repo
+    app.dependency_overrides[get_user_repository_with_rls] = lambda: mock_user_repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.get("/api/users/me")
@@ -57,7 +57,7 @@ def test_get_user(mock_user_repo, mock_current_user):
 def test_get_user_not_found(mock_current_user):
     repo = MagicMock()
     repo.get_by_id = AsyncMock(return_value=None)
-    app.dependency_overrides[get_user_repository] = lambda: repo
+    app.dependency_overrides[get_user_repository_with_rls] = lambda: repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.get("/api/users/me")
@@ -77,7 +77,7 @@ def test_update_user(mock_user_repo, mock_current_user):
     )
     mock_user_repo.update = AsyncMock(return_value=updated_user)
 
-    app.dependency_overrides[get_user_repository] = lambda: mock_user_repo
+    app.dependency_overrides[get_user_repository_with_rls] = lambda: mock_user_repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.put(
@@ -100,7 +100,7 @@ def test_update_user(mock_user_repo, mock_current_user):
 def test_update_user_not_found(mock_current_user):
     repo = MagicMock()
     repo.update = AsyncMock(return_value=None)
-    app.dependency_overrides[get_user_repository] = lambda: repo
+    app.dependency_overrides[get_user_repository_with_rls] = lambda: repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.put(

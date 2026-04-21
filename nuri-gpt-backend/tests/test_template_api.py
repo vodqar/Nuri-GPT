@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.db.models.template import TemplateResponse, TemplateFilter
-from app.core.dependencies import get_template_repository, get_current_user
+from app.core.dependencies import get_template_repository_with_rls, get_current_user
 
 client = TestClient(app)
 
@@ -72,7 +72,7 @@ def mock_current_user():
     }
 
 def test_get_templates(mock_template_repo, mock_current_user):
-    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: mock_template_repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
     
     response = client.get("/api/templates/")
@@ -91,7 +91,7 @@ def test_get_templates(mock_template_repo, mock_current_user):
     app.dependency_overrides.clear()
 
 def test_get_template_by_id(mock_template_repo, mock_current_user):
-    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: mock_template_repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
     
     template_id = str(uuid4())
@@ -108,7 +108,7 @@ def test_get_template_by_id(mock_template_repo, mock_current_user):
 def test_get_template_not_found(mock_current_user):
     repo = MagicMock()
     repo.get_by_id = AsyncMock(return_value=None)
-    app.dependency_overrides[get_template_repository] = lambda: repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
     
     response = client.get(f"/api/templates/{uuid4()}")
@@ -125,7 +125,7 @@ def test_get_template_not_found(mock_current_user):
 
 def test_delete_template(mock_template_repo, mock_current_user):
     """템플릿 소프트 삭제 테스트"""
-    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: mock_template_repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
     
     template_id = str(uuid4())
@@ -141,7 +141,7 @@ def test_delete_template_not_found(mock_current_user):
     """존재하지 않는 템플릿 삭제 테스트"""
     repo = MagicMock()
     repo.get_by_id = AsyncMock(return_value=None)
-    app.dependency_overrides[get_template_repository] = lambda: repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
     
     response = client.delete(f"/api/templates/{uuid4()}")
@@ -153,7 +153,7 @@ def test_delete_template_not_found(mock_current_user):
 
 def test_patch_template(mock_template_repo, mock_current_user):
     """템플릿 이름 변경 테스트"""
-    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: mock_template_repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
     
     template_id = str(uuid4())
@@ -175,7 +175,7 @@ def test_patch_template_not_found(mock_current_user):
     """존재하지 않는 템플릿 수정 테스트"""
     repo = MagicMock()
     repo.get_by_id = AsyncMock(return_value=None)
-    app.dependency_overrides[get_template_repository] = lambda: repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
     
     response = client.patch(
@@ -190,7 +190,7 @@ def test_patch_template_not_found(mock_current_user):
 
 def test_put_template_order(mock_template_repo, mock_current_user):
     """템플릿 순서 일괄 변경 테스트"""
-    app.dependency_overrides[get_template_repository] = lambda: mock_template_repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: mock_template_repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
     
     template_id_1 = str(uuid4())
@@ -219,7 +219,7 @@ def test_put_template_order_not_found(mock_current_user):
     """존재하지 않는 템플릿 순서 변경 테스트"""
     repo = MagicMock()
     repo.get_by_id = AsyncMock(return_value=None)
-    app.dependency_overrides[get_template_repository] = lambda: repo
+    app.dependency_overrides[get_template_repository_with_rls] = lambda: repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
     
     response = client.put(

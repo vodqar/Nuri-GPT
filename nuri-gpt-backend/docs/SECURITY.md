@@ -1,6 +1,6 @@
 # Security Notes
 
-보안 평가 보고서(`report/2026-04-21-redteam-security-assessment.md`)에 따른 14개 취약점(V-01~V-14) 중 V-04를 제외한 13개 수정 완료.
+보안 평가 보고서(`report/2026-04-21-redteam-security-assessment.md`)에 따른 14개 취약점(V-01~V-14) 전수 수정 완료.
 
 ---
 
@@ -77,13 +77,16 @@
 
 ---
 
-## 9. 전 Repository service_role 키 사용 🔶 장기 과제 (V-04)
+## 9. Repository anon_key 전환 ✅ 수정 완료 (V-04)
 
-**파일**: `app/core/dependencies.py`
+**파일**: `app/core/dependencies.py`, `app/db/connection.py`, 각 엔드포인트
 
-**현황**: 모든 Repository가 `get_supabase_admin_client()`로 초기화됨. DB 수준 RLS가 작동하지 않음. 현재 엔드포인트 레벨 소유권 검증이 방어선.
-
-**전환 계획**: 일반 사용자 요청 경로를 `get_supabase_client()`(anon key, RLS 적용)로 전환. `admin_client`는 관리자 전용 작업에만 제한적 사용. 전환 시 RLS 정책이 실제 접근 패턴을 허용하는지 사전 검증 필요. 별도 세션에서 진행.
+**적용 내용**:
+- 일반 사용자 요청 경로의 모든 Repository를 `get_supabase_client()`(anon key) 기반 `*_with_rls` 팩토리로 전환
+- `create_rls_client(token)`: 요청별 anon_key 클라이언트 생성 후 `postgrest.auth(token)`으로 사용자 JWT 설정
+- `get_current_user`가 원본 JWT 토큰도 반환하도록 확장 (`"token"` 키 추가)
+- DB 수준 RLS 정책이 `(select auth.uid())`로 사용자 데이터 접근을 제어
+- `admin_client`는 Storage API 등 RLS 미적용 영역에만 유지
 
 ---
 
@@ -131,9 +134,12 @@
 
 ---
 
-## 14. RLS 정책 최적화 ✅ 완료 (V-12)
+## 14. RLS 정책 최적화 및 중복 정책 병합 ✅ 완료 (V-12)
 
-**적용 내용**: 모든 테이블 RLS 정책 `auth.uid()` → `(select auth.uid())` 최적화 (Supabase MCP 마이그레이션)
+**적용 내용**:
+- 모든 테이블 RLS 정책 `auth.uid()` → `(select auth.uid())` 최적화
+- 중복 permissive 정책 병합: ALL 정책 삭제 (개별 DELETE/INSERT/UPDATE/SELECT 유지), 중복 SELECT 정책 삭제 (read → view 통합)
+- 마이그레이션 SQL: `supabase/migrations/20260421_rls_optimize_and_deduplicate.sql`
 
 ---
 
@@ -146,3 +152,4 @@
 > 상세 취약점 목록, 재현 절차, 단계별 개선 로드맵은 `report/2026-04-21-redteam-security-assessment.md` 참조.
 
 *Last updated: 2026-04-21*
+

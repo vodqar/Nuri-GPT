@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
-from app.core.dependencies import get_ocr_service, get_storage_service, get_current_user, get_usage_service
+from app.core.dependencies import get_ocr_service, get_storage_service, get_current_user, get_usage_service_with_rls
 from app.main import app
 from app.schemas.storage import StorageUploadResponse
 
@@ -40,7 +40,7 @@ def test_upload_memo_success():
 
     app.dependency_overrides[get_storage_service] = lambda: mock_storage_service
     app.dependency_overrides[get_ocr_service] = lambda: mock_ocr_service
-    app.dependency_overrides[get_usage_service] = lambda: mock_usage_service
+    app.dependency_overrides[get_usage_service_with_rls] = lambda: mock_usage_service
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     # 실제 PNG 매직넘버 포함

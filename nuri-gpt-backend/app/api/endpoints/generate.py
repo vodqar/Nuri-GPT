@@ -10,11 +10,11 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.core.dependencies import (
     get_current_user,
-    get_journal_repository,
+    get_journal_repository_with_rls,
     get_llm_service,
-    get_log_repository,
-    get_template_repository,
-    get_usage_service,
+    get_log_repository_with_rls,
+    get_template_repository_with_rls,
+    get_usage_service_with_rls,
 )
 from app.db.models.journal import JournalCreate
 from app.db.repositories.journal_repository import JournalRepository
@@ -42,10 +42,10 @@ async def generate_observation_log(
     log_request: GenerateLogRequest,
     current_user: dict = Depends(get_current_user),
     llm_service: LlmService = Depends(get_llm_service),
-    log_repository: LogRepository = Depends(get_log_repository),
-    template_repository: TemplateRepository = Depends(get_template_repository),
-    journal_repository: JournalRepository = Depends(get_journal_repository),
-    usage_service: UsageService = Depends(get_usage_service),
+    log_repository: LogRepository = Depends(get_log_repository_with_rls),
+    template_repository: TemplateRepository = Depends(get_template_repository_with_rls),
+    journal_repository: JournalRepository = Depends(get_journal_repository_with_rls),
+    usage_service: UsageService = Depends(get_usage_service_with_rls),
 ) -> GenerateLogResponse:
     """
     텍스트 데이터와 가이드라인을 바탕으로 관찰일지 초안을 생성합니다.
@@ -297,9 +297,9 @@ async def regenerate_observation_log(
     regen_request: RegenerateLogRequest,
     current_user: dict = Depends(get_current_user),
     llm_service: LlmService = Depends(get_llm_service),
-    log_repository: LogRepository = Depends(get_log_repository),
-    journal_repository: JournalRepository = Depends(get_journal_repository),
-    usage_service: UsageService = Depends(get_usage_service),
+    log_repository: LogRepository = Depends(get_log_repository_with_rls),
+    journal_repository: JournalRepository = Depends(get_journal_repository_with_rls),
+    usage_service: UsageService = Depends(get_usage_service_with_rls),
 ) -> RegenerateLogResponse:
     """
     코멘트 기반으로 기존 생성된 관찰일지를 부분 재생성합니다.

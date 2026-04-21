@@ -11,7 +11,7 @@ from typing import List
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import StreamingResponse
 
-from app.core.dependencies import get_current_user, get_greeting_service, get_user_preference_repository
+from app.core.dependencies import get_current_user, get_greeting_service, get_user_preference_repository_with_rls
 from app.db.repositories.user_preference_repository import UserPreferenceRepository
 from app.schemas.greeting import GreetingRequest, GreetingResponse
 from app.services.greeting import GreetingService
@@ -47,7 +47,7 @@ async def generate_greeting(
     greeting_request: GreetingRequest,
     current_user: dict = Depends(get_current_user),
     greeting_service: GreetingService = Depends(get_greeting_service),
-    pref_repo: UserPreferenceRepository = Depends(get_user_preference_repository),
+    pref_repo: UserPreferenceRepository = Depends(get_user_preference_repository_with_rls),
 ) -> GreetingResponse:
     """시군구 지역과 알림장 배포 일자를 기반으로 인삿말을 생성합니다."""
     # 병렬 비동기 버전 사용 (날씨+절기 병렬 수집)
@@ -79,7 +79,7 @@ async def generate_greeting_stream(
     greeting_request: GreetingRequest,
     current_user: dict = Depends(get_current_user),
     greeting_service: GreetingService = Depends(get_greeting_service),
-    pref_repo: UserPreferenceRepository = Depends(get_user_preference_repository),
+    pref_repo: UserPreferenceRepository = Depends(get_user_preference_repository_with_rls),
 ):
     """시군구 지역과 알림장 배포 일자를 기반으로 인삿말을 SSE 스트리밍으로 생성합니다."""
     async def event_generator():

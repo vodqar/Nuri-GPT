@@ -5,7 +5,7 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 
-from app.core.dependencies import get_journal_repository, get_current_user
+from app.core.dependencies import get_journal_repository_with_rls, get_current_user
 from app.db.models.journal import JournalResponse
 from app.main import app
 
@@ -50,7 +50,7 @@ def test_list_journals_success(mock_current_user):
     journal = _journal_response()
     repo.get_latest_by_group = AsyncMock(return_value=[journal])
 
-    app.dependency_overrides[get_journal_repository] = lambda: repo
+    app.dependency_overrides[get_journal_repository_with_rls] = lambda: repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.get("/api/journals?limit=10&offset=0")
@@ -76,7 +76,7 @@ def test_get_journal_success(mock_current_user):
     journal = _journal_response(user_id=UUID(MOCK_USER_ID))
     repo.get_by_id = AsyncMock(return_value=journal)
 
-    app.dependency_overrides[get_journal_repository] = lambda: repo
+    app.dependency_overrides[get_journal_repository_with_rls] = lambda: repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.get(f"/api/journals/{journal.id}")
@@ -95,7 +95,7 @@ def test_get_journal_not_found(mock_current_user):
     repo = MagicMock()
     repo.get_by_id = AsyncMock(return_value=None)
 
-    app.dependency_overrides[get_journal_repository] = lambda: repo
+    app.dependency_overrides[get_journal_repository_with_rls] = lambda: repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     response = client.get(f"/api/journals/{uuid4()}")
@@ -114,7 +114,7 @@ def test_get_journal_group_history_success(mock_current_user):
     journal2.version = 2
     repo.get_by_group_id = AsyncMock(return_value=[journal2, journal1])
 
-    app.dependency_overrides[get_journal_repository] = lambda: repo
+    app.dependency_overrides[get_journal_repository_with_rls] = lambda: repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     group_id = uuid4()
@@ -137,7 +137,7 @@ def test_delete_journal_group_success(mock_current_user):
     repo.get_by_group_id = AsyncMock(return_value=[journal])
     repo.delete_by_group_id = AsyncMock(return_value=3)
 
-    app.dependency_overrides[get_journal_repository] = lambda: repo
+    app.dependency_overrides[get_journal_repository_with_rls] = lambda: repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     group_id = uuid4()
@@ -155,7 +155,7 @@ def test_delete_journal_group_not_found(mock_current_user):
     repo.get_by_group_id = AsyncMock(return_value=[])
     repo.delete_by_group_id = AsyncMock(return_value=0)
 
-    app.dependency_overrides[get_journal_repository] = lambda: repo
+    app.dependency_overrides[get_journal_repository_with_rls] = lambda: repo
     app.dependency_overrides[get_current_user] = lambda: mock_current_user
 
     group_id = uuid4()

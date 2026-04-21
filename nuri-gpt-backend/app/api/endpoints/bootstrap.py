@@ -13,9 +13,9 @@ from pydantic import BaseModel, Field
 
 from app.core.dependencies import (
     get_current_user,
-    get_template_repository,
-    get_usage_service,
-    get_user_repository,
+    get_template_repository_with_rls,
+    get_usage_service_with_rls,
+    get_user_repository_with_rls,
 )
 from app.db.models.template import TemplateFilter, TemplateResponse
 from app.db.models.usage import UserUsageResponse
@@ -44,9 +44,9 @@ class BootstrapData(BaseModel):
 async def get_bootstrap(
     response: Response,
     current_user: dict = Depends(get_current_user),
-    user_repo: UserRepository = Depends(get_user_repository),
-    template_repo: TemplateRepository = Depends(get_template_repository),
-    usage_service: UsageService = Depends(get_usage_service),
+    user_repo: UserRepository = Depends(get_user_repository_with_rls),
+    template_repo: TemplateRepository = Depends(get_template_repository_with_rls),
+    usage_service: UsageService = Depends(get_usage_service_with_rls),
 ):
     """앱 초기 부팅 데이터 병렬 조회"""
     user_id = UUID(current_user["id"])
