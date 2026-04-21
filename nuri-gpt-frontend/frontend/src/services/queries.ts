@@ -46,7 +46,7 @@ export function useUserUsage() {
   return useQuery<UserUsageResponse>({
     queryKey: queryKeys.usage,
     queryFn: () => getUserUsage<UserUsageResponse>(),
-    staleTime: 60_000,
+    staleTime: 5_000,
   });
 }
 

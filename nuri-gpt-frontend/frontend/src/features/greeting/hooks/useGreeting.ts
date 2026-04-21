@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../../store/authStore';
 import { GreetingService, type StreamEvent } from '../services/greetingService';
 import { extractApiErrorMessage } from '../../../utils/apiError';
@@ -8,6 +9,7 @@ export type StreamStage = 'idle' | 'weather' | 'context' | 'generating';
 
 export function useGreeting() {
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +59,8 @@ export function useGreeting() {
     } finally {
       setIsGenerating(false);
       setStage('idle');
+      // 생성 성공/실패와 관계없이 사용량 데이터를 즉시 갱신 요청
+      queryClient.invalidateQueries({ queryKey: ['usage'] });
     }
   };
 
