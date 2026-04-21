@@ -56,7 +56,15 @@ export class GreetingService {
     }
 
     if (!response.ok) {
-      throw new Error(`스트리밍 요청 실패: ${response.status}`);
+      let detail = `스트리밍 요청 실패: ${response.status}`;
+      try {
+        const errorData = await response.json() as { detail?: string; message?: string };
+        if (errorData.detail) detail = errorData.detail;
+        else if (errorData.message) detail = errorData.message;
+      } catch {
+        // JSON 파싱 실패 시 상태 코드만 표시
+      }
+      throw new Error(detail);
     }
 
     const reader = response.body!.getReader();

@@ -91,8 +91,8 @@
 
 | Method | Path | Description | Content-Type | 인증 필요 | 주요 파라미터 |
 |--------|------|-------------|-------------|-----------|--------------|
-| POST | `/api/greeting/generate` | 알림장 인삿말 생성 (날씨/날짜/절기/공휴일/기념일/잡절 맥락 기반, 병렬 수집) | `application/json` | ✅ | `region` (시군구명), `target_date` (YYYY-MM-DD), `name_input?` (bool, 기본 false), `use_emoji?` (bool, 기본 true) |
-| POST | `/api/greeting/generate/stream` | 알림장 인삿말 SSE 스트리밍 생성 (진행 상태 + 토큰 단위 실시간 전송) | `text/event-stream` | ✅ | `region` (시군구명), `target_date` (YYYY-MM-DD), `name_input?` (bool, 기본 false), `use_emoji?` (bool, 기본 true) |
+| POST | `/api/greeting/generate` | 알림장 인삿말 생성 (날씨/날짜/절기/공휴일/기념일/잡절 맥락 기반, 병렬 수집). 생성 성공 시 `greeting_generate` 할당량 차감 | `application/json` | ✅ | `region` (시군구명), `target_date` (YYYY-MM-DD), `name_input?` (bool, 기본 false), `use_emoji?` (bool, 기본 true) |
+| POST | `/api/greeting/generate/stream` | 알림장 인삿말 SSE 스트리밍 생성 (진행 상태 + 토큰 단위 실시간 전송). 생성 성공 시 `greeting_generate` 할당량 차감 | `text/event-stream` | ✅ | `region` (시군구명), `target_date` (YYYY-MM-DD), `name_input?` (bool, 기본 false), `use_emoji?` (bool, 기본 true) |
 
 #### Greeting Dify inputs 상세
 
@@ -125,7 +125,9 @@
 ---
 
 
-> 마지막 업데이트: 2026-04-18 (인삿말 생성 파이프라인 병목 개선 — SSE 스트리밍 엔드포인트 신설, API 병렬화, 날씨 캐시 도입, SpecialDayService 싱글톤화)
+> 마지막 업데이트: 2026-04-22 (인삿말 생성기 할당량 적용 — `greeting_generate` quota check 및 success-only 사용량 기록, 프론트엔드 AccountPage 사용량 표시 추가)
+>
+> 이전 업데이트: 2026-04-18 (인삿말 생성 파이프라인 병목 개선 — SSE 스트리밍 엔드포인트 신설, API 병렬화, 날씨 캐시 도입, SpecialDayService 싱글톤화)
 >
 > 이전 업데이트: 2026-04-17 (Bootstrap 엔드포인트 — GET /users/me/bootstrap 신설, Cache-Control 응답 헤더 추가, DB 복합 인덱스 보강)
 >

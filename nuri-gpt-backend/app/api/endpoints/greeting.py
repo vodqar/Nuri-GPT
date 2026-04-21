@@ -11,10 +11,11 @@ from typing import List
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import StreamingResponse
 
-from app.core.dependencies import get_current_user, get_greeting_service, get_user_preference_repository_with_rls
+from app.core.dependencies import get_current_user, get_greeting_service, get_user_preference_repository_with_rls, get_usage_service_with_rls
 from app.db.repositories.user_preference_repository import UserPreferenceRepository
 from app.schemas.greeting import GreetingRequest, GreetingResponse
 from app.services.greeting import GreetingService
+from app.services.usage_service import UsageService
 from app.core.rate_limiter import limiter
 
 logger = logging.getLogger(__name__)
@@ -48,8 +49,20 @@ async def generate_greeting(
     current_user: dict = Depends(get_current_user),
     greeting_service: GreetingService = Depends(get_greeting_service),
     pref_repo: UserPreferenceRepository = Depends(get_user_preference_repository_with_rls),
+    usage_service: UsageService = Depends(get_usage_service_with_rls),
 ) -> GreetingResponse:
     """시군구 지역과 알림장 배포 일자를 기반으로 인삿말을 생성합니다."""
+    from uuid import UUID
+    user_id = UUID(current_user["id"])
+
+    # 할당량 확인
+    is_available = await usage_service.check_quota_available(user_id, "greeting_generate")
+    if not is_available:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="일일 인삿말 생성 할당량을 모두 소진했습니다. 내일 다시 시도해주세요.",
+        )
+
     # 병렬 비동기 버전 사용 (날씨+절기 병렬 수집)
     greeting = await greeting_service.generate_greeting_async(
         region=greeting_request.region,
@@ -60,11 +73,11 @@ async def generate_greeting(
         use_emoji=greeting_request.use_emoji,
     )
 
-    # 생성 성공 시 유저의 greeting.preferred_region 설정 저장
+    # 생성 성공 시 사용량 기록
     if greeting:
+        await usage_service.increment_usage(user_id, "greeting_generate", "success")
+        # 생성 성공 시 유저의 greeting.preferred_region 설정 저장
         try:
-            from uuid import UUID
-            user_id = UUID(current_user["id"])
             await pref_repo.upsert(user_id, "greeting.preferred_region", greeting_request.region)
         except Exception as e:
             logger.warning(f"Failed to save preferred region, greeting still returned: {e}")
@@ -80,8 +93,20 @@ async def generate_greeting_stream(
     current_user: dict = Depends(get_current_user),
     greeting_service: GreetingService = Depends(get_greeting_service),
     pref_repo: UserPreferenceRepository = Depends(get_user_preference_repository_with_rls),
+    usage_service: UsageService = Depends(get_usage_service_with_rls),
 ):
     """시군구 지역과 알림장 배포 일자를 기반으로 인삿말을 SSE 스트리밍으로 생성합니다."""
+    from uuid import UUID
+    user_id = UUID(current_user["id"])
+
+    # 할당량 확인 (스트리밍 시작 전)
+    is_available = await usage_service.check_quota_available(user_id, "greeting_generate")
+    if not is_available:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="일일 인삿말 생성 할당량을 모두 소진했습니다. 내일 다시 시도해주세요.",
+        )
+
     async def event_generator():
         try:
             # Phase 1: 진행 상태 전송 — 날씨+절기 병렬 수집
@@ -146,11 +171,16 @@ async def generate_greeting_stream(
             else:
                 yield f"data: {json.dumps({'event': 'done', 'greeting': full_text}, ensure_ascii=False)}\n\n"
 
+            # 생성 성공 시 사용량 기록
+            if full_text:
+                try:
+                    await usage_service.increment_usage(user_id, "greeting_generate", "success")
+                except Exception as e:
+                    logger.warning(f"Failed to increment usage in stream: {e}")
+
             # preferred_region 저장
             if full_text:
                 try:
-                    from uuid import UUID
-                    user_id = UUID(current_user["id"])
                     await pref_repo.upsert(user_id, "greeting.preferred_region", greeting_request.region)
                 except Exception as e:
                     logger.warning(f"Failed to save preferred region in stream: {e}")

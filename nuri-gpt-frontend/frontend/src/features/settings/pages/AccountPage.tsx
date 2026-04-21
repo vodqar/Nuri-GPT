@@ -11,6 +11,7 @@ export function AccountPage() {
   const featureLabels: Record<string, string> = {
     text_generate: '관찰일지 생성',
     vision_analyze: '이미지/템플릿 분석',
+    greeting_generate: '인삿말 생성',
   };
 
   const subscriptionData = {
