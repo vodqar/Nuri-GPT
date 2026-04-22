@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -69,16 +69,9 @@ class Settings(BaseSettings):
     llm_ocr_temperature: float = Field(default=1.0, alias="LLM_OCR_TEMPERATURE")
     llm_ocr_thinking_level: str = Field(default="medium", alias="LLM_OCR_THINKING_LEVEL")
 
-    # CORS 설정
-    cors_origins: List[str] = Field(
-        default_factory=lambda: [
-            "http://localhost:3000",
-            "http://localhost:5173",
-            "http://localhost:5174",
-            "http://127.0.0.1:5173",
-            "http://127.0.0.1:5174",
-            "http://127.0.0.1:44557",
-        ],
+    # CORS 설정 (쉼표로 구분된 문자열, main.py에서 리스트로 파싱)
+    cors_origins: str = Field(
+        default="http://localhost:3000,http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:44557",
         alias="CORS_ORIGINS"
     )
 
@@ -88,12 +81,6 @@ class Settings(BaseSettings):
         if self.supabase_url:
             return f"{self.supabase_url}/auth/v1"
         return None
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # 문자열로 들어온 cors_origins 파싱
-        if isinstance(self.cors_origins, str):
-            self.cors_origins = [origin.strip() for origin in self.cors_origins.split(",")]
 
 
 @lru_cache

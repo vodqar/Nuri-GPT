@@ -17,6 +17,7 @@ import { useViewTransition } from './hooks/useViewTransition';
 import { useLogGeneration } from './hooks/useLogGeneration';
 import { useTemplateManagement } from './hooks/useTemplateManagement';
 import { useFileUpload } from './hooks/useFileUpload';
+import type { Template } from '../../types/api';
 import { CHEAT_SAMPLE_TEMPLATE, isCheatMode } from './cheat-data';
 import { ImageCropperModal } from '../../components/global/ImageCropperModal';
 
@@ -68,7 +69,7 @@ export function ObservationPage() {
     regenerate,
     navigateHistory,
   } = useLogGeneration({
-    selectedTemplate: templates.find((t) => t.id === selectedTemplateId),
+    selectedTemplate: templates.find((t: Template) => t.id === selectedTemplateId),
     childAge,
     isAggressiveMode,
     setIsGenerating,
@@ -125,7 +126,7 @@ export function ObservationPage() {
     fetchTemplates();
   }, [fetchTemplates]);
 
-  const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
+  const selectedTemplate = templates.find((t: Template) => t.id === selectedTemplateId);
   const semanticJson = selectedTemplate?.semantic_json || selectedTemplate?.structure_json;
 
   const handleManualInputChange = (field: string, value: string) => {
@@ -192,7 +193,7 @@ export function ObservationPage() {
   const handleManageModeToggle = () => {
     if (isManageMode) {
       // Save order changes
-      const orders = templates.map((t) => ({
+      const orders = templates.map((t: Template) => ({
         id: t.id,
         sort_order: t.sort_order,
       }));

@@ -53,8 +53,9 @@ app = FastAPI(
 )
 
 # CORS 미들웨어 설정
+_cors_origins_list = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
 _cors_kwargs: dict = dict(
-    allow_origins=settings.cors_origins,
+    allow_origins=_cors_origins_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept"],

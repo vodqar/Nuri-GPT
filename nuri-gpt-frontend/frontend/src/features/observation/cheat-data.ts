@@ -3,6 +3,7 @@ import type { Template, GenerateLogResponse } from '../../types/api';
 export const CHEAT_SAMPLE_RESULT: GenerateLogResponse = {
   status: 'success',
   message: '치트 모드: 샘플 데이터',
+  log_id: 'cheat-log-id',
   updated_activities: [
     { target_id: '보육일지.놀이.활동.내용', updated_text: '종이의 질감을 탐색하고 접는 과정을 통해 소근육을 정교하게 조절하며, 다양한 형태를 구성해보는 조형 활동을 진행함.' },
     { target_id: '보육일지.놀이.실내놀이.놀이상황', updated_text: '다양한 크기의 블록을 활용하여 높이 쌓거나 구조물을 만드는 놀이에 몰입함. 블록의 균형을 맞추며 성취감을 느끼고 자신의 생각을 입체적으로 표현하는 모습이 관찰됨.' },
