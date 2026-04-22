@@ -1,0 +1,29 @@
+services:
+  backend:
+    build:
+      context: ./nuri-gpt-backend
+      dockerfile: Dockerfile
+    container_name: nuri-gpt-backend
+    env_file:
+      - ./nuri-gpt-backend/.env.production
+    networks:
+      - nuri-gpt
+    restart: unless-stopped
+    # 호스트 포트 노출 없음 — frontend nginx에서만 내부 통신
+
+  frontend:
+    build:
+      context: ./nuri-gpt-frontend/frontend
+      dockerfile: Dockerfile
+    container_name: nuri-gpt-frontend
+    ports:
+      - "8082:80"
+    depends_on:
+      - backend
+    networks:
+      - nuri-gpt
+    restart: unless-stopped
+
+networks:
+  nuri-gpt:
+    name: nuri-gpt

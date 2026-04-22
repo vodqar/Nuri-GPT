@@ -37,6 +37,7 @@ ENV/
 .env*
 *.env*
 !*.env.example
+!.env.production.example
 *.bak
 .env.bak
 
@@ -75,7 +76,6 @@ temp/
 
 # Personal file's
 notepad.md
-Makefile
 dev.sh
 download
 prompts
