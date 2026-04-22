@@ -105,8 +105,6 @@ async def signup(
             session = auth_response.session
             user = auth_response.user
 
-            # TODO: [배포 전 필수] HTTPS 환경에서는 아래 두 값을 변경할 것
-            # secure=True, samesite="strict"
             _set_auth_cookies(response=response, refresh_token=session.refresh_token, remember=True)
 
             preferences = await pref_repo.get_all(user.id)
@@ -165,8 +163,6 @@ async def login(
 
         # refresh_token을 httpOnly 쿠키로 설정
         # SameSite=Strict로 CSRF 방어, Path 제한으로 /api/auth/* 에서만 사용
-        # TODO: [배포 전 필수] HTTPS 환경에서는 아래 두 값을 변경할 것
-        # secure=True, samesite="strict"
         _set_auth_cookies(
             response=response,
             refresh_token=session.refresh_token,
@@ -223,8 +219,6 @@ async def refresh_token(
         if not user:
             raise AuthenticationError("사용자 정보를 찾을 수 없습니다")
 
-        # TODO: [배포 전 필수] HTTPS 환경에서는 아래 두 값을 변경할 것
-        # secure=True, samesite="strict"
         # 새 refresh_token으로 쿠키 업데이트 (token rotation)
         # remember_me 쿠키가 없으면 기존 사용자 호환을 위해 persistent로 처리
         remember = remember_me != "0"

@@ -13,10 +13,11 @@ import json
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Query, Response, UploadFile, status
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, Response, UploadFile, status
 from pydantic import BaseModel
 
 from app.core.dependencies import get_current_user, get_storage_service, get_template_repository_with_rls
+from app.core.rate_limiter import limiter
 from app.db.models.template import TemplateCreate, TemplateResponse, TemplateFilter, TemplateUpdate
 from app.db.repositories.template_repository import TemplateRepository
 from app.services.storage import StorageService
@@ -135,7 +136,9 @@ async def create_template(
     summary="템플릿 목록 조회",
     description="조건에 맞는 사용자의 템플릿 목록을 조회합니다. 기본적으로 활성화된 템플릿만 반환합니다.",
 )
+@limiter.limit("30/minute")
 async def get_templates(
+    request: Request,
     response: Response,
     current_user: dict = Depends(get_current_user),
     template_type: str = Query(None, description="템플릿 타입 필터 (예: observation_log)"),
@@ -163,7 +166,9 @@ async def get_templates(
     summary="템플릿 상세 조회",
     description="ID로 특정 템플릿의 메타데이터와 청사진 등을 조회합니다.",
 )
+@limiter.limit("30/minute")
 async def get_template(
+    request: Request,
     template_id: UUID,
     current_user: dict = Depends(get_current_user),
     template_repo: TemplateRepository = Depends(get_template_repository_with_rls),

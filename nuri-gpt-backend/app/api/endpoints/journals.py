@@ -6,9 +6,10 @@
 import uuid
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 
 from app.core.dependencies import get_current_user, get_journal_repository_with_rls
+from app.core.rate_limiter import limiter
 from app.db.models.journal import JournalListResponse, JournalResponse
 from app.db.repositories.journal_repository import JournalRepository
 
@@ -16,7 +17,9 @@ router = APIRouter()
 
 
 @router.get("", response_model=JournalListResponse)
+@limiter.limit("30/minute")
 async def list_journals(
+    request: Request,
     response: Response,
     current_user: dict = Depends(get_current_user),
     limit: int = Query(default=20, ge=1, le=100),
@@ -40,7 +43,9 @@ async def list_journals(
 
 
 @router.get("/{journal_id}", response_model=JournalResponse)
+@limiter.limit("30/minute")
 async def get_journal(
+    request: Request,
     journal_id: uuid.UUID,
     current_user: dict = Depends(get_current_user),
     journal_repository: JournalRepository = Depends(get_journal_repository_with_rls),
@@ -64,7 +69,9 @@ async def get_journal(
 
 
 @router.get("/group/{group_id}", response_model=List[JournalResponse])
+@limiter.limit("30/minute")
 async def get_journal_group_history(
+    request: Request,
     group_id: uuid.UUID,
     current_user: dict = Depends(get_current_user),
     journal_repository: JournalRepository = Depends(get_journal_repository_with_rls),

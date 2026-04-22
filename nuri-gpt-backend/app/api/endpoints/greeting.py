@@ -24,7 +24,8 @@ router = APIRouter()
 
 
 @router.get("/regions", response_model=List[str])
-async def get_regions():
+@limiter.limit("60/minute")
+async def get_regions(request: Request):
     """사용 가능한 시군구 지역 목록을 반환합니다."""
     import json
     import os

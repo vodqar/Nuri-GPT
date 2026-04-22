@@ -8,7 +8,7 @@ import asyncio
 from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 
 from app.core.dependencies import (
@@ -17,6 +17,7 @@ from app.core.dependencies import (
     get_usage_service_with_rls,
     get_user_repository_with_rls,
 )
+from app.core.rate_limiter import limiter
 from app.db.models.template import TemplateFilter, TemplateResponse
 from app.db.models.usage import UserUsageResponse
 from app.db.repositories.template_repository import TemplateRepository
@@ -41,7 +42,9 @@ class BootstrapData(BaseModel):
     summary="앱 부팅 데이터 일괄 조회",
     description="user + templates + usage를 asyncio.gather로 병렬 조회하여 1 RTT로 통합 반환합니다.",
 )
+@limiter.limit("30/minute")
 async def get_bootstrap(
+    request: Request,
     response: Response,
     current_user: dict = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository_with_rls),

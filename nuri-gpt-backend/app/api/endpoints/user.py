@@ -4,8 +4,9 @@
 """
 
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from app.core.dependencies import get_current_user, get_user_repository_with_rls, get_usage_service_with_rls, get_user_preference_repository_with_rls
+from app.core.rate_limiter import limiter
 from app.db.repositories.user_repository import UserRepository
 from app.db.repositories.user_preference_repository import UserPreferenceRepository
 from app.services.usage_service import UsageService
@@ -23,7 +24,9 @@ router = APIRouter()
     summary="현재 사용자 정보 조회",
     description="JWT 토큰으로 현재 로그인한 사용자의 프로필 정보를 조회합니다.",
 )
+@limiter.limit("30/minute")
 async def get_current_user_info(
+    request: Request,
     current_user: dict = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository_with_rls),
 ):
@@ -53,7 +56,9 @@ async def get_current_user_info(
     summary="현재 사용자 사용량 조회",
     description="현재 로그인한 사용자의 일일 할당량 및 사용 현황을 조회합니다.",
 )
+@limiter.limit("30/minute")
 async def get_current_user_usage(
+    request: Request,
     response: Response,
     current_user: dict = Depends(get_current_user),
     usage_service: UsageService = Depends(get_usage_service_with_rls),
@@ -138,7 +143,9 @@ async def update_current_user(
     summary="현재 사용자 설정 조회",
     description="현재 로그인한 사용자의 모든 설정값을 조회합니다.",
 )
+@limiter.limit("30/minute")
 async def get_current_user_preferences(
+    request: Request,
     current_user: dict = Depends(get_current_user),
     pref_repo: UserPreferenceRepository = Depends(get_user_preference_repository_with_rls),
 ):
@@ -160,15 +167,17 @@ async def get_current_user_preferences(
     summary="현재 사용자 설정 업데이트",
     description="현재 로그인한 사용자의 설정값을 upsert합니다. 복수 키 동시 갱신 가능.",
 )
+@limiter.limit("30/minute")
 async def update_current_user_preferences(
-    request: PreferencesUpdateRequest,
+    request: Request,
+    pref_request: PreferencesUpdateRequest,
     current_user: dict = Depends(get_current_user),
     pref_repo: UserPreferenceRepository = Depends(get_user_preference_repository_with_rls),
 ):
     """현재 인증된 사용자 설정 upsert"""
     user_id = UUID(current_user["id"])
     try:
-        preferences = await pref_repo.upsert_many(user_id, request.preferences)
+        preferences = await pref_repo.upsert_many(user_id, pref_request.preferences)
         return PreferencesResponse(preferences=preferences)
     except Exception as e:
         raise HTTPException(

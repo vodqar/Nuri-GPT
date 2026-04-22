@@ -76,9 +76,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
         if not settings.debug:
             response.headers["Content-Security-Policy"] = "default-src 'self'"
-            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+            response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)
@@ -148,7 +149,8 @@ async def external_api_exception_handler(request: Request, exc: ExternalAPIError
 
 # 기본 헬스체크 엔드포인트
 @app.get("/", response_model=HealthCheckResponse, tags=["Health"])
-async def root():
+@limiter.limit("60/minute")
+async def root(request: Request):
     """루트 엔드포인트 - 기본 헬스체크"""
     uptime = time.time() - _start_time if _start_time > 0 else None
     return HealthCheckResponse(
@@ -160,7 +162,8 @@ async def root():
 
 
 @app.get("/health", response_model=HealthCheckResponse, tags=["Health"])
-async def health_check():
+@limiter.limit("60/minute")
+async def health_check(request: Request):
     """헬스체크 엔드포인트"""
     uptime = time.time() - _start_time if _start_time > 0 else None
     return HealthCheckResponse(

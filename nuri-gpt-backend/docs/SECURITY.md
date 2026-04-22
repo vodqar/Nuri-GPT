@@ -4,13 +4,14 @@
 
 ---
 
-## 1. Rate Limiting ✅ 수정 완료 (V-08)
+## 1. Rate Limiting ✅ 수정 완료 (V-08 + 라이브 보고서)
 
 **파일**: `app/core/rate_limiter.py`, 각 엔드포인트
 
 **적용 내용**:
 - `slowapi` 기반 애플리케이션 레벨 rate limit 구현
-- 엔드포인트별 제한: auth signup 5/min, login 10/min, generate 20/min, greeting 20/min, upload 10~20/min
+- 쓰기/LLM 엔드포인트: auth signup 5/min, login 10/min, generate 20/min, greeting 10/min, upload 10~20/min
+- 읽기 엔드포인트: templates/journals/users/bootstrap 30/min, greeting/regions 60/min, health 60/min
 - `RateLimitExceeded` 예외 핸들러 등록
 
 ---
@@ -108,17 +109,18 @@
 
 ---
 
-## 12. 보안 헤더 ✅ 수정 완료 (V-09)
+## 12. 보안 헤더 ✅ 수정 완료 (V-09 + 라이브 보고서)
 
 **파일**: `app/main.py` (`SecurityHeadersMiddleware`)
 
 **적용 내용**:
 - `X-Content-Type-Options: nosniff`
 - `X-Frame-Options: DENY`
-- `Content-Security-Policy: default-src 'self'` (프로덕션만)
-- `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` (프로덕션만)
+- `X-XSS-Protection: 1; mode=block`
 - `Referrer-Policy: strict-origin-when-cross-origin`
 - `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+- `Content-Security-Policy: default-src 'self'` (프로덕션만)
+- `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` (프로덕션만)
 
 ---
 
@@ -130,7 +132,7 @@
 - `min_length=8` + 대문자·소문자·숫자 필수 (`field_validator` + regex)
 - `LoginRequest`, `SignupRequest` 모두 적용
 - 기존 사용자 비밀번호는 소급 적용되지 않으므로, 다음 로그인 시 변경 안내 필요
-- Supabase 대시보드에서 Leaked Password Protection 활성화 권장
+- **Leaked Password Protection**: Supabase Pro Plan 이상에서만 지원. 현재 Free 플랜이므로 코드 수준 정책으로 보완 중
 
 ---
 
@@ -151,5 +153,5 @@
 
 > 상세 취약점 목록, 재현 절차, 단계별 개선 로드맵은 `report/2026-04-21-redteam-security-assessment.md` 참조.
 
-*Last updated: 2026-04-21*
+*Last updated: 2026-04-22*
 
