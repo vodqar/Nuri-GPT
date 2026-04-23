@@ -24,7 +24,7 @@ export function JournalHistoryPage() {
   const limit = 20;
 
   // 초기 로드: React Query (캐시 + 자동 재시도)
-  const { isLoading: isInitialLoading, isError, refetch } = useQuery({
+  const { isLoading: isInitialLoading, isError, data, refetch } = useQuery({
     queryKey: queryKeys.journals(limit, 0),
     queryFn: () => getJournals(limit, 0),
     staleTime: 30_000,
@@ -33,15 +33,12 @@ export function JournalHistoryPage() {
 
   // 초기 쿼리 결과 → journals 상태 동기화
   useEffect(() => {
-    refetch().then((result) => {
-      if (result.data) {
-        setJournals(result.data.items);
-        setHasMore(result.data.items.length === limit);
-        setOffset(result.data.items.length);
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (data) {
+      setJournals(data.items);
+      setHasMore(data.items.length === limit);
+      setOffset(data.items.length);
+    }
+  }, [data, limit]);
 
   // 추가 페이지 로드 (무한 스크롤)
   const loadMoreJournals = useCallback(async () => {
