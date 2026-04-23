@@ -80,6 +80,10 @@ dev.sh
 download
 prompts
 
+# Deployment secrets (공개 저장소 커밋 금지)
+deploy/DEPLOYMENT_SECRETS.md
+deploy/nginx-nuri-gpt.conf
+
 # AI-IDE
 .windsurf
 .playwright-mcp

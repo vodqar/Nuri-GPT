@@ -14,8 +14,6 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 - **BROWSER_TESTING_WITH_PLAYWRIGHT_MCP.md** — Browser-facing verification guide using available Playwright MCP tools
 - **DOCUMENTATION_AND_ADRS.md** — Document decisions, rationale, and when to create ADR-style records
 - **RECURRING_FAILURES_AND_GUARDRAILS.md** — Promote repeated mistakes and late-discovered constraints into durable working guidance
-- **report/2026-04-21-redteam-security-assessment.md** — Pre-launch red-team vulnerability assessment (14 findings, remediation roadmap)
-
 ### Backend (`nuri-gpt-backend/`)
 - **agents.md** — Backend-specific guidelines (dependency management, testing isolation, DB schema, framework specs, DoD)
 - **docs/OVERVIEW.md** — Project purpose, tech stack, environment setup, execution methods
