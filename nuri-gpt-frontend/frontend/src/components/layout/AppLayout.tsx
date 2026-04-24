@@ -12,7 +12,7 @@ export function AppLayout() {
       <div className="flex flex-1">
         <SideNavBar />
         <main className={cn(
-          "flex-1 pb-20 md:pb-0 pt-6 transition-all duration-300 ease-in-out w-full",
+          "flex-1 pb-20 md:pb-0 pt-[68px] md:pt-6 transition-all duration-300 ease-in-out w-full",
           isSidebarCollapsed ? "md:pl-20" : "md:pl-[280px]"
         )}>
           <Outlet />
