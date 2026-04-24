@@ -6,7 +6,7 @@
 import asyncio
 import json
 import logging
-import random
+# import random  # disabled: seed_sequence generation
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from typing import Dict, Generator, List, Optional
@@ -68,13 +68,13 @@ class GreetingService:
         self.weather_service = weather_service or WeatherService()
         self.special_day_service = special_day_service
 
-    def _generate_seed_sequence(self) -> List[int]:
-        """[1,2,3] 중 1~2개를 무작위 추출하여 순서를 섞고, 마지막에 항상 4를 붙여 반환"""
-        count = random.randint(1, 2)
-        sequence = random.sample([1, 2, 3], count)
-        random.shuffle(sequence)
-        sequence.append(4)
-        return sequence
+    # def _generate_seed_sequence(self) -> List[int]:
+    #     """[1,2,3] 중 1~2개를 무작위 추출하여 순서를 섞고, 마지막에 항상 4를 붙여 반환"""
+    #     count = random.randint(1, 2)
+    #     sequence = random.sample([1, 2, 3], count)
+    #     random.shuffle(sequence)
+    #     sequence.append(4)
+    #     return sequence
 
     def _extract_answer_text(self, response: requests.Response) -> str:
         content_type = response.headers.get("Content-Type", "")
@@ -303,7 +303,8 @@ class GreetingService:
             "user_custom_input": user_input or "",
             "name_input": "true" if name_input else "false",
             "use_emoji": "true" if use_emoji else "false",
-            "seed_sequence": json.dumps(self._generate_seed_sequence()),
+            # "seed_sequence": json.dumps(self._generate_seed_sequence()),
+            "seed_sequence": "",
         }
 
         # 주차 정보(month_week)는 별도 체크박스가 없으므로 기본 포함하거나, 
@@ -391,7 +392,8 @@ class GreetingService:
             "user_custom_input": user_input or "",
             "name_input": "true" if name_input else "false",
             "use_emoji": "true" if use_emoji else "false",
-            "seed_sequence": json.dumps(self._generate_seed_sequence()),
+            # "seed_sequence": json.dumps(self._generate_seed_sequence()),
+            "seed_sequence": "",
         }
 
     def _get_weather_context(
