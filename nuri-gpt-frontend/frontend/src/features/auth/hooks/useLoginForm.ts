@@ -33,7 +33,7 @@ export const useLoginForm = () => {
       // 로그인 직후 bootstrap prefetch → 첫 페이지 체감 로딩 최소화
       prefetchBootstrap(queryClient);
 
-      navigate('/dashboard');
+      navigate('/observations');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || '로그인 중 오류가 발생했습니다.';

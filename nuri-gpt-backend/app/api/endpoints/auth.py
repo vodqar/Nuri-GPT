@@ -138,7 +138,6 @@ async def login(
     login_data: LoginRequest,
     response: Response,
     supabase: Client = Depends(get_supabase_client),
-    pref_repo: UserPreferenceRepository = Depends(lambda: UserPreferenceRepository(get_supabase_client())),
 ) -> TokenResponse:
     """사용자 로그인
 
@@ -169,7 +168,6 @@ async def login(
             remember=login_data.remember,
         )
 
-        preferences = await pref_repo.get_all(user.id)
         return TokenResponse(
             access_token=session.access_token,
             token_type="bearer",
@@ -178,7 +176,7 @@ async def login(
                 id=user.id,
                 email=user.email or "",
                 name=user.user_metadata.get("name", "") if user.user_metadata else "",
-                preferences=preferences,
+                preferences={},
             ),
         )
 
@@ -196,7 +194,6 @@ async def refresh_token(
     refresh_token: Optional[str] = Cookie(None, alias=REFRESH_TOKEN_COOKIE_NAME),
     remember_me: Optional[str] = Cookie(None, alias=REMEMBER_ME_COOKIE_NAME),
     supabase: Client = Depends(get_supabase_client),
-    pref_repo: UserPreferenceRepository = Depends(lambda: UserPreferenceRepository(get_supabase_client())),
 ) -> TokenResponse:
     """토큰 갱신
 
@@ -224,7 +221,6 @@ async def refresh_token(
         remember = remember_me != "0"
         _set_auth_cookies(response=response, refresh_token=session.refresh_token, remember=remember)
 
-        preferences = await pref_repo.get_all(user.id)
         return TokenResponse(
             access_token=session.access_token,
             token_type="bearer",
@@ -233,7 +229,7 @@ async def refresh_token(
                 id=user.id,
                 email=user.email or "",
                 name=user.user_metadata.get("name", "") if user.user_metadata else "",
-                preferences=preferences,
+                preferences={},
             ),
         )
 

@@ -72,4 +72,12 @@ Review for promotion to higher-level documentation if any of the following apply
 - [ ] Ensured documentation is not so overly specific that it fails to account for necessary exceptions.
 - [ ] Verified that there are no conflicts in roles or priorities between related documents.
 
-*Last Updated: 2026-04-14*
+### 3. 환경 변수 → 설정 객체 파싱: pydantic-settings `List[str]` 함정
+
+pydantic-settings의 `EnvSettingsSource`는 단일 문자열 값을 `List[str]` 필드에 안전하게 파싱하지 않는다. `.env`의 단일 URL과 다중 URL(쉼표 구분)이 모두 동일하게 작동해야 할 때, `List[str]` 타입 대신 `str`로 선언하고 애플리케이션 레벨에서 `split(",")` 처리하라. (사례: `CORS_ORIGINS` — `report/2026-04-22-pydantic-settings-list-env-parse.md` 참조)
+
+> **판단 기준**: env source의 파싱이 `field_validator`보다 먼저 실행될 수 있다. validator로 "추후 보완"하는 설계는 구멍이 생긴다.
+
+---
+
+*Last Updated: 2026-04-22*

@@ -28,7 +28,7 @@ function AppRoutes() {
       {/* 로그인 사용자 전용 라우트 */}
       <Route element={<PrivateRoute />}>
         <Route path="/" element={<AppLayout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route index element={<Navigate to="/observations" replace />} />
           <Route path="dashboard" element={<div className="p-10"><h1 className="text-2xl font-bold">{t('app.dashboardTitle')}</h1></div>} />
           <Route path="observations" element={<ObservationPage />} />
           <Route path="tools/greeting" element={<GreetingPage />} />
